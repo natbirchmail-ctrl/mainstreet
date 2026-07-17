@@ -1,0 +1,12 @@
+{
+  "cycle": 2,
+  "fromCycle": 1,
+  "createdAt": "2026-07-17T23:12:41.347Z",
+  "source": "openai-revision",
+  "fallbackReason": null,
+  "designNotes": {
+    "aesthetic": "A high desert bakehouse expressed through warm paper, clay, rust, deep juniper green, editorial serif typography, and bold geometric food illustrations.",
+    "signatureMove": "The continuous juniper trail remains fully visible as a static guide through the menu, story, and visit chapters. A new bread board echoes its botanical marks and gives the desktop menu a balanced visual anchor.",
+    "rationale": "The revision removes the invalid security directive, enlarges reading text and controls, keeps the mobile wordmark on one line, strengthens label and button contrast, and gives every primary navigation target a comfortable touch area. The desktop menu now uses both columns without relying on unavailable photography. Unconfirmed operational details are consolidated into one clear status card rather than repeated as placeholders, while all original business facts and the distinctive oven landscape remain intact."
+  }
+}

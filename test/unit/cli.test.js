@@ -48,3 +48,19 @@ test("parseCli reads an explicit preview port", () => {
     flags: { port: "4601" },
   });
 });
+
+test("parseCli reads an explicit critic cycle", () => {
+  assert.deepEqual(parseCli(["critique", "juniper-oven", "--cycle", "1"]), {
+    command: "critique",
+    positionals: ["juniper-oven"],
+    flags: { cycle: "1" },
+  });
+});
+
+test("parseCli reads a revision cycle", () => {
+  assert.deepEqual(parseCli(["revise", "juniper-oven", "--cycle", "1"]), {
+    command: "revise",
+    positionals: ["juniper-oven"],
+    flags: { cycle: "1" },
+  });
+});

@@ -6,13 +6,15 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 
 import { buildRun } from "../src/build.js";
+import { runCriticCycle } from "../src/critic.js";
 import { createBrief } from "../src/intake.js";
 import { initializeRun, resolveInside, writeJsonNew } from "../src/lib/runs.js";
+import { reviseRun } from "../src/revise.js";
 import { findLatestSite, startStaticServer } from "../src/serve.js";
 import { slugify } from "../src/lib/slug.js";
 
 const booleanFlags = new Set(["fast", "help"]);
-const valueFlags = new Set(["city", "details", "port", "max-cycles"]);
+const valueFlags = new Set(["city", "details", "port", "cycle", "max-cycles"]);
 
 export function parseCli(argv) {
   const [command = "help", ...tokens] = argv;
@@ -102,6 +104,30 @@ export async function main(argv = process.argv.slice(2)) {
     await new Promise(() => {});
   }
 
+  if (parsed.command === "critique") {
+    const slug = slugify(parsed.positionals.join(" "));
+    const runDir = resolveInside(runsRoot, slug);
+    const latestSite = await findLatestSite(runDir);
+    const inferredCycle = Number(path.basename(path.dirname(latestSite)).slice("cycle-".length));
+    const cycle = parsed.flags.cycle ? Number(parsed.flags.cycle) : inferredCycle;
+    const critique = await runCriticCycle({ runDir, cycle });
+    process.stdout.write(
+      `Critique complete: ${critique.score}/100 (${critique.verdict})\n`,
+    );
+    return;
+  }
+
+  if (parsed.command === "revise") {
+    const slug = slugify(parsed.positionals.join(" "));
+    const runDir = resolveInside(runsRoot, slug);
+    const latestSite = await findLatestSite(runDir);
+    const inferredCycle = Number(path.basename(path.dirname(latestSite)).slice("cycle-".length));
+    const fromCycle = parsed.flags.cycle ? Number(parsed.flags.cycle) : inferredCycle;
+    const revision = await reviseRun({ runDir, fromCycle });
+    process.stdout.write(`Revision built: cycle ${revision.toCycle}\n`);
+    return;
+  }
+
   throw new TypeError(`Unknown command: ${parsed.command}`);
 }
 
@@ -110,7 +136,7 @@ function toCamelCase(value) {
 }
 
 function helpText() {
-  return `Mainstreet\n\nUsage:\n  mainstreet intake "Business Name" [--city "City, ST"] [--details "Known facts"] [--fast]\n  mainstreet build <slug>\n  mainstreet serve <slug> [--port 4601]\n`;
+  return `Mainstreet\n\nUsage:\n  mainstreet intake "Business Name" [--city "City, ST"] [--details "Known facts"] [--fast]\n  mainstreet build <slug>\n  mainstreet critique <slug> [--cycle 1]\n  mainstreet revise <slug> [--cycle 1]\n  mainstreet serve <slug> [--port 4601]\n`;
 }
 
 const isEntryPoint =

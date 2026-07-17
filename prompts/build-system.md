@@ -16,6 +16,6 @@ Create a single responsive page with a useful skip link, restrained header navig
 
 ## Technical boundary
 
-Use only semantic HTML and one external local stylesheet named `styles.css`. Do not include JavaScript, forms, iframes, embeds, inline event handlers, external URLs, web fonts, remote images, data URLs, `@import`, or CSS `url()` calls. Include charset, viewport, description, title, stylesheet link, and a restrictive Content Security Policy meta tag. The page must remain complete without images.
+Use only semantic HTML and one external local stylesheet named `styles.css`. Do not include JavaScript, forms, iframes, embeds, inline event handlers, external URLs, web fonts, remote images, data URLs, `@import`, or CSS `url()` calls. Include charset, viewport, description, title, stylesheet link, and a restrictive Content Security Policy meta tag. Do not put `frame-ancestors` in the meta policy because browsers accept that directive only as an HTTP header. The page must remain complete without images.
 
 Return raw file contents without Markdown fences.

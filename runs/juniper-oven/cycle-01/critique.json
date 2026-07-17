@@ -1,0 +1,128 @@
+{
+  "rubricVersion": "1.0",
+  "score": 60,
+  "verdict": "revise",
+  "summary": "A distinctive, cohesive high-desert bakery concept with strong art direction, an effective hero, and an unusually memorable botanical trail. It is not ready for public presentation because the page cannot support a real visit or order, body copy is consistently undersized, the mobile header is cramped, and the desktop menu composition leaves an excessive empty half-page.",
+  "dimensions": {
+    "layout": {
+      "score": 13,
+      "evidence": "The hero has a balanced text-and-illustration split, and the story and visit sections use a coherent vertical grid. However, the desktop menu section places nearly all content in the right half, leaving a very large empty field on the left. On mobile, the trail line crowds the content edge and some sections feel compressed against it.",
+      "fix": "On desktop, move the menu column approximately 100–140px left or place a supporting bread image or short seasonal note in the empty left field; on mobile, increase the content inset from the trail line by 8px."
+    },
+    "hierarchy": {
+      "score": 13,
+      "evidence": "Large editorial headlines, compact eyebrows, numbered offerings, and the dark visit block establish a clear reading sequence. The primary hero action is visibly stronger than the secondary one. The ingredient warning competes heavily with the menu despite being provisional, while the actionable visit information ends in placeholders.",
+      "fix": "Reduce the ingredient note’s vertical padding slightly and replace the visit placeholders with one prominent status message until real details exist."
+    },
+    "color": {
+      "score": 11,
+      "evidence": "Clay, paper, juniper green, charcoal, and rust form a cohesive palette that supports the high-desert positioning. The dark green visit panel and cream text have strong contrast. Some small olive-green and rust labels are faint against the paper background.",
+      "fix": "Darken the small green and rust eyebrow and number text by one shade while retaining the palette."
+    },
+    "typography": {
+      "score": 10,
+      "evidence": "The display serif and italic treatment give the hero a recognizable editorial voice, and headline wrapping is generally deliberate. Body copy, navigation, metadata, and supporting labels are extremely small in both screenshots; the desktop menu description and mobile visit copy require effort to read. The mobile logo also wraps awkwardly into two lines.",
+      "fix": "Set all body and utility copy to at least 14px on desktop and 15–16px on mobile with a minimum 1.45 line-height, and keep the mobile wordmark on one line."
+    },
+    "mobile": {
+      "score": 10,
+      "evidence": "The layout collapses cleanly into one column, preserves both hero actions, and keeps the illustration and trail motif. However, the header compresses a two-line logo and three tiny links into a shallow row, tap targets appear undersized, multiple paragraphs are too small, and the trail line reduces an already narrow text measure.",
+      "fix": "Increase the mobile header height to about 56px, use one-line branding, and give navigation links at least 40px-high tap areas; raise body text sizes without narrowing the content column further."
+    },
+    "specificity": {
+      "score": 7,
+      "evidence": "Flagstaff, high-desert language, the AZ seal, seasonal baking, and the custom oven landscape make the concept feel locally directed rather than like a generic cafe template. Yet most business copy describes an evolving concept, and every practical detail—address, hours, ordering, contact, allergens, and full menu—is explicitly unavailable.",
+      "fix": "Before launch, replace the placeholder visit panel with confirmed address, hours, ordering method, and one contact channel, then publish at least a representative menu with prices and dietary markers."
+    },
+    "accessibility": {
+      "score": 7,
+      "evidence": "A skip link is present in the visible text, section structure is visually clear, and primary text contrast is generally strong. Readability is undermined by very small body text and labels, while the compact mobile navigation and buttons appear below comfortable touch-target sizes. The secondary outlined button also has a relatively weak visual boundary.",
+      "fix": "Increase text and control sizes, provide 44px minimum touch targets, and strengthen the secondary button border and focus treatment."
+    },
+    "polish": {
+      "score": 5,
+      "evidence": "The custom landscape illustration, botanical line, AZ seal, restrained rules, aligned numbering, and consistent footer treatment feel intentionally art-directed. The major rough edges are functional and typographic rather than unfinished decorative execution.",
+      "fix": "Preserve the illustration and trail system while completing the content and type-size corrections."
+    }
+  },
+  "strengths": [
+    "The high-desert oven illustration is distinctive, relevant to the business, and more memorable than generic bakery photography.",
+    "The juniper trail creates continuity across sections and survives the mobile layout without hiding content.",
+    "The serif and italic hero composition gives the brand a warm, quietly confident editorial character.",
+    "The palette is cohesive and strongly connected to clay, juniper, paper, and the surrounding landscape.",
+    "The page is transparent about unconfirmed information rather than inventing operational details."
+  ],
+  "issues": [
+    {
+      "priority": 1,
+      "severity": "major",
+      "dimension": "specificity",
+      "evidence": "The visit section says the address, hours, ordering availability, phone, email, and direct inquiries are all unavailable; the menu is also described only as an intended direction.",
+      "impact": "Visitors cannot decide when or where to visit, place an order, contact the bakery, or evaluate actual menu choices, so the site does not fulfill its core business purpose.",
+      "fix": "Do not publicly launch until the visit panel contains confirmed address, hours, ordering instructions, and at least one working contact method."
+    },
+    {
+      "priority": 2,
+      "severity": "major",
+      "dimension": "typography",
+      "evidence": "Supporting paragraphs, menu descriptions, navigation, footer copy, labels, and visit details render at very small sizes across desktop and mobile.",
+      "impact": "Critical menu, dietary, and visit information becomes difficult to scan or read, especially for low-vision visitors and on small screens.",
+      "fix": "Raise body copy to at least 14px desktop and 15–16px mobile, with utility text no smaller than 12px and line-height of at least 1.45."
+    },
+    {
+      "priority": 3,
+      "severity": "medium",
+      "dimension": "layout",
+      "evidence": "On desktop, the long menu section reserves almost the entire left half for blank paper while all useful content occupies a narrow right column.",
+      "impact": "The composition feels underfilled and makes the menu less immediate than the hero promises.",
+      "fix": "Shift the menu content left by 100–140px or add one purposeful bakery image or seasonal feature to the empty column."
+    },
+    {
+      "priority": 4,
+      "severity": "medium",
+      "dimension": "mobile",
+      "evidence": "The mobile header squeezes a two-line wordmark and three tiny navigation links into a very shallow strip.",
+      "impact": "Brand recognition and navigation readability suffer, and the links do not appear to provide comfortable touch targets.",
+      "fix": "Use a 56px header, keep the wordmark on one line, and enlarge each navigation link to a minimum 40–44px tap height."
+    },
+    {
+      "priority": 5,
+      "severity": "medium",
+      "dimension": "accessibility",
+      "evidence": "Small colored eyebrows and rust menu numbers are faint on the cream background, while the outlined secondary action has a thin, subdued boundary.",
+      "impact": "Low-vision visitors may miss labels, item ordering, and the secondary call to action.",
+      "fix": "Darken the label colors and increase the secondary button border to a clearly contrasting 1.5–2px stroke."
+    },
+    {
+      "priority": 6,
+      "severity": "minor",
+      "dimension": "hierarchy",
+      "evidence": "The large dark ingredient-warning card becomes one of the strongest elements in the menu despite containing only provisional information.",
+      "impact": "A caveat draws more attention than the bakery’s actual offerings.",
+      "fix": "Reduce the warning card’s padding and headline size while retaining its clear contrast."
+    }
+  ],
+  "revisionBrief": {
+    "mustFix": [
+      "Add confirmed address, hours, ordering instructions, and a usable contact method before public launch.",
+      "Publish a real or representative menu with prices and dietary or allergen indicators.",
+      "Increase body, utility, and navigation text sizes across both viewports.",
+      "Rebuild the mobile header with a one-line wordmark and accessible tap targets.",
+      "Resolve the excessive empty left side of the desktop menu section.",
+      "Strengthen contrast for small labels and the outlined secondary action."
+    ],
+    "preserve": [
+      "The custom high-desert oven illustration and geometric landscape.",
+      "The juniper trail as the page’s signature connective device.",
+      "The clay, paper, juniper, charcoal, and rust palette.",
+      "The editorial serif and italic headline character.",
+      "The AZ high-desert seal and Flagstaff-specific visual language.",
+      "The clear, honest treatment of information that has not yet been confirmed."
+    ]
+  },
+  "visionScore": 76,
+  "cycle": 1,
+  "mode": "vision",
+  "createdAt": "2026-07-17T23:07:58.383Z",
+  "mechanicalPassed": false
+}

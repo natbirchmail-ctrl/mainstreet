@@ -1,0 +1,12 @@
+{
+  "cycle": 3,
+  "fromCycle": 2,
+  "createdAt": "2026-07-17T23:16:05.801Z",
+  "source": "openai-revision",
+  "fallbackReason": null,
+  "designNotes": {
+    "aesthetic": "A warm high desert bakehouse with natural paper tones, clay surfaces, deep juniper green, darker rust accents, editorial serif headlines, and geometric food illustrations.",
+    "signatureMove": "The fully drawn juniper trail remains the narrative spine across menu, story, and opening status. On small screens it is moved inward and given more space from the content, while the bread board repeats its botanical gestures.",
+    "rationale": "The revision enlarges supporting text, captions, labels, navigation targets, and calls to action across small screens. Mobile navigation now occupies a clear full width row rather than competing with the wordmark. The unavailable visit action is renamed to View opening status, and operational uncertainty is consolidated into one status card. Menu and ingredient language remains transparent without repeating long concept disclaimers. Darker rust numerals and a dark green status label improve contrast while the oven illustration, palette, AZ seal, editorial layouts, and central trail are preserved."
+  }
+}

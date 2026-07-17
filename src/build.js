@@ -120,6 +120,9 @@ export function validateSiteManifest(manifest) {
   ) {
     throw new Error("Generated site contains forbidden HTML or active content.");
   }
+  if (/\bframe-ancestors\b/i.test(html)) {
+    throw new Error("frame-ancestors is not valid in an HTML meta policy.");
+  }
 
   if (/@import\b|url\s*\(|expression\s*\(|(?:^|[;{]\s*)behavior\s*:/im.test(css)) {
     throw new Error("Generated site contains remote or embedded CSS assets.");

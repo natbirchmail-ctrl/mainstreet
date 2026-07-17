@@ -1,0 +1,126 @@
+{
+  "rubricVersion": "1.0",
+  "score": 78,
+  "verdict": "revise",
+  "summary": "The desktop page has a distinctive, credible high-desert bakery identity, strong editorial composition, and a memorable botanical trail. It is not ready to ship because the mobile header, buttons, labels, and body copy are visibly undersized, while the visit CTA contradicts the prominent message that no visit information is available. Repeated concept-stage disclaimers also make the business feel less concrete than the visual presentation suggests.",
+  "dimensions": {
+    "layout": {
+      "score": 16,
+      "evidence": "The desktop hero, split menu section, centered trail, alternating story composition, and dark visit band create a controlled editorial rhythm. Mobile sections stack logically, but the trail is pushed against the left edge and several content blocks become narrow and dense.",
+      "fix": "On mobile, inset the botanical trail 8–12px farther from the edge and add a little more separation between menu rows and the ingredient panel."
+    },
+    "hierarchy": {
+      "score": 13,
+      "evidence": "Large serif headlines, small uppercase eyebrows, numbered offerings, and contrasting panels make the main sections easy to scan. On mobile, very small supporting copy and labels weaken the hierarchy beneath otherwise strong headings.",
+      "fix": "Increase mobile body and label sizes while retaining the existing headline scale."
+    },
+    "color": {
+      "score": 11,
+      "evidence": "Cream, clay, rust, and juniper green form a cohesive palette with strong dark-on-light contrast. The pale tan uppercase label inside the visit card and some tiny green or rust labels have weaker practical contrast at their displayed size.",
+      "fix": "Darken the pale tan visit-card eyebrow and small rust numerals by one shade."
+    },
+    "typography": {
+      "score": 11,
+      "evidence": "The serif display face gives the page a warm, crafted character, and the italic hero treatment is distinctive. Mobile navigation, captions, menu descriptions, disclaimer copy, and footer text appear markedly too small; the visit headline also breaks into several short lines.",
+      "fix": "Set mobile body copy to at least 14–16px with roughly 1.45 line height, labels to at least 11–12px, and slightly reduce the mobile visit headline so it wraps more evenly."
+    },
+    "mobile": {
+      "score": 9,
+      "evidence": "The overall stacking order is coherent and the hero artwork scales cleanly, but the header is cramped, the four navigation items are tiny, and both hero buttons appear substantially shorter than comfortable touch targets. Dense copy in the menu, ingredient, story, visit, and footer areas requires effort to read.",
+      "fix": "Replace the mobile text navigation with one 44px menu control and make both hero actions at least 44px tall."
+    },
+    "specificity": {
+      "score": 7,
+      "evidence": "Flagstaff, high-desert language, the AZ seal, oven illustration, seasonal menu framing, and named categories establish a recognizable concept. However, nearly every offering remains generic, and repeated phrases such as “concept,” “intended direction,” and “not confirmed” prevent visitors from learning what makes this bakery materially different.",
+      "fix": "Consolidate the uncertainty into one status notice and replace one generic offering description with a concrete example once an item is approved."
+    },
+    "accessibility": {
+      "score": 7,
+      "evidence": "A visible skip link is present in the supplied text, major sections have clear headings, and most color pairings are legible. Visible mobile text and navigation are too small, CTA heights appear below common 44px touch guidance, and the decorative trail closely approaches content without helping navigation.",
+      "fix": "Raise all mobile interactive targets to 44px minimum and eliminate text below 12px, with primary reading copy at 14px or larger."
+    },
+    "polish": {
+      "score": 4,
+      "evidence": "Illustration, borders, botanical details, numbering, and footer styling feel coordinated rather than templated. The mobile microtype and the mismatch between “Plan your visit” and “Please wait before planning a visit” are conspicuous final-pass problems.",
+      "fix": "Rename the unavailable visit CTA to “View opening status” until address and hours exist."
+    }
+  },
+  "strengths": [
+    "The arched oven and high-desert landscape create a recognizable visual signature without relying on stock photography.",
+    "The central botanical trail successfully connects the menu, story, and visit sections on desktop.",
+    "The desktop serif typography and asymmetric editorial layouts feel warm, grounded, and craft focused.",
+    "The palette is cohesive and the dark green visit section provides an effective tonal transition.",
+    "The page is unusually transparent about unconfirmed menu, ingredient, and location information."
+  ],
+  "issues": [
+    {
+      "priority": 1,
+      "severity": "major",
+      "dimension": "mobile",
+      "evidence": "At 390px, header links, labels, descriptions, footer text, and both hero actions are visibly miniature; the buttons appear only around half the height of a standard touch target.",
+      "impact": "Mobile visitors may struggle to read the page or accurately activate navigation and calls to action.",
+      "fix": "Use one 44px mobile menu control, make CTAs at least 44px tall, and set body copy to a minimum of 14px."
+    },
+    {
+      "priority": 2,
+      "severity": "medium",
+      "dimension": "hierarchy",
+      "evidence": "The hero offers “Plan your visit,” but the visit section says opening details are unavailable and explicitly asks users to wait before planning a visit.",
+      "impact": "The primary journey promises an action the page cannot support, reducing trust and creating a dead-end interaction.",
+      "fix": "Change “Plan your visit” to “View opening status.”"
+    },
+    {
+      "priority": 3,
+      "severity": "medium",
+      "dimension": "typography",
+      "evidence": "Menu descriptions, ingredient details, story paragraphs, visit details, and footer copy are small even on desktop and become especially compressed on mobile.",
+      "impact": "Important qualification and dietary-status information is harder to read than the decorative headings around it.",
+      "fix": "Increase supporting text by 2–3px on mobile and 1–2px in the desktop information panels."
+    },
+    {
+      "priority": 4,
+      "severity": "medium",
+      "dimension": "specificity",
+      "evidence": "The menu contains only broad categories, while multiple sections repeat that the concept, menu, dietary details, story, ordering, and location are unconfirmed.",
+      "impact": "The page reads more like a polished concept presentation than a useful bakery website for customers.",
+      "fix": "Combine repeated caveats into one clearly labeled development-status notice and remove duplicate qualification paragraphs."
+    },
+    {
+      "priority": 5,
+      "severity": "minor",
+      "dimension": "color",
+      "evidence": "The pale tan “Before you plan a visit” label sits on a cream card at small size, and rust menu numbers are also fine and subdued.",
+      "impact": "These secondary cues lose definition, particularly for low-vision visitors.",
+      "fix": "Use the main dark green for the visit-card label and a darker rust for menu numbers."
+    },
+    {
+      "priority": 6,
+      "severity": "minor",
+      "dimension": "layout",
+      "evidence": "On mobile, the botanical trail and leaf markers sit very close to the viewport edge and occasionally feel detached from the section content they are meant to connect.",
+      "impact": "The signature device reads more like a border artifact than a guided narrative line.",
+      "fix": "Move the mobile trail inward by 8–12px and align each leaf marker with its associated section heading."
+    }
+  ],
+  "revisionBrief": {
+    "mustFix": [
+      "Make mobile navigation and all calls to action at least 44px tall.",
+      "Increase mobile body, caption, disclaimer, and footer text to readable sizes.",
+      "Rename “Plan your visit” to “View opening status” while opening details remain unavailable.",
+      "Consolidate repeated concept-stage disclaimers into one concise status notice.",
+      "Strengthen contrast for the pale visit-card eyebrow and small rust numerals."
+    ],
+    "preserve": [
+      "The high-desert oven illustration and arched visual motif.",
+      "The cream, clay, rust, and juniper-green palette.",
+      "The central botanical trail as the page’s signature device.",
+      "The editorial serif headlines and italic hero emphasis.",
+      "The transparent handling of unconfirmed business information.",
+      "The desktop alternating section composition and AZ seal."
+    ]
+  },
+  "cycle": 2,
+  "mode": "vision",
+  "createdAt": "2026-07-17T23:13:46.477Z",
+  "mechanicalPassed": true
+}

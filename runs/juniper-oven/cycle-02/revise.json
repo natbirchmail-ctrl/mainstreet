@@ -1,0 +1,30 @@
+{
+  "schemaVersion": "1.0",
+  "fromCycle": 2,
+  "toCycle": 3,
+  "createdAt": "2026-07-17T23:16:05.797Z",
+  "targetScore": 85,
+  "mustKeep": [
+    "Confirmed business facts and explicit unknowns",
+    "Single page semantic structure",
+    "No JavaScript or external assets",
+    "No emoji or visible dash characters",
+    "Every current accessibility safeguard"
+  ],
+  "mustFix": [
+    "Make mobile navigation and all calls to action at least 44px tall.",
+    "Increase mobile body, caption, disclaimer, and footer text to readable sizes.",
+    "Rename “Plan your visit” to “View opening status” while opening details remain unavailable.",
+    "Consolidate repeated concept-stage disclaimers into one concise status notice.",
+    "Strengthen contrast for the pale visit-card eyebrow and small rust numerals."
+  ],
+  "preserve": [
+    "The high-desert oven illustration and arched visual motif.",
+    "The cream, clay, rust, and juniper-green palette.",
+    "The central botanical trail as the page’s signature device.",
+    "The editorial serif headlines and italic hero emphasis.",
+    "The transparent handling of unconfirmed business information.",
+    "The desktop alternating section composition and AZ seal."
+  ],
+  "mechanicalFailures": []
+}

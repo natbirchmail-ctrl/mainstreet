@@ -97,6 +97,13 @@ test("validateSiteManifest rejects active or remote content", () => {
   const remote = safeManifest();
   remote.stylesCss += "\n.hero { background-image: url(https://example.com/image.jpg); }";
   assert.throws(() => validateSiteManifest(remote), /remote or embedded css assets/i);
+
+  const unsupportedPolicy = safeManifest();
+  unsupportedPolicy.indexHtml = unsupportedPolicy.indexHtml.replace(
+    "form-action 'none'",
+    "form-action 'none'; frame-ancestors 'none'",
+  );
+  assert.throws(() => validateSiteManifest(unsupportedPolicy), /frame-ancestors/i);
 });
 
 test("validateSiteManifest rejects dashes, emojis, and placeholders in visible copy", () => {

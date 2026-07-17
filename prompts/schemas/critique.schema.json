@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "rubricVersion": { "type": "string", "enum": ["1.0"] },
+    "score": { "type": "integer", "minimum": 0, "maximum": 100 },
+    "verdict": { "type": "string", "enum": ["revise", "ship"] },
+    "summary": { "type": "string" },
+    "dimensions": {
+      "type": "object",
+      "properties": {
+        "layout": { "$ref": "#/$defs/dimension" },
+        "hierarchy": { "$ref": "#/$defs/dimension" },
+        "color": { "$ref": "#/$defs/dimension" },
+        "typography": { "$ref": "#/$defs/dimension" },
+        "mobile": { "$ref": "#/$defs/dimension" },
+        "specificity": { "$ref": "#/$defs/dimension" },
+        "accessibility": { "$ref": "#/$defs/dimension" },
+        "polish": { "$ref": "#/$defs/dimension" }
+      },
+      "required": ["layout", "hierarchy", "color", "typography", "mobile", "specificity", "accessibility", "polish"],
+      "additionalProperties": false
+    },
+    "strengths": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "maxItems": 5
+    },
+    "issues": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "priority": { "type": "integer", "minimum": 1, "maximum": 10 },
+          "severity": { "type": "string", "enum": ["major", "medium", "minor"] },
+          "dimension": { "type": "string", "enum": ["layout", "hierarchy", "color", "typography", "mobile", "specificity", "accessibility", "polish"] },
+          "evidence": { "type": "string" },
+          "impact": { "type": "string" },
+          "fix": { "type": "string" }
+        },
+        "required": ["priority", "severity", "dimension", "evidence", "impact", "fix"],
+        "additionalProperties": false
+      },
+      "maxItems": 10
+    },
+    "revisionBrief": {
+      "type": "object",
+      "properties": {
+        "mustFix": { "type": "array", "items": { "type": "string" }, "maxItems": 6 },
+        "preserve": { "type": "array", "items": { "type": "string" }, "maxItems": 6 }
+      },
+      "required": ["mustFix", "preserve"],
+      "additionalProperties": false
+    }
+  },
+  "required": ["rubricVersion", "score", "verdict", "summary", "dimensions", "strengths", "issues", "revisionBrief"],
+  "additionalProperties": false,
+  "$defs": {
+    "dimension": {
+      "type": "object",
+      "properties": {
+        "score": { "type": "integer", "minimum": 0, "maximum": 18 },
+        "evidence": { "type": "string" },
+        "fix": { "type": "string" }
+      },
+      "required": ["score", "evidence", "fix"],
+      "additionalProperties": false
+    }
+  }
+}

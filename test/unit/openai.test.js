@@ -48,6 +48,36 @@ test("requestStructured uses the Responses API with a strict JSON schema", async
   assert.equal(calls[0].input[0].content[0].type, "input_text");
 });
 
+test("requestStructured accepts multimodal content for vision stages", async () => {
+  let request;
+  const inputContent = [
+    { type: "input_text", text: "Review this page." },
+    { type: "input_image", image_url: "data:image/png;base64,iVBORw0KGgo=", detail: "high" },
+  ];
+
+  await requestStructured({
+    client: {
+      responses: {
+        create: async (value) => {
+          request = value;
+          return {
+            status: "completed",
+            output: [],
+            output_text: JSON.stringify({ ok: true }),
+          };
+        },
+      },
+    },
+    schema,
+    schemaName: "vision_response",
+    systemPrompt: "Review images.",
+    inputContent,
+    sleep: async () => {},
+  });
+
+  assert.deepEqual(request.input[0].content, inputContent);
+});
+
 test("requestStructured retries transient API failures without SDK retry multiplication", async () => {
   let attempts = 0;
   const client = {

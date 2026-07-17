@@ -31,6 +31,7 @@ export async function requestStructured({
   schemaName,
   systemPrompt,
   userPayload,
+  inputContent,
   maxOutputTokens = 8_000,
   maxAttempts = DEFAULT_ATTEMPTS,
   sleep = defaultSleep,
@@ -46,12 +47,14 @@ export async function requestStructured({
         input: [
           {
             role: "user",
-            content: [
-              {
-                type: "input_text",
-                text: JSON.stringify(userPayload),
-              },
-            ],
+            content:
+              inputContent ??
+              [
+                {
+                  type: "input_text",
+                  text: JSON.stringify(userPayload),
+                },
+              ],
           },
         ],
         text: {
