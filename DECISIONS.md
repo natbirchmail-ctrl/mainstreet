@@ -26,6 +26,9 @@ Out of scope: modifying the production factory, importing production customer co
 - ASSUMPTION: helper agents may inspect, research, and verify, but only this root Codex session authors repository files.
 - ASSUMPTION: every cleanup target moves under `.trash/`; nothing is hard-deleted.
 - ASSUMPTION: absent Cloudflare credentials select the documented local server fallback and do not fail a run.
+- DECISION: port 4601 is the static preview and fallback server. Port 4600 remains reserved for the optional local UI. This resolves the contradictory fallback URL in the original plan.
+- DECISION: the OpenAI SDK runs with automatic retries disabled. Mainstreet owns one bounded ladder of three total attempts so latency and cost do not multiply invisibly.
+- DECISION: fast intake may infer positioning and design direction, but it never publishes invented phone numbers, email addresses, street addresses, or hours. Unknown precise facts remain null and are recorded as needed.
 
 ## Security controls
 
@@ -38,6 +41,7 @@ Out of scope: modifying the production factory, importing production customer co
 
 - Attempt 1: project preflight found no `.env`; stopped exactly as the plan required.
 - Attempt 2: an authorized preexisting credential source was used to materialize the local `.env`. No source metadata or secret value was printed or committed.
+- Attempt 3: the initial dependency tree was moved intact to `.trash/` after a newly published Wrangler release failed the seven day package age gate. Wrangler was pinned to a mature release, the lockfile was regenerated, package provenance checks passed, and `npm audit` reported zero vulnerabilities.
 
 ## Found, not fixed
 

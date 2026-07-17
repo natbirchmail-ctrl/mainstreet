@@ -16,7 +16,7 @@ You are the sole code author. This plan is written so you can run the entire bui
 3. **This repo goes public for judging.** Nothing sensitive gets committed, ever: no API keys, no tokens, no customer names from the production factory, no workspace paths in committed files (this plan.md is the one exception — scrub the workspace path from it before the final commit, or move it to a `docs/` note with paths generalized).
 4. **Secrets ladder — never block, degrade:**
    - `OPENAI_API_KEY` missing → this is the only hard stop. Print exactly what is needed and where to put it (`.env`), then wait.
-   - `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` missing → do NOT stop. Fall back to `mainstreet serve`, which serves the finished site on `http://127.0.0.1:4600/` and prints the URL. Deploy is a bonus, not a gate.
+   - `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` missing → do NOT stop. Fall back to `mainstreet serve`, which serves the finished site on `http://127.0.0.1:4601/` and prints the URL. Deploy is a bonus, not a gate.
 5. **Failure ladder — always have a fallback:**
    - Playwright install fails → run `npx playwright install chromium` once; if it still fails, degrade the critic loop to HTML/CSS source review by GPT-5.6 (no screenshots) and note the degradation in DECISIONS.md. The pipeline must still complete end to end.
    - OpenAI API error → retry 3x with exponential backoff; on persistent failure of a critic cycle, ship the best build so far rather than failing the run.

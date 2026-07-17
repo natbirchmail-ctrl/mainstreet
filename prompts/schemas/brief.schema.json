@@ -1,0 +1,180 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "enum": ["1.0"]
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["fast", "interview"]
+    },
+    "business": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "city": { "type": ["string", "null"] },
+        "category": { "type": "string" },
+        "summary": { "type": "string" }
+      },
+      "required": ["name", "city", "category", "summary"],
+      "additionalProperties": false
+    },
+    "audience": {
+      "type": "object",
+      "properties": {
+        "primary": { "type": "string" },
+        "needs": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 2,
+          "maxItems": 5
+        }
+      },
+      "required": ["primary", "needs"],
+      "additionalProperties": false
+    },
+    "offerings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "confidence": {
+            "type": "string",
+            "enum": ["confirmed", "inferred"]
+          }
+        },
+        "required": ["name", "description", "confidence"],
+        "additionalProperties": false
+      },
+      "minItems": 3,
+      "maxItems": 6
+    },
+    "brand": {
+      "type": "object",
+      "properties": {
+        "personality": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 3,
+          "maxItems": 5
+        },
+        "voice": { "type": "string" },
+        "aesthetic": { "type": "string" },
+        "signatureMove": {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string" },
+            "description": { "type": "string" },
+            "touchFallback": { "type": "string" },
+            "reducedMotion": { "type": "string" }
+          },
+          "required": ["name", "description", "touchFallback", "reducedMotion"],
+          "additionalProperties": false
+        },
+        "palette": {
+          "type": "object",
+          "properties": {
+            "background": { "type": "string" },
+            "surface": { "type": "string" },
+            "text": { "type": "string" },
+            "accent": { "type": "string" }
+          },
+          "required": ["background", "surface", "text", "accent"],
+          "additionalProperties": false
+        }
+      },
+      "required": ["personality", "voice", "aesthetic", "signatureMove", "palette"],
+      "additionalProperties": false
+    },
+    "content": {
+      "type": "object",
+      "properties": {
+        "eyebrow": { "type": "string" },
+        "headline": { "type": "string" },
+        "subheadline": { "type": "string" },
+        "about": { "type": "string" },
+        "primaryAction": { "type": "string" },
+        "secondaryAction": { "type": "string" },
+        "contactPrompt": { "type": "string" }
+      },
+      "required": [
+        "eyebrow",
+        "headline",
+        "subheadline",
+        "about",
+        "primaryAction",
+        "secondaryAction",
+        "contactPrompt"
+      ],
+      "additionalProperties": false
+    },
+    "contact": {
+      "type": "object",
+      "properties": {
+        "phone": { "type": ["string", "null"] },
+        "email": { "type": ["string", "null"] },
+        "address": { "type": ["string", "null"] },
+        "hours": { "type": ["string", "null"] }
+      },
+      "required": ["phone", "email", "address", "hours"],
+      "additionalProperties": false
+    },
+    "facts": {
+      "type": "object",
+      "properties": {
+        "confirmed": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": { "type": "string" },
+              "value": { "type": "string" },
+              "source": { "type": "string", "enum": ["user"] }
+            },
+            "required": ["label", "value", "source"],
+            "additionalProperties": false
+          }
+        },
+        "inferred": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": { "type": "string" },
+              "value": { "type": "string" },
+              "confidence": {
+                "type": "string",
+                "enum": ["low", "medium", "high"]
+              }
+            },
+            "required": ["label", "value", "confidence"],
+            "additionalProperties": false
+          }
+        },
+        "needed": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        }
+      },
+      "required": ["confirmed", "inferred", "needed"],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "mode",
+    "business",
+    "audience",
+    "offerings",
+    "brand",
+    "content",
+    "contact",
+    "facts"
+  ],
+  "additionalProperties": false
+}
