@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "indexHtml": { "type": "string" },
+    "stylesCss": { "type": "string" },
+    "designNotes": {
+      "type": "object",
+      "properties": {
+        "aesthetic": { "type": "string" },
+        "signatureMove": { "type": "string" },
+        "rationale": { "type": "string" }
+      },
+      "required": ["aesthetic", "signatureMove", "rationale"],
+      "additionalProperties": false
+    }
+  },
+  "required": ["indexHtml", "stylesCss", "designNotes"],
+  "additionalProperties": false
+}

@@ -29,6 +29,8 @@ Out of scope: modifying the production factory, importing production customer co
 - DECISION: port 4601 is the static preview and fallback server. Port 4600 remains reserved for the optional local UI. This resolves the contradictory fallback URL in the original plan.
 - DECISION: the OpenAI SDK runs with automatic retries disabled. Mainstreet owns one bounded ladder of three total attempts so latency and cost do not multiply invisibly.
 - DECISION: fast intake may infer positioning and design direction, but it never publishes invented phone numbers, email addresses, street addresses, or hours. Unknown precise facts remain null and are recorded as needed.
+- DECISION: the build model returns a bounded two file site manifest plus design notes. Deterministic gates reject active content, remote assets, placeholders, emojis, visible dashes, and incomplete semantics before any file is written.
+- DECISION: a model outage produces a complete deterministic editorial baseline rather than a failed run. The artifact records that fallback honestly.
 
 ## Security controls
 

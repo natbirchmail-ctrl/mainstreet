@@ -5,8 +5,10 @@ import "dotenv/config";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
+import { buildRun } from "../src/build.js";
 import { createBrief } from "../src/intake.js";
 import { initializeRun, resolveInside, writeJsonNew } from "../src/lib/runs.js";
+import { findLatestSite, startStaticServer } from "../src/serve.js";
 import { slugify } from "../src/lib/slug.js";
 
 const booleanFlags = new Set(["fast", "help"]);
@@ -52,16 +54,6 @@ export async function main(argv = process.argv.slice(2)) {
     return;
   }
 
-  if (parsed.command !== "intake") {
-    throw new TypeError(`Unknown command: ${parsed.command}`);
-  }
-
-  const businessName = parsed.positionals.join(" ").trim();
-  if (!businessName) {
-    throw new TypeError("The intake command requires a business name.");
-  }
-
-  const slug = slugify(businessName);
   const projectRoot = process.cwd();
   const runsRoot = path.resolve(
     process.env.MAINSTREET_RUNS_DIR || path.join(projectRoot, "runs"),
@@ -69,18 +61,48 @@ export async function main(argv = process.argv.slice(2)) {
   const trashRoot = path.resolve(
     process.env.MAINSTREET_TRASH_DIR || path.join(projectRoot, ".trash", "runs"),
   );
-  const { runDir } = await initializeRun({ slug, runsRoot, trashRoot });
 
-  const brief = await createBrief({
-    businessName,
-    city: parsed.flags.city,
-    details: parsed.flags.details,
-    fast: Boolean(parsed.flags.fast),
-  });
-  const briefPath = resolveInside(runDir, "brief.json");
-  await writeJsonNew(briefPath, brief);
+  if (parsed.command === "intake") {
+    const businessName = parsed.positionals.join(" ").trim();
+    if (!businessName) {
+      throw new TypeError("The intake command requires a business name.");
+    }
 
-  process.stdout.write(`Brief saved: ${briefPath}\n`);
+    const slug = slugify(businessName);
+    const { runDir } = await initializeRun({ slug, runsRoot, trashRoot });
+
+    const brief = await createBrief({
+      businessName,
+      city: parsed.flags.city,
+      details: parsed.flags.details,
+      fast: Boolean(parsed.flags.fast),
+    });
+    const briefPath = resolveInside(runDir, "brief.json");
+    await writeJsonNew(briefPath, brief);
+
+    process.stdout.write(`Brief saved: ${briefPath}\n`);
+    return;
+  }
+
+  if (parsed.command === "build") {
+    const slug = slugify(parsed.positionals.join(" "));
+    const runDir = resolveInside(runsRoot, slug);
+    const result = await buildRun({ runDir });
+    process.stdout.write(`Site built: ${result.siteDir}\n`);
+    return;
+  }
+
+  if (parsed.command === "serve") {
+    const slug = slugify(parsed.positionals.join(" "));
+    const runDir = resolveInside(runsRoot, slug);
+    const siteDir = await findLatestSite(runDir);
+    const port = parsed.flags.port ? Number(parsed.flags.port) : 4601;
+    const preview = await startStaticServer({ root: siteDir, port });
+    process.stdout.write(`Serving ${slug}: ${preview.url}\n`);
+    await new Promise(() => {});
+  }
+
+  throw new TypeError(`Unknown command: ${parsed.command}`);
 }
 
 function toCamelCase(value) {
@@ -88,7 +110,7 @@ function toCamelCase(value) {
 }
 
 function helpText() {
-  return `Mainstreet\n\nUsage:\n  mainstreet intake "Business Name" [--city "City, ST"] [--details "Known facts"] [--fast]\n`;
+  return `Mainstreet\n\nUsage:\n  mainstreet intake "Business Name" [--city "City, ST"] [--details "Known facts"] [--fast]\n  mainstreet build <slug>\n  mainstreet serve <slug> [--port 4601]\n`;
 }
 
 const isEntryPoint =

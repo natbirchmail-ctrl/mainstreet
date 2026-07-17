@@ -32,3 +32,19 @@ test("parseCli rejects unsupported flags", () => {
     /unknown option/i,
   );
 });
+
+test("parseCli reads a build slug", () => {
+  assert.deepEqual(parseCli(["build", "juniper-oven"]), {
+    command: "build",
+    positionals: ["juniper-oven"],
+    flags: {},
+  });
+});
+
+test("parseCli reads an explicit preview port", () => {
+  assert.deepEqual(parseCli(["serve", "juniper-oven", "--port", "4601"]), {
+    command: "serve",
+    positionals: ["juniper-oven"],
+    flags: { port: "4601" },
+  });
+});

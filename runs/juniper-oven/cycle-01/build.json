@@ -1,0 +1,11 @@
+{
+  "cycle": 1,
+  "createdAt": "2026-07-17T22:55:51.173Z",
+  "source": "openai",
+  "fallbackReason": null,
+  "designNotes": {
+    "aesthetic": "A high desert bakehouse rendered with uncoated paper tones, clay warmth, deep juniper green, editorial serif type, and a restrained abstract oven landscape.",
+    "signatureMove": "A continuous juniper stem runs through the menu, story, and visit sections. Botanical nodes mark each chapter, while the layout shifts around the central stem on wide screens and keeps it as a clear side guide on mobile.",
+    "rationale": "The oversized type and simple oven illustration create a distinctive opening without relying on unavailable photography. Ruled menu rows feel practical and bakery specific, while transparent status language keeps every unconfirmed menu, ordering, contact, and visit detail honest."
+  }
+}
