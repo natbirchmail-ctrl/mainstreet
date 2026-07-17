@@ -1,0 +1,29 @@
+{
+  "schemaVersion": "1.0",
+  "fromCycle": 2,
+  "toCycle": 3,
+  "createdAt": "2026-07-17T23:52:58.798Z",
+  "targetScore": 85,
+  "mustKeep": [
+    "Confirmed business facts and explicit unknowns",
+    "Single page semantic structure",
+    "No JavaScript or external assets",
+    "No emoji or visible dash characters",
+    "Every current accessibility safeguard"
+  ],
+  "mustFix": [
+    "Provide a functioning inquiry path from the primary call to action.",
+    "Increase small body, navigation, disclaimer, and footer typography to readable sizes.",
+    "Make mobile links and controls at least 44px tall or wide where applicable.",
+    "Publish at least basic service-area, delivery or pickup, and timing information.",
+    "Add one authentic floral-work image so visitors can assess the studio’s style."
+  ],
+  "preserve": [
+    "The restrained cream, deep green, and rust palette.",
+    "The large editorial serif headlines and numbered section system.",
+    "The botanical line-art language as a supporting brand device.",
+    "The dark studio-approach panel and its strong contrast.",
+    "The practical request-preparation checklist and clear three-service structure."
+  ],
+  "mechanicalFailures": []
+}

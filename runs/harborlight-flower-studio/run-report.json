@@ -1,0 +1,50 @@
+{
+  "schemaVersion": "1.0",
+  "slug": "harborlight-flower-studio",
+  "businessName": "Harborlight Flower Studio",
+  "startedAt": "2026-07-17T23:45:41.511Z",
+  "completedAt": "2026-07-17T23:54:09.595Z",
+  "status": "completed",
+  "stopReason": "max_cycles_reached",
+  "selectedCycle": 3,
+  "scoresImproved": true,
+  "cycles": [
+    {
+      "cycle": 1,
+      "score": 72,
+      "visionScore": null,
+      "verdict": "revise",
+      "mode": "vision",
+      "mechanicalPassed": true
+    },
+    {
+      "cycle": 2,
+      "score": 77,
+      "visionScore": null,
+      "verdict": "revise",
+      "mode": "vision",
+      "mechanicalPassed": true
+    },
+    {
+      "cycle": 3,
+      "score": 79,
+      "visionScore": null,
+      "verdict": "revise",
+      "mode": "vision",
+      "mechanicalPassed": true
+    }
+  ],
+  "delivery": {
+    "schemaVersion": "1.0",
+    "slug": "harborlight-flower-studio",
+    "selectedCycle": 3,
+    "createdAt": "2026-07-17T23:54:09.594Z",
+    "mode": "cloudflare",
+    "projectName": "mainstreet-hackathon",
+    "url": "https://mainstreet-hackathon.pages.dev/",
+    "deploymentUrl": "https://76095739.mainstreet-hackathon.pages.dev/",
+    "verified": true,
+    "status": 200,
+    "reason": null
+  }
+}

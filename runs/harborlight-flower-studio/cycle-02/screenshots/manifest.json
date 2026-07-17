@@ -1,0 +1,23 @@
+{
+  "schemaVersion": "1.0",
+  "cycle": 2,
+  "capturedAt": "2026-07-17T23:50:17.008Z",
+  "previewUrl": "http://127.0.0.1:4601/",
+  "viewports": {
+    "desktop": {
+      "width": 1440,
+      "height": 900,
+      "path": "screenshots/desktop-home.png"
+    },
+    "mobile": {
+      "width": 390,
+      "height": 844,
+      "path": "screenshots/mobile-home.png"
+    }
+  },
+  "network": {
+    "externalRequests": 0,
+    "consoleErrors": 0,
+    "pageErrors": 0
+  }
+}

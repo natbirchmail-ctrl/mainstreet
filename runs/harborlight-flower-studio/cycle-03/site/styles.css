@@ -1,0 +1,852 @@
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  color-scheme: light;
+  --paper: #f4f0e8;
+  --surface: #fcfaf5;
+  --ink: #26332e;
+  --accent: #8b3f32;
+  --studioAccent: #f0b09d;
+  --line: rgba(38, 51, 46, 0.46);
+  --softline: rgba(38, 51, 46, 0.26);
+  --serif: Georgia, "Times New Roman", serif;
+  --sans: Arial, Helvetica, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  border: 6px solid var(--surface);
+  pointer-events: none;
+  content: "";
+}
+
+a {
+  color: inherit;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.3em;
+}
+
+a:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 4px;
+}
+
+.skip {
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  z-index: 100;
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0.7rem 1rem;
+  background: var(--ink);
+  color: var(--surface);
+  transform: translateY(-180%);
+}
+
+.skip:focus {
+  transform: translateY(0);
+}
+
+.siteHeader {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.65rem;
+  padding: 1rem 1.25rem 0;
+  border-bottom: 1px solid var(--line);
+  background: var(--paper);
+}
+
+.wordmark {
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 48px;
+  width: fit-content;
+  line-height: 1;
+  text-decoration: none;
+}
+
+.wordmark span {
+  font-family: var(--serif);
+  font-size: 1.45rem;
+}
+
+.wordmark small {
+  margin-top: 0.42rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+nav {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-top: 1px solid var(--softline);
+}
+
+nav a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  padding: 0.7rem 0.3rem;
+  font-size: 1rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+nav a:hover,
+.backTop:hover,
+.textAction:hover {
+  color: var(--accent);
+}
+
+.hero {
+  display: grid;
+  overflow: hidden;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.heroCopy {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 4rem 1.5rem 2.5rem;
+  background: var(--paper);
+}
+
+.eyebrow {
+  margin: 0 0 1.15rem;
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.sectionNumber,
+.itemNumber {
+  margin: 0 0 1.1rem;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+h1,
+h2,
+h3,
+p {
+  max-width: 70ch;
+}
+
+h1,
+h2,
+h3 {
+  margin-top: 0;
+  font-family: var(--serif);
+  font-weight: 400;
+  line-height: 1.06;
+}
+
+h1 {
+  max-width: 10ch;
+  margin-bottom: 1.4rem;
+  font-size: clamp(3.05rem, 13vw, 7.2rem);
+  letter-spacing: -0.05em;
+}
+
+h2 {
+  max-width: 14ch;
+  margin-bottom: 1.75rem;
+  font-size: clamp(2.5rem, 10vw, 5rem);
+  letter-spacing: -0.04em;
+}
+
+h3 {
+  margin-bottom: 0.75rem;
+  font-size: clamp(1.75rem, 7vw, 2.35rem);
+}
+
+p,
+li {
+  font-size: 1rem;
+}
+
+.intro,
+.largeCopy {
+  font-family: var(--serif);
+  font-size: clamp(1.25rem, 4vw, 1.65rem);
+  line-height: 1.46;
+}
+
+.intro {
+  max-width: 31rem;
+  margin: 0;
+}
+
+.heroActions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+  margin-top: 2rem;
+}
+
+.primaryAction,
+.textAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  padding: 0.8rem 1.2rem;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.primaryAction {
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: var(--surface);
+  text-decoration: none;
+}
+
+.primaryAction:hover {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.textAction {
+  width: fit-content;
+  padding-inline: 0.15rem;
+  text-decoration: underline;
+  text-decoration-color: var(--accent);
+  text-decoration-thickness: 2px;
+}
+
+.heroNote {
+  max-width: 34rem;
+  margin: 1.35rem 0 0;
+  font-size: 1rem;
+}
+
+.bloomField {
+  position: relative;
+  min-height: 29rem;
+  margin-top: -1px;
+  overflow: hidden;
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+  isolation: isolate;
+}
+
+.bloomField::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 5rem;
+  background: linear-gradient(to top, rgba(244, 240, 232, 0.92), transparent);
+  content: "";
+}
+
+.sunDisc {
+  position: absolute;
+  top: 2.8rem;
+  left: 50%;
+  width: 10rem;
+  aspect-ratio: 1;
+  border: 2px solid rgba(139, 63, 50, 0.58);
+  border-radius: 50%;
+  transform: translateX(-50%);
+}
+
+.botanical {
+  position: absolute;
+  bottom: -3rem;
+  width: 12rem;
+  height: 30rem;
+  transform-origin: bottom center;
+}
+
+.botanicalOne {
+  left: calc(50% - 6rem);
+  z-index: 2;
+  transform: scale(0.88) rotate(-4deg);
+}
+
+.botanicalTwo {
+  right: -4.5rem;
+  transform: scale(0.61) rotate(13deg);
+}
+
+.botanicalThree {
+  left: -3rem;
+  transform: scale(0.58) rotate(-8deg);
+}
+
+.stem {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  height: 82%;
+  background: var(--ink);
+  transform: rotate(3deg);
+  transform-origin: bottom;
+}
+
+.leaf {
+  position: absolute;
+  left: 50%;
+  width: 5.5rem;
+  height: 2.3rem;
+  border: 2px solid var(--ink);
+  border-radius: 100% 0 100% 0;
+  background: var(--paper);
+  transform-origin: left center;
+}
+
+.leafOne {
+  bottom: 24%;
+  transform: rotate(22deg);
+}
+
+.leafTwo {
+  bottom: 43%;
+  transform: scaleX(-1) rotate(22deg);
+}
+
+.leafThree {
+  bottom: 58%;
+  transform: rotate(8deg) scale(0.72);
+}
+
+.flower {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 7rem;
+  height: 7rem;
+  transform: translateX(-50%);
+}
+
+.flower::after {
+  position: absolute;
+  top: 2.65rem;
+  left: 2.65rem;
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 50%;
+  background: var(--accent);
+  content: "";
+}
+
+.flower i {
+  position: absolute;
+  top: 0.25rem;
+  left: 2.25rem;
+  width: 2.5rem;
+  height: 3.35rem;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  background: var(--paper);
+  transform-origin: 50% 3.25rem;
+}
+
+.flower i:nth-child(2) {
+  transform: rotate(72deg);
+}
+
+.flower i:nth-child(3) {
+  transform: rotate(144deg);
+}
+
+.flower i:nth-child(4) {
+  transform: rotate(216deg);
+}
+
+.flower i:nth-child(5) {
+  transform: rotate(288deg);
+}
+
+.bud {
+  position: absolute;
+  top: 2rem;
+  left: calc(50% - 1.5rem);
+  width: 3rem;
+  height: 4rem;
+  border: 2px solid var(--ink);
+  border-radius: 50% 50% 44% 44%;
+  background: var(--accent);
+}
+
+.artCaption {
+  display: none;
+}
+
+.offerings,
+.studio,
+.planning {
+  padding: 4.75rem 1.5rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.sectionHeading {
+  margin-bottom: 2.25rem;
+}
+
+.offeringList {
+  border-top: 2px solid var(--ink);
+}
+
+.offeringList article {
+  display: grid;
+  grid-template-columns: 3.8rem minmax(0, 1fr);
+  gap: 0.75rem;
+  padding: 2rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.offeringList article p:last-child {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.55;
+}
+
+.itemNumber {
+  margin-top: 0.3rem;
+  color: var(--accent);
+}
+
+.availabilityNote {
+  max-width: 45rem;
+  margin: 1.5rem 0 0 auto;
+  font-size: 1rem;
+}
+
+.studio {
+  display: grid;
+  gap: 2.75rem;
+  background: var(--ink);
+  color: var(--surface);
+}
+
+.studio .eyebrow {
+  color: var(--studioAccent);
+}
+
+.studio .sectionNumber {
+  color: var(--surface);
+}
+
+.studioMark {
+  position: relative;
+  min-height: 27rem;
+  overflow: hidden;
+  border: 1px solid rgba(252, 250, 245, 0.62);
+  background: rgba(252, 250, 245, 0.04);
+}
+
+.moon {
+  position: absolute;
+  top: 2.5rem;
+  right: 2.5rem;
+  width: 7rem;
+  height: 7rem;
+  border: 1px solid rgba(252, 250, 245, 0.55);
+  border-radius: 50%;
+}
+
+.vase {
+  position: absolute;
+  bottom: 2.5rem;
+  left: calc(50% - 5rem);
+  width: 10rem;
+  height: 11rem;
+  border: 2px solid var(--surface);
+  border-radius: 10% 10% 45% 45%;
+}
+
+.vase::before {
+  position: absolute;
+  top: -0.55rem;
+  left: 1rem;
+  width: 8rem;
+  height: 1rem;
+  border: 2px solid var(--surface);
+  border-radius: 50%;
+  background: var(--ink);
+  content: "";
+}
+
+.vaseStem {
+  position: absolute;
+  bottom: 12.5rem;
+  left: 50%;
+  width: 2px;
+  height: 10rem;
+  background: var(--surface);
+  transform-origin: bottom;
+}
+
+.stemA {
+  transform: rotate(-22deg);
+}
+
+.stemB {
+  transform: rotate(-7deg);
+}
+
+.stemC {
+  transform: rotate(10deg);
+}
+
+.stemD {
+  transform: rotate(25deg);
+}
+
+.smallBloom {
+  position: absolute;
+  width: 4.2rem;
+  height: 4.2rem;
+  border: 2px solid var(--surface);
+  border-radius: 50% 10% 50% 10%;
+  background: var(--accent);
+  transform: rotate(45deg);
+}
+
+.bloomA {
+  top: 3.5rem;
+  left: calc(50% - 7rem);
+}
+
+.bloomB {
+  top: 2rem;
+  left: calc(50% - 2rem);
+}
+
+.bloomC {
+  top: 4rem;
+  left: calc(50% + 2.5rem);
+}
+
+.smallLeaf {
+  position: absolute;
+  width: 4rem;
+  height: 1.8rem;
+  border: 2px solid var(--surface);
+  border-radius: 100% 0 100% 0;
+}
+
+.smallLeafA {
+  top: 10rem;
+  left: calc(50% - 6.5rem);
+  transform: rotate(18deg);
+}
+
+.smallLeafB {
+  top: 11rem;
+  left: calc(50% + 1.5rem);
+  transform: scaleX(-1) rotate(18deg);
+}
+
+.studioCopy h2 {
+  max-width: 13ch;
+  font-size: clamp(2.35rem, 9vw, 4.8rem);
+}
+
+.studioCopy p:last-child {
+  color: rgba(252, 250, 245, 0.92);
+}
+
+.planning {
+  display: grid;
+  gap: 1.75rem;
+}
+
+.planningDetails {
+  max-width: 43rem;
+}
+
+.planningDetails > .largeCopy {
+  margin-top: 0;
+}
+
+.prepare {
+  margin-top: 2.5rem;
+  padding-top: 1.75rem;
+  border-top: 2px solid var(--ink);
+}
+
+.prepare h3 {
+  font-family: var(--sans);
+  font-size: 0.9rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.prepare ul {
+  margin: 1.25rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.prepare li {
+  position: relative;
+  padding: 0.9rem 0 0.9rem 1.8rem;
+  border-bottom: 1px solid var(--softline);
+  font-family: var(--serif);
+  font-size: 1.2rem;
+  line-height: 1.45;
+}
+
+.prepare li::before {
+  position: absolute;
+  top: 0.92rem;
+  left: 0;
+  color: var(--accent);
+  content: "○";
+}
+
+.statusNote {
+  margin: 2rem 0 0;
+  padding: 1.25rem 1.4rem;
+  border-left: 4px solid var(--accent);
+  background: var(--surface);
+  font-size: 1rem;
+}
+
+footer {
+  display: grid;
+  gap: 1rem;
+  padding: 3rem 1.5rem 4rem;
+  background: var(--surface);
+}
+
+footer p {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 1.1rem;
+  font-style: italic;
+}
+
+.footerMark,
+.backTop {
+  min-height: 48px;
+}
+
+.backTop {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+@media (min-width: 48rem) {
+  body::before {
+    border-width: 10px;
+  }
+
+  .siteHeader {
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    min-height: 6rem;
+    padding: 1rem 3rem;
+  }
+
+  nav {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    border-top: 0;
+  }
+
+  nav a {
+    min-width: 6rem;
+  }
+
+  .hero {
+    grid-template-columns: minmax(0, 1.08fr) minmax(22rem, 0.92fr);
+    min-height: calc(100svh - 6rem);
+  }
+
+  .heroCopy {
+    padding: 6rem 4rem;
+  }
+
+  .heroActions {
+    flex-direction: row;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  .primaryAction {
+    min-width: 13rem;
+  }
+
+  .bloomField {
+    min-height: 46rem;
+    margin-top: 0;
+    border-top: 0;
+    border-left: 1px solid var(--line);
+  }
+
+  .sunDisc {
+    top: 12%;
+    left: 24%;
+    width: 11rem;
+    transform: none;
+  }
+
+  .botanical {
+    bottom: -1rem;
+  }
+
+  .botanicalOne {
+    left: 10%;
+    transform: rotate(-8deg);
+  }
+
+  .botanicalTwo {
+    right: -1rem;
+    transform: scale(0.78) rotate(14deg);
+  }
+
+  .botanicalThree {
+    left: 50%;
+    transform: scale(0.7) rotate(3deg);
+  }
+
+  .artCaption {
+    position: absolute;
+    right: 2rem;
+    bottom: 2rem;
+    z-index: 3;
+    display: block;
+    margin: 0;
+    padding: 0.6rem 0.8rem;
+    background: rgba(252, 250, 245, 0.88);
+    font-family: var(--serif);
+    font-size: 1rem;
+    font-style: italic;
+    line-height: 1.55;
+    text-align: right;
+  }
+
+  .offerings,
+  .studio,
+  .planning {
+    padding: 8rem clamp(3rem, 7vw, 8rem);
+  }
+
+  .sectionHeading {
+    display: grid;
+    grid-template-columns: 1fr 3fr;
+    gap: 3rem;
+  }
+
+  .offeringList article {
+    grid-template-columns: 1fr 3fr;
+    padding: 2.5rem 0;
+  }
+
+  .offeringList article div {
+    display: grid;
+    grid-template-columns: minmax(15rem, 1fr) minmax(17rem, 1fr);
+    gap: 3rem;
+  }
+
+  .studio {
+    grid-template-columns: minmax(18rem, 0.8fr) minmax(24rem, 1.2fr);
+    align-items: center;
+    gap: clamp(4rem, 9vw, 10rem);
+  }
+
+  .studioMark {
+    min-height: 31rem;
+  }
+
+  .planning {
+    grid-template-columns: minmax(20rem, 1fr) minmax(24rem, 1fr);
+    gap: clamp(4rem, 10vw, 12rem);
+  }
+
+  footer {
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    gap: 2.5rem;
+    padding: 4rem clamp(3rem, 7vw, 8rem);
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  @supports (animation-timeline: view()) {
+    .bloomField .botanical,
+    .bloomField .sunDisc {
+      animation: bloomFocus linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 45%;
+    }
+  }
+}
+
+@keyframes bloomFocus {
+  from {
+    filter: blur(8px);
+    opacity: 0.28;
+  }
+
+  to {
+    filter: blur(0);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .bloomField .botanical,
+  .bloomField .sunDisc {
+    filter: none;
+    opacity: 1;
+  }
+}

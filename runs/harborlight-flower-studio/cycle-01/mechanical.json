@@ -1,0 +1,52 @@
+{
+  "schemaVersion": "1.0",
+  "cycle": 1,
+  "passed": true,
+  "failures": [],
+  "metrics": {
+    "desktop": {
+      "viewportWidth": 1440,
+      "viewportHeight": 900,
+      "scrollWidth": 1440,
+      "horizontalOverflow": false,
+      "h1Count": 1,
+      "mainCount": 1,
+      "missingAltCount": 0,
+      "brokenAnchors": [],
+      "smallTargets": [
+        {
+          "text": "Harborlight\n      Flower Studio",
+          "width": 109.25,
+          "height": 36.15625
+        },
+        {
+          "text": "Harborlight\n      Flower Studio",
+          "width": 740.59375,
+          "height": 36.15625
+        }
+      ],
+      "visibleTextLength": 1741
+    },
+    "mobile": {
+      "viewportWidth": 390,
+      "viewportHeight": 844,
+      "scrollWidth": 390,
+      "horizontalOverflow": false,
+      "h1Count": 1,
+      "mainCount": 1,
+      "missingAltCount": 0,
+      "brokenAnchors": [],
+      "smallTargets": [
+        {
+          "text": "Harborlight\n      Flower Studio",
+          "width": 342,
+          "height": 36.15625
+        }
+      ],
+      "visibleTextLength": 1741
+    },
+    "consoleErrors": [],
+    "pageErrors": [],
+    "externalRequests": []
+  }
+}

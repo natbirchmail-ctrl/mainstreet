@@ -1,0 +1,11 @@
+{
+  "cycle": 1,
+  "createdAt": "2026-07-17T23:47:48.109Z",
+  "source": "openai",
+  "fallbackReason": null,
+  "designNotes": {
+    "aesthetic": "A quiet coastal editorial composition using warm paper tones, deep botanical green, terracotta accents, generous space, and expressive serif typography. Fine rules and hand drawn CSS florals evoke a working flower studio without relying on photography.",
+    "signatureMove": "The opening is split between oversized editorial copy and a CSS drawn botanical silhouette. On precise pointer devices with supported scroll timelines, the stems move from a soft blur into full focus as the opening passes through the viewport. Touch devices and reduced motion settings receive the complete still composition.",
+    "rationale": "The asymmetrical layout gives the studio a distinctive art direction while keeping every service and inquiry detail easy to scan. The contact section is intentionally candid about missing channels, location, delivery, pickup, and timing rather than presenting invented information."
+  }
+}

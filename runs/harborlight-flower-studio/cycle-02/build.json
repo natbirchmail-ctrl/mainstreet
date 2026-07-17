@@ -1,0 +1,12 @@
+{
+  "cycle": 2,
+  "fromCycle": 1,
+  "createdAt": "2026-07-17T23:50:15.557Z",
+  "source": "openai-revision",
+  "fallbackReason": null,
+  "designNotes": {
+    "aesthetic": "The revision preserves the warm cream, botanical green, and deeper rust palette while improving contrast and legibility. Large editorial serif headings remain the visual anchor, supported by clearer body typography, stronger rules, and a more deliberate light, dark, light sequence.",
+    "signatureMove": "The Harborlight bloom remains the defining visual gesture. Its line drawn flowers now occupy a shorter, cleaner mobile panel with all annotation text removed at that size. On larger precise pointer screens, the complete botanical composition gently resolves from soft focus as it enters view. Touch and reduced motion experiences show a complete still composition.",
+    "rationale": "The mobile header now uses a spacious two row layout rather than an inoperative menu control, so every destination remains available without JavaScript and every link has a comfortable target. Body and functional text are at least sixteen pixels, the dark section has brighter secondary copy, and the studio heading has a more controlled mobile measure. Because no verified contact channel, location, service terms, portfolio asset, or timing facts were supplied, the revision does not invent them. The former false inquiry action is replaced with a useful planning path, and missing operational facts are disclosed once in a concise honest note."
+  }
+}

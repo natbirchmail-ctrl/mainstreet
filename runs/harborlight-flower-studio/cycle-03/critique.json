@@ -1,0 +1,132 @@
+{
+  "rubricVersion": "1.0",
+  "score": 79,
+  "verdict": "revise",
+  "summary": "A calm, distinctive editorial composition with strong botanical line work, disciplined color, and a solid desktop-to-mobile adaptation. It is not yet credible for public presentation because the primary journey ends without an inquiry method, essential service details are absent, and several labels and descriptions are visibly too small. The sparse illustration and repeated season/setting language also leave the studio feeling more conceptual than established.",
+  "dimensions": {
+    "layout": {
+      "score": 16,
+      "evidence": "The page uses a coherent grid, generous section spacing, aligned rules, and clear alternation between light and dark panels. The desktop service rows and planning split are especially orderly. However, the desktop hero’s right half is unusually empty around a very thin illustration, while its action area is compressed into a shallow strip beneath the main copy.",
+      "fix": "Enlarge and reposition the hero botanical drawing so it occupies more of the right panel without changing the grid."
+    },
+    "hierarchy": {
+      "score": 13,
+      "evidence": "Large serif headlines, numbered sections, accent eyebrows, and the dark studio panel create an immediately understandable sequence. The hero headline clearly dominates. Supporting descriptions, disclaimer copy, and service details fall too far down the hierarchy because of their very small scale.",
+      "fix": "Increase service descriptions, helper text, and disclaimers by 1–2px while retaining the current headline scale."
+    },
+    "color": {
+      "score": 11,
+      "evidence": "Cream, deep green, and restrained rust create a cohesive coastal-botanical mood. The dark studio section has strong contrast and provides useful pacing. Fine rust labels and hairline illustration strokes are comparatively faint against the cream background.",
+      "fix": "Darken the rust used for small labels and fine botanical strokes slightly."
+    },
+    "typography": {
+      "score": 11,
+      "evidence": "The display serif gives the page an editorial identity and most headline wrapping is graceful. On both viewports, service descriptions, the hero support line, figure captions, navigation, and footer copy appear undersized; some mobile paragraphs become dense blocks of tiny text. Uppercase labels also use very tight, small lettering.",
+      "fix": "Set all informational body copy to a minimum visible size of 14px on mobile and 15px on desktop, then allow affected sections to grow vertically."
+    },
+    "mobile": {
+      "score": 12,
+      "evidence": "The major sections stack logically, the navigation fits without collision, service rows remain scannable, and the botanical artwork receives its own panel. The primary button is usable, but the secondary action looks like a small inline text link, service copy becomes cramped beside titles, and multiple text elements are difficult to read at the shown width.",
+      "fix": "Stack each mobile service title above its description and enlarge the description text rather than keeping the narrow two-column row."
+    },
+    "specificity": {
+      "score": 6,
+      "evidence": "The service categories and request checklist are relevant to floral work, while the custom line drawings provide a recognizable visual gesture. But the page supplies no location, service area, delivery terms, pickup details, lead times, portfolio photography, pricing guidance, or inquiry channel. Copy repeatedly returns to broad phrases such as “season,” “setting,” and “feeling,” which could belong to many floral studios.",
+      "fix": "Add one compact facts block containing service area, delivery or pickup availability, typical lead time, and the actual inquiry method before the request checklist."
+    },
+    "accessibility": {
+      "score": 7,
+      "evidence": "The visible text indicates a skip link, headings are clearly differentiated, contrast is generally strong, and the layout does not rely on color alone. The smallest navigation, captions, labels, disclaimers, and footer copy present a visible readability problem, while the underlined secondary action has a very small target compared with the primary button.",
+      "fix": "Give both hero actions a minimum 44px tap height and raise all small functional text to at least 14px."
+    },
+    "polish": {
+      "score": 3,
+      "evidence": "Rules, numbering, restrained decoration, and section transitions feel deliberate. The botanical illustrations are distinctive but visually sparse and somewhat diagrammatic compared with the promised expressive floral character. The notice that contact details are unavailable makes the page read as an unfinished holding page, and the footer leaves the inquiry journey unresolved.",
+      "fix": "Replace the unavailable-contact notice with a functioning email or inquiry link styled as the concluding call to action."
+    }
+  },
+  "strengths": [
+    "Distinctive cream, green, and rust palette establishes a calm editorial identity.",
+    "Large serif headlines create memorable moments without excessive ornament.",
+    "Custom botanical line art supports the floral business more effectively than generic card imagery would.",
+    "Desktop sections follow a disciplined grid with consistent rules and numbering.",
+    "The mobile layout preserves the overall narrative and keeps navigation from becoming cramped."
+  ],
+  "issues": [
+    {
+      "priority": 1,
+      "severity": "major",
+      "dimension": "specificity",
+      "evidence": "The primary action leads toward request preparation, but the planning section explicitly says that no inquiry channel is available. No phone, email, form, address, or service area appears anywhere.",
+      "impact": "A visitor can prepare information but cannot place an order or discuss an event, making the primary business journey a dead end.",
+      "fix": "Add a working email link or inquiry form directly beneath the request checklist and point the hero primary action to it."
+    },
+    {
+      "priority": 2,
+      "severity": "medium",
+      "dimension": "typography",
+      "evidence": "Service descriptions, captions, disclaimers, navigation labels, and footer text appear very small on desktop and especially at the 390px viewport.",
+      "impact": "Important details require effort to read and the refined editorial style starts to resemble compressed fine print.",
+      "fix": "Raise informational copy to at least 14px on mobile and 15px on desktop, with approximately 1.45 line-height."
+    },
+    {
+      "priority": 3,
+      "severity": "medium",
+      "dimension": "specificity",
+      "evidence": "The page names three broad services but gives no service area, delivery or pickup policy, lead time, event process, examples, or portfolio imagery.",
+      "impact": "Visitors cannot determine whether the studio serves their location or occasion, and there is little evidence behind the brand promise.",
+      "fix": "Insert a short “Ordering at a glance” row with service area, fulfillment method, lead time, and event inquiry process."
+    },
+    {
+      "priority": 4,
+      "severity": "medium",
+      "dimension": "mobile",
+      "evidence": "Each mobile service entry retains a narrow side-by-side arrangement, forcing descriptions into thin columns beneath or beside multi-line titles.",
+      "impact": "The repeated rows feel cramped and are slower to scan than the otherwise spacious composition.",
+      "fix": "Stack the title and description within each service row on mobile, keeping the number above them."
+    },
+    {
+      "priority": 5,
+      "severity": "minor",
+      "dimension": "layout",
+      "evidence": "The desktop hero dedicates roughly half its width to a very fine drawing surrounded by extensive unused space, while the actions are squeezed into a shallow band at the bottom left.",
+      "impact": "The opening composition feels slightly underfilled on the right and congested at the point of action.",
+      "fix": "Scale the floral drawing up by roughly 15% and add vertical padding around the hero action row."
+    },
+    {
+      "priority": 6,
+      "severity": "minor",
+      "dimension": "hierarchy",
+      "evidence": "“Explore floral services” is presented as a tiny underlined link beside a solid primary button.",
+      "impact": "The secondary path looks incidental rather than like an intentional navigation choice.",
+      "fix": "Give the secondary action the same height and padding as the primary action, using an outlined treatment."
+    },
+    {
+      "priority": 7,
+      "severity": "minor",
+      "dimension": "polish",
+      "evidence": "The repeated wording around season, setting, occasion, and feeling appears across the hero, approach, services, and request sections.",
+      "impact": "The voice becomes circular and generic despite the distinctive visual system.",
+      "fix": "Replace one repeated paragraph with concrete process language describing consultation, stem selection, and fulfillment."
+    }
+  ],
+  "revisionBrief": {
+    "mustFix": [
+      "Provide a functioning inquiry destination and connect the hero primary action to it.",
+      "Add visible service-area, delivery or pickup, lead-time, and ordering-process information.",
+      "Increase small body, label, navigation, disclaimer, and footer text to readable sizes.",
+      "Stack mobile service titles and descriptions to remove narrow text columns."
+    ],
+    "preserve": [
+      "The restrained cream, deep-green, and rust palette.",
+      "The editorial serif headline treatment and numbered section structure.",
+      "The custom botanical line-art motif.",
+      "The dark studio-approach panel as a pacing and contrast device.",
+      "The generous overall spacing and clean ruled grid."
+    ]
+  },
+  "cycle": 3,
+  "mode": "vision",
+  "createdAt": "2026-07-17T23:54:01.210Z",
+  "mechanicalPassed": true
+}

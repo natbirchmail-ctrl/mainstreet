@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "1.0",
+  "cycle": 2,
+  "passed": true,
+  "failures": [],
+  "metrics": {
+    "desktop": {
+      "viewportWidth": 1440,
+      "viewportHeight": 900,
+      "scrollWidth": 1440,
+      "horizontalOverflow": false,
+      "h1Count": 1,
+      "mainCount": 1,
+      "missingAltCount": 0,
+      "brokenAnchors": [],
+      "smallTargets": [],
+      "visibleTextLength": 1847
+    },
+    "mobile": {
+      "viewportWidth": 390,
+      "viewportHeight": 844,
+      "scrollWidth": 390,
+      "horizontalOverflow": false,
+      "h1Count": 1,
+      "mainCount": 1,
+      "missingAltCount": 0,
+      "brokenAnchors": [],
+      "smallTargets": [],
+      "visibleTextLength": 1797
+    },
+    "consoleErrors": [],
+    "pageErrors": [],
+    "externalRequests": []
+  }
+}

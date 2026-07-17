@@ -1,0 +1,30 @@
+{
+  "schemaVersion": "1.0",
+  "fromCycle": 1,
+  "toCycle": 2,
+  "createdAt": "2026-07-17T23:50:15.555Z",
+  "targetScore": 85,
+  "mustKeep": [
+    "Confirmed business facts and explicit unknowns",
+    "Single page semantic structure",
+    "No JavaScript or external assets",
+    "No emoji or visible dash characters",
+    "Every current accessibility safeguard"
+  ],
+  "mustFix": [
+    "Provide a real, usable inquiry method and remove all staging language about unavailable contact details.",
+    "Increase functional and body text sizes, particularly on mobile and in service descriptions.",
+    "Simplify the mobile header and enlarge interactive targets.",
+    "Remove overlapping annotation text from the mobile botanical artwork.",
+    "Add confirmed service-area, delivery or pickup, and timing information.",
+    "Show at least one credible image of actual floral work."
+  ],
+  "preserve": [
+    "The restrained cream, deep green, and rust palette.",
+    "The large editorial serif headlines.",
+    "The numbered section structure and light–dark–light pacing.",
+    "The custom botanical line-art motif.",
+    "The concise three-service presentation and occasion-preparation checklist."
+  ],
+  "mechanicalFailures": []
+}
