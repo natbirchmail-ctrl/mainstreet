@@ -1,0 +1,47 @@
+{
+  "schemaVersion": "1.0",
+  "cycle": 1,
+  "passed": true,
+  "failures": [],
+  "metrics": {
+    "desktop": {
+      "viewportWidth": 1440,
+      "viewportHeight": 900,
+      "scrollWidth": 1440,
+      "horizontalOverflow": false,
+      "h1Count": 1,
+      "mainCount": 1,
+      "missingAltCount": 0,
+      "brokenAnchors": [],
+      "smallTargets": [
+        {
+          "text": "Canyon Wheelworks",
+          "width": 230.875,
+          "height": 36
+        }
+      ],
+      "visibleTextLength": 1305
+    },
+    "mobile": {
+      "viewportWidth": 390,
+      "viewportHeight": 844,
+      "scrollWidth": 390,
+      "horizontalOverflow": false,
+      "h1Count": 1,
+      "mainCount": 1,
+      "missingAltCount": 0,
+      "brokenAnchors": [],
+      "smallTargets": [
+        {
+          "text": "Canyon Wheelworks",
+          "width": 230.875,
+          "height": 36
+        }
+      ],
+      "visibleTextLength": 1478
+    },
+    "consoleErrors": [],
+    "pageErrors": [],
+    "externalRequests": []
+  }
+}

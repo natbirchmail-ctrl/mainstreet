@@ -21,6 +21,38 @@ test("selectBestCycle prefers the highest mechanically clean score", () => {
   );
 });
 
+test("run report measures improvement using the selected best cycle", async () => {
+  const root = path.join(process.cwd(), "tmp", randomUUID());
+  const scores = [70, 90, 65];
+  const result = await executePipeline({
+    businessName: "Best Cycle Proof",
+    fast: true,
+    maxCycles: 3,
+    runsRoot: path.join(root, "runs"),
+    trashRoot: path.join(root, "trash"),
+    createBriefFn: async () => ({ business: { name: "Best Cycle Proof" } }),
+    buildRunFn: async ({ runDir }) => {
+      await mkdir(path.join(runDir, "cycle-01", "site"), { recursive: true });
+    },
+    criticFn: async ({ cycle }) => ({
+      cycle,
+      score: scores[cycle - 1],
+      verdict: "revise",
+      mechanicalPassed: true,
+      mode: "vision",
+    }),
+    reviseRunFn: async ({ runDir, fromCycle }) => {
+      await mkdir(
+        path.join(runDir, `cycle-${String(fromCycle + 1).padStart(2, "0")}`, "site"),
+        { recursive: true },
+      );
+    },
+  });
+
+  assert.equal(result.report.selectedCycle, 2);
+  assert.equal(result.report.scoresImproved, true);
+});
+
 test("executePipeline runs bounded revisions and stops at the ship threshold", async () => {
   const root = path.join(process.cwd(), "tmp", randomUUID());
   const scores = [64, 81, 88];

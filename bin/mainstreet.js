@@ -137,8 +137,21 @@ export async function main(argv = process.argv.slice(2)) {
     const selectedCycle = Number(
       path.basename(path.dirname(siteDir)).slice("cycle-".length),
     );
-    const deployment = await deployRun({ runDir, slug, selectedCycle, siteDir });
+    let localPreview = null;
+    const deployment = await deployRun({
+      runDir,
+      slug,
+      selectedCycle,
+      siteDir,
+      startLocalFn: async ({ root, port }) => {
+        localPreview = await startStaticServer({ root, port });
+        return localPreview;
+      },
+    });
     process.stdout.write(`Site URL: ${deployment.url}\n`);
+    if (localPreview) {
+      await new Promise(() => {});
+    }
     return;
   }
 
@@ -148,6 +161,7 @@ export async function main(argv = process.argv.slice(2)) {
       throw new TypeError("The run command requires a business name.");
     }
     const maxCycles = parsed.flags.maxCycles ? Number(parsed.flags.maxCycles) : 3;
+    let localPreview = null;
     const result = await executePipeline({
       businessName,
       city: parsed.flags.city,
@@ -156,13 +170,19 @@ export async function main(argv = process.argv.slice(2)) {
       maxCycles,
       runsRoot,
       trashRoot,
-      deliveryFn: deployRun,
+      deliveryFn: (input) =>
+        deployRun({
+          ...input,
+          startLocalFn: async ({ root, port }) => {
+            localPreview = await startStaticServer({ root, port });
+            return localPreview;
+          },
+        }),
       onProgress: printProgress,
     });
     process.stdout.write(`Site URL: ${result.delivery.url}\n`);
-    if (result.delivery.mode === "local") {
-      const preview = await startStaticServer({ root: result.selectedSiteDir, port: 4601 });
-      process.stdout.write(`Local preview running: ${preview.url}\n`);
+    if (localPreview) {
+      process.stdout.write(`Local preview running: ${localPreview.url}\n`);
       await new Promise(() => {});
     }
     return;

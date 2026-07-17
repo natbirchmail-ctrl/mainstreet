@@ -1,0 +1,11 @@
+{
+  "cycle": 1,
+  "createdAt": "2026-07-17T23:33:49.656Z",
+  "source": "openai",
+  "fallbackReason": null,
+  "designNotes": {
+    "aesthetic": "A warm desert workshop composition pairs sandstone paper tones with rust red, near black mechanical lines, large editorial serif type, and precise component inspired diagrams.",
+    "signatureMove": "The service area is built as a working wheel selector. Three labeled spokes control the adjacent service panel on wide screens, while smaller screens preserve the full wheel and show every service in a clear list below it.",
+    "rationale": "The oversized chainring and service wheel make bicycle mechanics central to the layout without relying on unavailable photography. Firm borders, practical language, and restrained colors support a dependable neighborhood shop character."
+  }
+}

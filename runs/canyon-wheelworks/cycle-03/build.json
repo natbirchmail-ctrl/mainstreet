@@ -1,0 +1,12 @@
+{
+  "cycle": 3,
+  "fromCycle": 2,
+  "createdAt": "2026-07-17T23:40:25.022Z",
+  "source": "openai-revision",
+  "fallbackReason": null,
+  "designNotes": {
+    "aesthetic": "The revision preserves the desert workshop palette and editorial serif hierarchy while increasing the weight and contrast of rules, supporting copy, navigation, and service information. Cream work surfaces, rust feature panels, and charcoal component drawings now feel more deliberate and readable.",
+    "signatureMove": "The service wheel remains the defining feature on larger screens, where labeled spokes reveal one focused service panel. On phones, a compact wheel introduces three accessible service rows with the first row open by default. The about ornament is now a layered cassette detail rather than an ambiguous crosshair.",
+    "rationale": "The mobile header now uses one large native menu control, all mobile interactive labels meet a comfortable touch size, and body copy is at least sixteen pixels. Compact expandable service rows reduce repetition and page length. Since the brief confirms no address, hours, phone number, or email, the revised walk in section states that limitation once in a clearly styled notice instead of directing visitors to another listing or inventing details."
+  }
+}

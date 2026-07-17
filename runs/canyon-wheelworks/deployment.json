@@ -1,0 +1,13 @@
+{
+  "schemaVersion": "1.0",
+  "slug": "canyon-wheelworks",
+  "selectedCycle": 3,
+  "createdAt": "2026-07-17T23:41:40.728Z",
+  "mode": "cloudflare",
+  "projectName": "mainstreet-hackathon",
+  "url": "https://mainstreet-hackathon.pages.dev/",
+  "deploymentUrl": "https://0790e671.mainstreet-hackathon.pages.dev/",
+  "verified": true,
+  "status": 200,
+  "reason": null
+}

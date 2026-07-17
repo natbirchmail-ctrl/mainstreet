@@ -198,6 +198,8 @@ async function writeRunReport({
   delivery,
 }) {
   const numericScores = cycles.map((cycle) => cycle.score).filter(Number.isFinite);
+  const firstScore = numericScores[0];
+  const selectedScore = cycles.find((cycle) => cycle.cycle === selectedCycle)?.score;
   const report = {
     schemaVersion: "1.0",
     slug,
@@ -208,7 +210,9 @@ async function writeRunReport({
     stopReason,
     selectedCycle,
     scoresImproved:
-      numericScores.length >= 2 && numericScores.at(-1) > numericScores[0],
+      numericScores.length >= 2 &&
+      Number.isFinite(selectedScore) &&
+      selectedScore > firstScore,
     cycles,
     delivery,
   };

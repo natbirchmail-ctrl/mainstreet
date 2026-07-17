@@ -1,0 +1,67 @@
+{
+  "schemaVersion": "1.0",
+  "cycle": 3,
+  "passed": true,
+  "failures": [],
+  "metrics": {
+    "desktop": {
+      "viewportWidth": 1440,
+      "viewportHeight": 900,
+      "scrollWidth": 1440,
+      "horizontalOverflow": false,
+      "h1Count": 1,
+      "mainCount": 1,
+      "missingAltCount": 0,
+      "brokenAnchors": [],
+      "smallTargets": [
+        {
+          "text": "Services",
+          "width": 0,
+          "height": 0
+        },
+        {
+          "text": "About",
+          "width": 0,
+          "height": 0
+        },
+        {
+          "text": "Walk In",
+          "width": 0,
+          "height": 0
+        }
+      ],
+      "visibleTextLength": 1363
+    },
+    "mobile": {
+      "viewportWidth": 390,
+      "viewportHeight": 844,
+      "scrollWidth": 390,
+      "horizontalOverflow": false,
+      "h1Count": 1,
+      "mainCount": 1,
+      "missingAltCount": 0,
+      "brokenAnchors": [],
+      "smallTargets": [
+        {
+          "text": "Services",
+          "width": 0,
+          "height": 0
+        },
+        {
+          "text": "About",
+          "width": 0,
+          "height": 0
+        },
+        {
+          "text": "Walk In",
+          "width": 0,
+          "height": 0
+        }
+      ],
+      "visibleTextLength": 1325
+    },
+    "consoleErrors": [],
+    "pageErrors": [],
+    "externalRequests": []
+  }
+}

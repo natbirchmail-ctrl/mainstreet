@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { readFile } from "node:fs/promises";
+import { access, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -94,10 +94,20 @@ export async function deployRun({
   selectedCycle,
   siteDir,
   deployFn = deployToPages,
+  startLocalFn = null,
   now = () => new Date(),
 }) {
   const resolvedSiteDir = siteDir || (await findSelectedSite(runDir));
-  const result = await deployFn({ siteDir: resolvedSiteDir });
+  let result = await deployFn({ siteDir: resolvedSiteDir });
+  if (result.mode === "local" && startLocalFn) {
+    const preview = await startLocalFn({ root: resolvedSiteDir, port: 4601 });
+    result = {
+      ...result,
+      url: preview.url,
+      verified: true,
+      status: preview.status ?? null,
+    };
+  }
   const artifact = {
     schemaVersion: "1.0",
     slug,
@@ -105,8 +115,39 @@ export async function deployRun({
     createdAt: now().toISOString(),
     ...result,
   };
-  await writeJsonNew(resolveInside(runDir, "deployment.json"), artifact);
+  await writeJsonNew(await nextDeploymentArtifactPath(runDir), artifact);
   return artifact;
+}
+
+async function nextDeploymentArtifactPath(runDir) {
+  const first = resolveInside(runDir, "deployment.json");
+  if (!(await pathExists(first))) {
+    return first;
+  }
+
+  for (let sequence = 2; sequence <= 999; sequence += 1) {
+    const candidate = resolveInside(
+      runDir,
+      "deployments",
+      `deployment-${String(sequence).padStart(2, "0")}.json`,
+    );
+    if (!(await pathExists(candidate))) {
+      return candidate;
+    }
+  }
+  throw new Error("Deployment history limit reached.");
+}
+
+async function pathExists(target) {
+  try {
+    await access(target);
+    return true;
+  } catch (error) {
+    if (error?.code === "ENOENT") {
+      return false;
+    }
+    throw error;
+  }
 }
 
 export async function findSelectedSite(runDir) {

@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "1.0",
+  "fromCycle": 1,
+  "toCycle": 2,
+  "createdAt": "2026-07-17T23:36:59.449Z",
+  "targetScore": 85,
+  "mustKeep": [
+    "Confirmed business facts and explicit unknowns",
+    "Single page semantic structure",
+    "No JavaScript or external assets",
+    "No emoji or visible dash characters",
+    "Every current accessibility safeguard"
+  ],
+  "mustFix": [
+    "Provide an actionable walk-in destination and contact path using confirmed shop details.",
+    "Increase mobile navigation, body copy, and service-label sizes to legible minimums.",
+    "Replace the cramped labels around the mobile wheel with accessible service controls.",
+    "Differentiate each service with at least one practical, confirmed detail."
+  ],
+  "preserve": [
+    "The desert workshop palette and strong cream/rust/charcoal section changes.",
+    "The editorial serif headline style and confident hero composition.",
+    "The bicycle wheel as the signature visual and service-navigation concept.",
+    "The varied section layouts and direct, plainspoken tone.",
+    "The complete mobile list of all three service descriptions."
+  ],
+  "mechanicalFailures": []
+}

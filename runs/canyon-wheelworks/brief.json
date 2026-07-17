@@ -1,0 +1,119 @@
+{
+  "schemaVersion": "1.0",
+  "mode": "fast",
+  "business": {
+    "name": "Canyon Wheelworks",
+    "city": "Tucson, AZ",
+    "category": "Neighborhood bicycle repair shop",
+    "summary": "A Tucson bicycle repair shop focused on commuter tune ups, flat fixes, and careful maintenance. Walk in service is welcome."
+  },
+  "audience": {
+    "primary": "Tucson commuters and neighborhood riders who depend on their bicycles for everyday trips",
+    "needs": [
+      "Clear repair options",
+      "Careful maintenance",
+      "Convenient walk in service",
+      "Straightforward service information"
+    ]
+  },
+  "offerings": [
+    {
+      "name": "Commuter Tune Ups",
+      "description": "Routine service focused on keeping everyday bicycles working smoothly.",
+      "confidence": "confirmed"
+    },
+    {
+      "name": "Flat Fixes",
+      "description": "Repair service for flat bicycle tires.",
+      "confidence": "confirmed"
+    },
+    {
+      "name": "Careful Maintenance",
+      "description": "General bicycle maintenance based on the condition and needs of each bike.",
+      "confidence": "confirmed"
+    }
+  ],
+  "brand": {
+    "personality": [
+      "Neighborly",
+      "Practical",
+      "Careful",
+      "Dependable"
+    ],
+    "voice": "Plainspoken, helpful, and grounded in everyday riding.",
+    "aesthetic": "A desert workshop look with warm sandstone tones, dark mechanical details, strong typography, and close bicycle component photography.",
+    "signatureMove": {
+      "name": "Service Wheel",
+      "description": "A bicycle wheel diagram highlights each repair service as visitors move through the page. Selecting a spoke reveals the matching service details beside it.",
+      "touchFallback": "On touch devices, every spoke is a labeled button and all service details remain available in a simple list below the wheel.",
+      "reducedMotion": "With reduced motion enabled, the wheel remains still and every service label is visible without animation."
+    },
+    "palette": {
+      "background": "#F3E8D2",
+      "surface": "#FFF9EE",
+      "text": "#24231F",
+      "accent": "#B84F2E"
+    }
+  },
+  "content": {
+    "eyebrow": "Neighborhood bicycle repair in Tucson",
+    "headline": "Keep Your Everyday Ride Moving",
+    "subheadline": "Commuter tune ups, flat fixes, and careful maintenance with walk in service welcome.",
+    "about": "Canyon Wheelworks is a neighborhood bicycle repair shop in Tucson. We focus on commuter tune ups, flat fixes, and careful maintenance for everyday bicycles.",
+    "primaryAction": "Bring In Your Bike",
+    "secondaryAction": "Explore Services",
+    "contactPrompt": "Walk in with your bike and tell us what needs attention."
+  },
+  "contact": {
+    "phone": null,
+    "email": null,
+    "address": null,
+    "hours": null
+  },
+  "facts": {
+    "confirmed": [
+      {
+        "label": "Business name",
+        "value": "Canyon Wheelworks",
+        "source": "user"
+      },
+      {
+        "label": "City",
+        "value": "Tucson, AZ",
+        "source": "user"
+      },
+      {
+        "label": "Owner details",
+        "value": "A neighborhood bicycle repair shop focused on commuter tune ups, flat fixes, and careful maintenance. Walk in service is welcome.",
+        "source": "user"
+      }
+    ],
+    "inferred": [
+      {
+        "label": "Primary audience",
+        "value": "Tucson commuters and neighborhood riders",
+        "confidence": "high"
+      },
+      {
+        "label": "Positioning",
+        "value": "Practical neighborhood care for bicycles used in everyday travel",
+        "confidence": "high"
+      },
+      {
+        "label": "Brand direction",
+        "value": "A warm desert workshop identity with mechanical details",
+        "confidence": "medium"
+      }
+    ],
+    "needed": [
+      "Street address",
+      "Phone number",
+      "Email address",
+      "Opening hours",
+      "Detailed service list",
+      "Service prices",
+      "Typical turnaround times",
+      "Payment methods"
+    ]
+  }
+}

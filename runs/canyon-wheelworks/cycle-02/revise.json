@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "1.0",
+  "fromCycle": 2,
+  "toCycle": 3,
+  "createdAt": "2026-07-17T23:40:25.021Z",
+  "targetScore": 85,
+  "mustKeep": [
+    "Confirmed business facts and explicit unknowns",
+    "Single page semantic structure",
+    "No JavaScript or external assets",
+    "No emoji or visible dash characters",
+    "Every current accessibility safeguard"
+  ],
+  "mustFix": [
+    "Provide confirmed address, hours, and a direct contact method before making the walk-in CTA public.",
+    "Rebuild the mobile header around one adequately sized menu control.",
+    "Increase mobile body, navigation, selector, and footer text sizes.",
+    "Shorten the mobile service sequence with expandable service rows."
+  ],
+  "preserve": [
+    "The desert-workshop color palette.",
+    "The oversized editorial serif headlines.",
+    "The bicycle service-wheel concept and labeled touch fallback.",
+    "The commuter-focused, plainspoken positioning.",
+    "The strong cream, charcoal, and rust section transitions."
+  ],
+  "mechanicalFailures": []
+}

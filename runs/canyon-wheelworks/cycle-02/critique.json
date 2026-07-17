@@ -1,0 +1,124 @@
+{
+  "rubricVersion": "1.0",
+  "score": 82,
+  "verdict": "revise",
+  "summary": "A distinctive, credible-looking desert-workshop identity with strong editorial hierarchy and a service-wheel concept that fits bicycle repair. The page falls short of public readiness because its primary walk-in action provides no location, hours, phone, or direct next step; mobile utility is also weakened by very small navigation and body text.",
+  "dimensions": {
+    "layout": {
+      "score": 15,
+      "evidence": "The desktop hero uses a confident two-column split, sections align to a consistent grid, and the alternating dark, light, and rust panels create clear rhythm. On mobile, the service sequence becomes long and repetitive, while the four-part header is compressed into a shallow strip.",
+      "fix": "Increase the mobile header height and consolidate navigation into one menu control; tighten the vertical gaps between the wheel selector and service cards."
+    },
+    "hierarchy": {
+      "score": 14,
+      "evidence": "Oversized serif headlines, rust eyebrows, bordered service panels, and contrasting section backgrounds make the primary story easy to scan. The main CTA is visually dominant, but it leads toward an unresolved walk-in action rather than concrete visit information.",
+      "fix": "Place confirmed address and hours directly beneath the final walk-in headline once available, making them the terminal information hierarchy."
+    },
+    "color": {
+      "score": 11,
+      "evidence": "Sandstone, cream, charcoal, and rust form a cohesive Tucson workshop palette with strong contrast in the hero, cards, and dark sections. Fine tan rules and some small secondary copy are comparatively faint against cream surfaces.",
+      "fix": "Darken fine divider lines and secondary body copy one contrast step while preserving the four-color palette."
+    },
+    "typography": {
+      "score": 12,
+      "evidence": "The large serif display face gives the shop a memorable editorial character, and the compact sans-serif labels support the mechanical theme. Desktop paragraphs, mobile descriptions, footer text, and navigation are visibly undersized; several mobile headlines also form dense, abrupt stacks.",
+      "fix": "Raise mobile body and navigation text to at least 16px and loosen body line-height without changing the display typeface."
+    },
+    "mobile": {
+      "score": 11,
+      "evidence": "The hero, CTAs, wheel, and service details correctly collapse into a single column, and all three services remain visible. However, the logo and three navigation links are tightly packed, many labels are tiny, and the three nearly identical service cards make the page feel longer than necessary.",
+      "fix": "Replace the three mobile nav links with a single menu button and present service details as expandable rows with one open by default."
+    },
+    "specificity": {
+      "score": 7,
+      "evidence": "The page repeatedly identifies Tucson commuters, flat fixes, tune ups, maintenance, and walk-in service, and the wheel motif is relevant to the trade. Yet service descriptions remain broad, with no prices, turnaround guidance, repair examples, address, hours, or contact method; the final instruction to consult another listing undermines the site’s usefulness.",
+      "fix": "Before publishing, add one confirmed visit block containing address, hours, contact method, and at least a basic price or turnaround qualifier."
+    },
+    "accessibility": {
+      "score": 8,
+      "evidence": "Dark text on cream and white text on rust generally provide strong visible contrast, CTAs have clear boundaries, and the mobile service states use text rather than color alone. Small navigation, micro-labels, descriptions, and footer links may be difficult to read or tap, especially in the compressed mobile header.",
+      "fix": "Increase all mobile interactive labels to 16px and provide visibly larger tap areas of at least 44px in the header and service selector."
+    },
+    "polish": {
+      "score": 4,
+      "evidence": "Borders, geometric wheel details, color transitions, and spacing are consistently executed across both screenshots. The abstract crosshair graphic feels underdeveloped, and the external-listing disclaimer gives the closing section an unfinished placeholder quality.",
+      "fix": "Replace the crosshair ornament with a recognizable bicycle-component detail and restyle the disclaimer as a temporary notice rather than primary closing copy."
+    }
+  },
+  "strengths": [
+    "Distinctive sandstone, rust, cream, and charcoal palette evokes Tucson without resorting to generic desert imagery.",
+    "The service-wheel motif is memorable, business-relevant, and successfully retained as a labeled selector on mobile.",
+    "Large editorial serif headlines create a confident visual identity and strong section hierarchy.",
+    "The mobile layout preserves all service information rather than hiding essential content behind an unexplained interaction.",
+    "Copy consistently speaks to commuters and everyday riders rather than performance-cycling clichés."
+  ],
+  "issues": [
+    {
+      "priority": 1,
+      "severity": "major",
+      "dimension": "specificity",
+      "evidence": "The primary action says “Bring In Your Bike,” but no address, hours, phone, email, or map is shown; the page instead tells visitors to use a trusted local listing.",
+      "impact": "A ready-to-convert visitor cannot complete the core walk-in task from the page, making the site unsuitable for public launch.",
+      "fix": "Add a confirmed address, current hours, and one direct contact method beside the final walk-in CTA before publishing."
+    },
+    {
+      "priority": 2,
+      "severity": "medium",
+      "dimension": "mobile",
+      "evidence": "At 390px, the logo and three separate navigation links are compressed into one shallow row with very small text and narrow visual tap areas.",
+      "impact": "The first interaction feels cramped and may be difficult to read or operate accurately.",
+      "fix": "Use a taller mobile header with the logo on the left and one 44px menu button on the right."
+    },
+    {
+      "priority": 3,
+      "severity": "medium",
+      "dimension": "typography",
+      "evidence": "Service descriptions, explanatory copy, navigation, and footer text appear markedly smaller than comfortable reading size on mobile and remain small on desktop.",
+      "impact": "Important service and visit information requires extra effort to read, particularly for low-vision users.",
+      "fix": "Set body copy and interactive labels to a minimum 16px on mobile with approximately 1.5 line-height."
+    },
+    {
+      "priority": 4,
+      "severity": "medium",
+      "dimension": "mobile",
+      "evidence": "Three full service cards repeat the same eyebrow, title, description, divider, and qualifier structure in succession.",
+      "impact": "The mobile service section becomes visually monotonous and pushes the more persuasive neighborhood and walk-in content far down the page.",
+      "fix": "Convert the cards into an accordion with Commuter Tune Ups expanded by default."
+    },
+    {
+      "priority": 5,
+      "severity": "minor",
+      "dimension": "polish",
+      "evidence": "The dark “Built Around Everyday Riding” panel contains a sparse circle-and-crosshair ornament that does not immediately read as a bicycle component.",
+      "impact": "The gesture consumes substantial space without reinforcing the repair-shop story as clearly as the service wheel does.",
+      "fix": "Replace the crosshair with a simplified hub, chainring, or spoke-detail illustration at the same size."
+    },
+    {
+      "priority": 6,
+      "severity": "minor",
+      "dimension": "color",
+      "evidence": "Thin tan dividers and small muted text sit close in value to the cream backgrounds.",
+      "impact": "Secondary structure and explanatory copy lose definition despite the otherwise strong palette.",
+      "fix": "Use the charcoal text color at higher opacity for small copy and darken divider strokes."
+    }
+  ],
+  "revisionBrief": {
+    "mustFix": [
+      "Provide confirmed address, hours, and a direct contact method before making the walk-in CTA public.",
+      "Rebuild the mobile header around one adequately sized menu control.",
+      "Increase mobile body, navigation, selector, and footer text sizes.",
+      "Shorten the mobile service sequence with expandable service rows."
+    ],
+    "preserve": [
+      "The desert-workshop color palette.",
+      "The oversized editorial serif headlines.",
+      "The bicycle service-wheel concept and labeled touch fallback.",
+      "The commuter-focused, plainspoken positioning.",
+      "The strong cream, charcoal, and rust section transitions."
+    ]
+  },
+  "cycle": 2,
+  "mode": "vision",
+  "createdAt": "2026-07-17T23:38:05.780Z",
+  "mechanicalPassed": true
+}
