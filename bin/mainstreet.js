@@ -7,8 +7,10 @@ import { pathToFileURL } from "node:url";
 
 import { buildRun } from "../src/build.js";
 import { runCriticCycle } from "../src/critic.js";
+import { deployRun, findSelectedSite } from "../src/deploy.js";
 import { createBrief } from "../src/intake.js";
 import { initializeRun, resolveInside, writeJsonNew } from "../src/lib/runs.js";
+import { executePipeline } from "../src/pipeline.js";
 import { reviseRun } from "../src/revise.js";
 import { findLatestSite, startStaticServer } from "../src/serve.js";
 import { slugify } from "../src/lib/slug.js";
@@ -128,6 +130,44 @@ export async function main(argv = process.argv.slice(2)) {
     return;
   }
 
+  if (parsed.command === "deploy") {
+    const slug = slugify(parsed.positionals.join(" "));
+    const runDir = resolveInside(runsRoot, slug);
+    const siteDir = await findSelectedSite(runDir);
+    const selectedCycle = Number(
+      path.basename(path.dirname(siteDir)).slice("cycle-".length),
+    );
+    const deployment = await deployRun({ runDir, slug, selectedCycle, siteDir });
+    process.stdout.write(`Site URL: ${deployment.url}\n`);
+    return;
+  }
+
+  if (parsed.command === "run") {
+    const businessName = parsed.positionals.join(" ").trim();
+    if (!businessName) {
+      throw new TypeError("The run command requires a business name.");
+    }
+    const maxCycles = parsed.flags.maxCycles ? Number(parsed.flags.maxCycles) : 3;
+    const result = await executePipeline({
+      businessName,
+      city: parsed.flags.city,
+      details: parsed.flags.details,
+      fast: Boolean(parsed.flags.fast),
+      maxCycles,
+      runsRoot,
+      trashRoot,
+      deliveryFn: deployRun,
+      onProgress: printProgress,
+    });
+    process.stdout.write(`Site URL: ${result.delivery.url}\n`);
+    if (result.delivery.mode === "local") {
+      const preview = await startStaticServer({ root: result.selectedSiteDir, port: 4601 });
+      process.stdout.write(`Local preview running: ${preview.url}\n`);
+      await new Promise(() => {});
+    }
+    return;
+  }
+
   throw new TypeError(`Unknown command: ${parsed.command}`);
 }
 
@@ -136,7 +176,34 @@ function toCamelCase(value) {
 }
 
 function helpText() {
-  return `Mainstreet\n\nUsage:\n  mainstreet intake "Business Name" [--city "City, ST"] [--details "Known facts"] [--fast]\n  mainstreet build <slug>\n  mainstreet critique <slug> [--cycle 1]\n  mainstreet revise <slug> [--cycle 1]\n  mainstreet serve <slug> [--port 4601]\n`;
+  return `Mainstreet\n\nUsage:\n  mainstreet run "Business Name" [--city "City, ST"] [--details "Known facts"] [--fast] [--max-cycles 3]\n  mainstreet intake "Business Name" [--city "City, ST"] [--details "Known facts"] [--fast]\n  mainstreet build <slug>\n  mainstreet critique <slug> [--cycle 1]\n  mainstreet revise <slug> [--cycle 1]\n  mainstreet deploy <slug>\n  mainstreet serve <slug> [--port 4601]\n`;
+}
+
+function printProgress(event) {
+  switch (event.type) {
+    case "run_started":
+      process.stdout.write(`Run started: ${event.slug}\n`);
+      break;
+    case "intake_complete":
+      process.stdout.write("Intake brief complete.\n");
+      break;
+    case "build_complete":
+      process.stdout.write(`Build complete: cycle ${event.cycle}.\n`);
+      break;
+    case "critique_complete":
+      process.stdout.write(
+        `Critic cycle ${event.cycle}: ${event.score}/100 (${event.verdict}).\n`,
+      );
+      break;
+    case "revision_complete":
+      process.stdout.write(`Revision complete: cycle ${event.toCycle}.\n`);
+      break;
+    case "delivery_complete":
+      process.stdout.write(`Delivery selected: ${event.delivery.mode}.\n`);
+      break;
+    default:
+      break;
+  }
 }
 
 const isEntryPoint =

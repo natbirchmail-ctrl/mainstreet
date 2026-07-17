@@ -48,6 +48,21 @@ export async function writeJsonNew(target, value) {
   }
 }
 
+export async function writeTextNew(target, value) {
+  await mkdir(path.dirname(target), { recursive: true });
+  try {
+    await writeFile(target, value.endsWith("\n") ? value : `${value}\n`, {
+      encoding: "utf8",
+      flag: "wx",
+    });
+  } catch (error) {
+    if (error?.code === "EEXIST") {
+      throw new Error(`Evidence file already exists: ${target}`);
+    }
+    throw error;
+  }
+}
+
 async function pathExists(target) {
   try {
     await access(target);

@@ -1,0 +1,129 @@
+import assert from "node:assert/strict";
+import { randomUUID } from "node:crypto";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import path from "node:path";
+import test from "node:test";
+
+import {
+  deployToPages,
+  findSelectedSite,
+  parseDeploymentUrl,
+} from "../../src/deploy.js";
+
+const credentials = {
+  CLOUDFLARE_API_TOKEN: "test-token-not-real",
+  CLOUDFLARE_ACCOUNT_ID: "test-account",
+};
+
+test("deployToPages returns the local fallback when credentials are absent", async () => {
+  let called = false;
+  const result = await deployToPages({
+    siteDir: process.cwd(),
+    env: {},
+    runner: async () => {
+      called = true;
+    },
+  });
+
+  assert.equal(called, false);
+  assert.equal(result.mode, "local");
+  assert.equal(result.url, "http://127.0.0.1:4601/");
+  assert.equal(result.reason, "missing_credentials");
+});
+
+test("deployToPages reads the project, uploads, and verifies the returned URL", async () => {
+  const calls = [];
+  const runner = async (args) => {
+    calls.push(args);
+    if (args.join(" ").includes("project list")) {
+      return {
+        exitCode: 0,
+        stdout: JSON.stringify([{ "Project Name": "mainstreet-hackathon" }]),
+        stderr: "",
+      };
+    }
+    return {
+      exitCode: 0,
+      stdout: "Deployment complete https://abc.mainstreet-hackathon.pages.dev",
+      stderr: "",
+    };
+  };
+
+  const result = await deployToPages({
+    siteDir: path.join(process.cwd(), "tmp", "site"),
+    projectName: "mainstreet-hackathon",
+    env: credentials,
+    runner,
+    fetchFn: async () => new Response("<!doctype html><title>Mainstreet</title>", { status: 200 }),
+    sleep: async () => {},
+  });
+
+  assert.equal(result.mode, "cloudflare");
+  assert.equal(result.verified, true);
+  assert.equal(result.url, "https://mainstreet-hackathon.pages.dev/");
+  assert.equal(result.deploymentUrl, "https://abc.mainstreet-hackathon.pages.dev/");
+  assert.equal(calls.some((args) => args.join(" ").includes("project create")), false);
+  assert.equal(calls.some((args) => args.join(" ").includes("pages deploy")), true);
+});
+
+test("deployToPages creates a missing project noninteractively before upload", async () => {
+  const calls = [];
+  const runner = async (args) => {
+    calls.push(args);
+    if (args.join(" ").includes("project list")) {
+      return { exitCode: 0, stdout: "[]", stderr: "" };
+    }
+    if (args.join(" ").includes("project create")) {
+      return { exitCode: 0, stdout: "Created", stderr: "" };
+    }
+    return {
+      exitCode: 0,
+      stdout: "https://new.mainstreet-hackathon.pages.dev",
+      stderr: "",
+    };
+  };
+
+  const result = await deployToPages({
+    siteDir: process.cwd(),
+    projectName: "mainstreet-hackathon",
+    env: credentials,
+    runner,
+    fetchFn: async () => new Response("ok", { status: 200 }),
+    sleep: async () => {},
+  });
+
+  const createCall = calls.find((args) => args.join(" ").includes("project create"));
+  assert.ok(createCall);
+  assert.ok(createCall.includes("--production-branch"));
+  assert.equal(result.mode, "cloudflare");
+});
+
+test("deployToPages degrades to local serving after a Cloudflare failure", async () => {
+  const result = await deployToPages({
+    siteDir: process.cwd(),
+    env: credentials,
+    runner: async () => ({ exitCode: 1, stdout: "", stderr: "denied" }),
+  });
+  assert.equal(result.mode, "local");
+  assert.equal(result.reason, "cloudflare_failed");
+  assert.equal(result.url, "http://127.0.0.1:4601/");
+  assert.equal("stderr" in result, false);
+});
+
+test("parseDeploymentUrl accepts only secure pages.dev URLs", () => {
+  assert.equal(
+    parseDeploymentUrl("Preview: https://abc.mainstreet-hackathon.pages.dev"),
+    "https://abc.mainstreet-hackathon.pages.dev/",
+  );
+  assert.throws(() => parseDeploymentUrl("http://unsafe.example.com"), /pages deployment url/i);
+});
+
+test("findSelectedSite honors the final run report", async () => {
+  const runDir = path.join(process.cwd(), "tmp", randomUUID(), "run");
+  await mkdir(path.join(runDir, "cycle-02", "site"), { recursive: true });
+  await writeFile(path.join(runDir, "run-report.json"), JSON.stringify({ selectedCycle: 2 }), "utf8");
+  await writeFile(path.join(runDir, "cycle-02", "site", "index.html"), "proof", "utf8");
+
+  assert.equal(await findSelectedSite(runDir), path.join(runDir, "cycle-02", "site"));
+  assert.equal(await readFile(path.join(await findSelectedSite(runDir), "index.html"), "utf8"), "proof");
+});

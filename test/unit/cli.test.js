@@ -64,3 +64,19 @@ test("parseCli reads a revision cycle", () => {
     flags: { cycle: "1" },
   });
 });
+
+test("parseCli reads a deploy slug", () => {
+  assert.deepEqual(parseCli(["deploy", "juniper-oven"]), {
+    command: "deploy",
+    positionals: ["juniper-oven"],
+    flags: {},
+  });
+});
+
+test("parseCli reads the autonomous fast run command", () => {
+  assert.deepEqual(parseCli(["run", "Juniper Oven", "--fast", "--max-cycles", "3"]), {
+    command: "run",
+    positionals: ["Juniper Oven"],
+    flags: { fast: true, maxCycles: "3" },
+  });
+});

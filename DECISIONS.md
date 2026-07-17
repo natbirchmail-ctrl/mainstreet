@@ -31,6 +31,9 @@ Out of scope: modifying the production factory, importing production customer co
 - DECISION: fast intake may infer positioning and design direction, but it never publishes invented phone numbers, email addresses, street addresses, or hours. Unknown precise facts remain null and are recorded as needed.
 - DECISION: the build model returns a bounded two file site manifest plus design notes. Deterministic gates reject active content, remote assets, placeholders, emojis, visible dashes, and incomplete semantics before any file is written.
 - DECISION: a model outage produces a complete deterministic editorial baseline rather than a failed run. The artifact records that fallback honestly.
+- DECISION: each cycle is immutable. The final selector prefers mechanically clean cycles, then chooses the highest score, with a later cycle winning a tie.
+- DECISION: Cloudflare delivery uses the project local pinned Wrangler executable and the stable `mainstreet-hackathon` Pages project. This keeps the public prototype self contained while honoring the authorized least privilege Pages credential.
+- DECISION: the canonical production alias is the reported URL. The hash deployment URL is retained as deployment metadata because a newly created hash route may lag or be unavailable while the production alias is healthy.
 
 ## Security controls
 
@@ -44,6 +47,8 @@ Out of scope: modifying the production factory, importing production customer co
 - Attempt 1: project preflight found no `.env`; stopped exactly as the plan required.
 - Attempt 2: an authorized preexisting credential source was used to materialize the local `.env`. No source metadata or secret value was printed or committed.
 - Attempt 3: the initial dependency tree was moved intact to `.trash/` after a newly published Wrangler release failed the seven day package age gate. Wrangler was pinned to a mature release, the lockfile was regenerated, package provenance checks passed, and `npm audit` reported zero vulnerabilities.
+- Attempt 4: the first Pages upload completed, but immediate verification used the hash route and degraded to local serving. The record was archived intact. A read back proved the production alias healthy.
+- Attempt 5: the next deployment read misidentified Wrangler's table shaped JSON and tried to recreate the existing project. The fallback record was archived intact, the parser received a regression test, and the corrected deployment verified the production alias with HTTP 200.
 
 ## Found, not fixed
 

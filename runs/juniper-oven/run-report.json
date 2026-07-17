@@ -1,0 +1,38 @@
+{
+  "schemaVersion": "1.0",
+  "slug": "juniper-oven",
+  "businessName": "Juniper Oven",
+  "startedAt": null,
+  "completedAt": "2026-07-17T23:20:21.628Z",
+  "status": "completed",
+  "stopReason": "max_cycles_reached",
+  "selectedCycle": 3,
+  "scoresImproved": true,
+  "cycles": [
+    {
+      "cycle": 1,
+      "score": 60,
+      "visionScore": 76,
+      "verdict": "revise",
+      "mode": "vision",
+      "mechanicalPassed": false
+    },
+    {
+      "cycle": 2,
+      "score": 78,
+      "visionScore": null,
+      "verdict": "revise",
+      "mode": "vision",
+      "mechanicalPassed": true
+    },
+    {
+      "cycle": 3,
+      "score": 79,
+      "visionScore": null,
+      "verdict": "revise",
+      "mode": "vision",
+      "mechanicalPassed": true
+    }
+  ],
+  "delivery": null
+}
