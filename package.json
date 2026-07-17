@@ -1,0 +1,36 @@
+{
+  "name": "mainstreet-site-generator",
+  "version": "0.1.0",
+  "private": false,
+  "description": "An AI website generator for local small businesses, built for OpenAI Build Week.",
+  "type": "module",
+  "bin": {
+    "mainstreet": "bin/mainstreet.js"
+  },
+  "scripts": {
+    "test": "node --test",
+    "test:unit": "node --test test/unit/*.test.js",
+    "test:integration": "node --test test/integration/*.test.js",
+    "check": "node --check bin/mainstreet.js && node --test",
+    "mainstreet": "node bin/mainstreet.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "openai",
+    "codex",
+    "website-generator",
+    "small-business",
+    "cloudflare-pages"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "openai": "^5.23.2",
+    "playwright": "^1.57.0"
+  },
+  "devDependencies": {
+    "wrangler": "4.110.0"
+  }
+}
