@@ -92,9 +92,9 @@ export function validatePngBuffer(buffer, { expectedWidth, expectedHeight } = {}
       throw new Error("invalid png");
     }
 
-    const raw = inflateSync(Buffer.concat(idatChunks));
     const stride = width * channels;
     const expectedLength = height * (stride + 1);
+    const raw = inflateSync(Buffer.concat(idatChunks), { maxOutputLength: expectedLength });
     if (raw.length !== expectedLength) throw new Error("invalid png");
     for (let row = 0; row < height; row += 1) {
       if (raw[row * (stride + 1)] > 4) throw new Error("invalid png");

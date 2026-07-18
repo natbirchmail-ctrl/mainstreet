@@ -3,6 +3,7 @@ import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
+import { deflateSync } from "node:zlib";
 
 import {
   MAX_IMAGE_REQUESTS_PER_CYCLE,
@@ -68,6 +69,15 @@ test("validatePngBuffer rejects a non alphabetic ancillary-looking chunk type", 
   const afterIhdr = 8 + 12 + ihdrLength;
   const malformed = Buffer.concat([image.subarray(0, afterIhdr), chunk("1abc"), image.subarray(afterIhdr)]);
   assert.throws(() => validatePngBuffer(malformed), /PNG validation failed\./);
+});
+
+test("validatePngBuffer bounds decompression to the known scanline payload", () => {
+  const image = createDeterministicPng(plan()[0], { width: 8, height: 6 });
+  const ihdrEnd = 8 + 12 + image.readUInt32BE(8);
+  const oversizedIdat = chunk("IDAT", deflateSync(Buffer.alloc(2 * 1024 * 1024)));
+  const iend = chunk("IEND");
+  const compressedOversize = Buffer.concat([image.subarray(0, ihdrEnd), oversizedIdat, iend]);
+  assert.throws(() => validatePngBuffer(compressedOversize), /PNG validation failed\./);
 });
 
 test("createDeterministicPng is stable, valid, and changes with the ordered plan tuple", () => {
