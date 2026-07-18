@@ -67,7 +67,7 @@ export async function executePipeline({
       score: critique.score,
       verdict: critique.verdict,
     });
-    if (critique.verdict === "ship" && critique.score >= 85) {
+    if (critique.shipEligible === true) {
       stopReason = "threshold_reached";
       break;
     }
@@ -98,6 +98,13 @@ export async function executePipeline({
       verdict: "unscored",
       mode: "unavailable",
       mechanicalPassed: null,
+      assetsResolved: null,
+      lawGatePassed: false,
+      lawGateFailures: ["critique:unavailable"],
+      shipEligible: false,
+      hardGateFailures: ["critique:unavailable"],
+      laws: null,
+      lawCoverage: null,
     });
   }
 
@@ -130,8 +137,16 @@ export function selectBestCycle(cycles) {
     throw new TypeError("At least one cycle is required.");
   }
   const scored = cycles.filter((cycle) => Number.isFinite(cycle.score));
-  const clean = scored.filter((cycle) => cycle.mechanicalPassed !== false);
-  const candidates = clean.length > 0 ? clean : scored.length > 0 ? scored : cycles;
+  const eligible = scored.filter((cycle) => cycle.shipEligible === true);
+  const mechanicallySafe = scored.filter((cycle) => cycle.mechanicalPassed === true);
+  const candidates =
+    eligible.length > 0
+      ? eligible
+      : mechanicallySafe.length > 0
+        ? mechanicallySafe
+        : scored.length > 0
+          ? scored
+          : cycles;
 
   return [...candidates].sort((left, right) => {
     const scoreDifference = (right.score ?? -1) - (left.score ?? -1);
@@ -154,7 +169,9 @@ export async function finalizeExistingRun({
   const selected = selectBestCycle(cycles);
   const resolvedStopReason =
     stopReason ||
-    (cycles.at(-1).verdict === "ship" ? "threshold_reached" : "max_cycles_reached");
+    (cycles.at(-1).shipEligible === true
+      ? "threshold_reached"
+      : "max_cycles_reached");
 
   return writeRunReport({
     runDir,
@@ -227,7 +244,7 @@ function renderMarkdownReport(report) {
   const rows = report.cycles
     .map(
       (cycle) =>
-        `| ${cycle.cycle} | ${cycle.score ?? "Unavailable"} | ${cycle.mechanicalPassed ?? "Unavailable"} | ${cycle.verdict} |`,
+        `| ${cycle.cycle} | ${cycle.score ?? "Unavailable"} | ${cycle.mechanicalPassed ?? "Unavailable"} | ${cycle.assetsResolved ?? "Unavailable"} | ${cycle.lawGatePassed ?? "Unavailable"} | ${cycle.shipEligible} | ${cycle.verdict} |`,
     )
     .join("\n");
   return `# ${report.businessName} run report
@@ -238,8 +255,8 @@ Stop reason: ${report.stopReason}
 
 Selected cycle: ${report.selectedCycle}
 
-| Cycle | Score | Mechanical pass | Verdict |
-| ---: | ---: | :---: | :--- |
+| Cycle | Score | Mechanical pass | Assets resolved | Laws pass | Ship eligible | Verdict |
+| ---: | ---: | :---: | :---: | :---: | :---: | :--- |
 ${rows}
 `;
 }
@@ -249,12 +266,35 @@ function toCycleSummary(critique) {
     cycle: critique.cycle,
     score: Number.isFinite(critique.score) ? critique.score : null,
     visionScore: Number.isFinite(critique.visionScore) ? critique.visionScore : null,
-    verdict: critique.verdict,
+    verdict: critique.shipEligible === true ? "ship" : "revise",
     mode: critique.mode,
-    mechanicalPassed: critique.mechanicalPassed,
+    mechanicalPassed: booleanOrNull(critique.mechanicalPassed),
+    assetsResolved: booleanOrNull(critique.assetsResolved),
+    lawGatePassed: critique.lawGatePassed === true,
+    lawGateFailures: cloneArray(critique.lawGateFailures),
+    shipEligible: critique.shipEligible === true,
+    hardGateFailures: cloneArray(critique.hardGateFailures),
+    laws: cloneObjectOrNull(critique.laws),
+    lawCoverage: cloneObjectOrNull(critique.lawCoverage),
   };
 }
 
 function pad(cycle) {
   return String(cycle).padStart(2, "0");
+}
+
+function booleanOrNull(value) {
+  if (value === true) return true;
+  if (value === false) return false;
+  return null;
+}
+
+function cloneArray(value) {
+  return Array.isArray(value) ? [...value] : [];
+}
+
+function cloneObjectOrNull(value) {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? structuredClone(value)
+    : null;
 }

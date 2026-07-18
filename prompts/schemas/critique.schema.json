@@ -3,8 +3,6 @@
   "type": "object",
   "properties": {
     "rubricVersion": { "type": "string", "enum": ["1.0"] },
-    "score": { "type": "integer", "minimum": 0, "maximum": 100 },
-    "verdict": { "type": "string", "enum": ["revise", "ship"] },
     "summary": { "type": "string" },
     "dimensions": {
       "type": "object",
@@ -44,6 +42,30 @@
       },
       "maxItems": 10
     },
+    "laws": {
+      "type": "object",
+      "properties": {
+        "headlineDiscipline": { "$ref": "#/$defs/law" },
+        "foldComposition": { "$ref": "#/$defs/law" },
+        "completeLayouts": { "$ref": "#/$defs/law" },
+        "firstBeatVisibility": { "$ref": "#/$defs/law" },
+        "imageContrast": { "$ref": "#/$defs/law" },
+        "motionRestraint": { "$ref": "#/$defs/law" },
+        "imageryCoherence": { "$ref": "#/$defs/law" },
+        "factualRestraint": { "$ref": "#/$defs/law" }
+      },
+      "required": [
+        "headlineDiscipline",
+        "foldComposition",
+        "completeLayouts",
+        "firstBeatVisibility",
+        "imageContrast",
+        "motionRestraint",
+        "imageryCoherence",
+        "factualRestraint"
+      ],
+      "additionalProperties": false
+    },
     "revisionBrief": {
       "type": "object",
       "properties": {
@@ -54,7 +76,7 @@
       "additionalProperties": false
     }
   },
-  "required": ["rubricVersion", "score", "verdict", "summary", "dimensions", "strengths", "issues", "revisionBrief"],
+  "required": ["rubricVersion", "summary", "dimensions", "strengths", "issues", "laws", "revisionBrief"],
   "additionalProperties": false,
   "$defs": {
     "dimension": {
@@ -65,6 +87,33 @@
         "fix": { "type": "string" }
       },
       "required": ["score", "evidence", "fix"],
+      "additionalProperties": false
+    },
+    "law": {
+      "type": "object",
+      "properties": {
+        "status": { "type": "string", "enum": ["pass", "fail", "unverified"] },
+        "evidence": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/lawEvidence" },
+          "minItems": 1,
+          "maxItems": 6
+        },
+        "fix": { "type": "string" }
+      },
+      "required": ["status", "evidence", "fix"],
+      "additionalProperties": false
+    },
+    "lawEvidence": {
+      "type": "object",
+      "properties": {
+        "viewport": {
+          "type": "string",
+          "enum": ["desktop", "tablet", "phone", "source"]
+        },
+        "observation": { "type": "string" }
+      },
+      "required": ["viewport", "observation"],
       "additionalProperties": false
     }
   }
