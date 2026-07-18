@@ -25,6 +25,9 @@ test("static server binds to loopback and serves GET and HEAD safely", async () 
   await mkdir(root, { recursive: true });
   await writeFile(path.join(root, "index.html"), "<!doctype html><h1>Mainstreet</h1>", "utf8");
   await writeFile(path.join(root, "styles.css"), "body { color: #123456; }", "utf8");
+  await writeFile(path.join(root, "script.js"), "window.mainstreet = true;", "utf8");
+  await mkdir(path.join(root, "assets"));
+  await writeFile(path.join(root, "assets", "cover.png"), Buffer.from("89504e470d0a1a0a", "hex"));
 
   const preview = await startStaticServer({ root, port: 4601 });
   try {
@@ -39,6 +42,17 @@ test("static server binds to loopback and serves GET and HEAD safely", async () 
     const headResponse = await fetch(`${preview.url}styles.css`, { method: "HEAD" });
     assert.equal(headResponse.status, 200);
     assert.equal(await headResponse.text(), "");
+
+    for (const [pathname, contentType] of [["script.js", "application/javascript; charset=utf-8"], ["assets/cover.png", "image/png"]]) {
+      const scriptGet = await fetch(`${preview.url}${pathname}`);
+      assert.equal(scriptGet.status, 200);
+      assert.equal(scriptGet.headers.get("content-type"), contentType);
+      assert.equal(scriptGet.headers.get("x-content-type-options"), "nosniff");
+      const scriptHead = await fetch(`${preview.url}${pathname}`, { method: "HEAD" });
+      assert.equal(scriptHead.status, 200);
+      assert.equal(scriptHead.headers.get("content-type"), contentType);
+      assert.equal(await scriptHead.text(), "");
+    }
 
     const postResponse = await fetch(preview.url, { method: "POST" });
     assert.equal(postResponse.status, 405);

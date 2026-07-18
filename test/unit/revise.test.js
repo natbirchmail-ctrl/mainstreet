@@ -4,16 +4,17 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 
-import { createOwnedMotionRuntime, validateSiteManifest } from "../../src/build.js";
+import { createOwnedMotionRuntime, createOwnedMotionStyles, validateSiteManifest } from "../../src/build.js";
 import { reviseRun, reviseSite } from "../../src/revise.js";
 
 const revisePromptUrl = new URL("../../prompts/revise-system.md", import.meta.url);
 
 function manifest(headline = "Bread for the day ahead", { modelOutput = false } = {}) {
   const motionMoves = ["staged hero entrance"];
+  const modelStyles = "body { margin: 0; color: #252820; background: #f3ebdd; font-family: Georgia, serif; } a:focus-visible { outline: 3px solid currentColor; }";
   return {
     indexHtml: `<!doctype html><html lang="en"><head><meta name="viewport" content="width=device-width, initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'"><title>Juniper Oven</title><link rel="stylesheet" href="styles.css"></head><body data-motion-moves="staged-hero-entrance"><a href="#main">Skip to content</a><main id="main"><section data-section="hero" data-motion-root="staged-hero-entrance"><div data-first-beat data-motion-target><h1>${headline}</h1><img src="assets/bread-hero.png" alt="Baker shaping a loaf on a work surface"></div></section><section data-section="offerings"><div data-first-beat><h2>Fresh from the oven</h2><p>Made with care.</p><img src="assets/bread-shelf.png" alt="Fresh loaves on a bakery shelf"></div></section><section data-section="story"><div data-first-beat><h2>The bakery story</h2><img src="assets/flour-detail.png" alt="Flour grain and a ceramic bowl"></div></section></main><script src="script.js" defer></script></body></html>`,
-    stylesCss: "body { margin: 0; color: #252820; background: #f3ebdd; font-family: Georgia, serif; } a:focus-visible { outline: 3px solid currentColor; }",
+    stylesCss: modelOutput ? modelStyles : `${modelStyles}${createOwnedMotionStyles(motionMoves)}`,
     scriptJs: modelOutput ? "" : createOwnedMotionRuntime(motionMoves),
     imagePlan: [
       {
@@ -89,6 +90,7 @@ test("reviseSite supplies current files and fresh critique to the model", async 
   validateSiteManifest(revised);
   assert.equal(request.schemaName, "mainstreet_revision");
   assert.equal(request.userPayload.currentSite.indexHtml, manifest().indexHtml);
+  assert.equal(request.userPayload.currentSite.stylesCss, manifest(undefined, { modelOutput: true }).stylesCss);
   assert.equal(request.userPayload.currentSite.scriptJs, manifest().scriptJs);
   assert.deepEqual(request.userPayload.currentSite.imagePlan, manifest().imagePlan);
   assert.equal(request.userPayload.critique.score, 76);
@@ -157,6 +159,7 @@ test("revision prompt requests the expanded model sentinel contract", async () =
     assert.match(prompt, new RegExp(`\\b${field}\\b`));
   }
   assert.match(prompt, /empty `scriptJs` sentinel/i);
+  assert.match(prompt, /appends the exact owned motion CSS/i);
   assert.match(prompt, /planned local PNG/i);
   assert.match(prompt, /data-motion-moves/i);
   for (const [move, slug] of [

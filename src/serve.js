@@ -164,6 +164,8 @@ function contentType(target) {
       return "text/html; charset=utf-8";
     case ".css":
       return "text/css; charset=utf-8";
+    case ".js":
+      return "application/javascript; charset=utf-8";
     case ".svg":
       return "image/svg+xml";
     case ".png":

@@ -5,6 +5,7 @@ import path from "node:path";
 import test from "node:test";
 
 import * as buildModule from "../../src/build.js";
+import { createDeterministicPng } from "../../src/assets.js";
 
 const {
   buildSite,
@@ -109,7 +110,11 @@ function safeManifest() {
 * { box-sizing: border-box; }
 body { margin: 0; color: var(--ink); background: var(--paper); font-family: Georgia, serif; }
 a:focus-visible { outline: 3px solid currentColor; outline-offset: 4px; }
-@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; } }`,
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; } }${
+      typeof buildModule.createOwnedMotionStyles === "function"
+        ? buildModule.createOwnedMotionStyles(motionMoves)
+        : ""
+    }`,
     scriptJs:
       typeof buildModule.createOwnedMotionRuntime === "function"
         ? buildModule.createOwnedMotionRuntime(motionMoves)
@@ -148,21 +153,37 @@ a:focus-visible { outline: 3px solid currentColor; outline-offset: 4px; }
 }
 
 function modelManifest() {
-  return { ...safeManifest(), scriptJs: "" };
+  const manifest = safeManifest();
+  const ownedStyles = typeof buildModule.createOwnedMotionStyles === "function"
+    ? buildModule.createOwnedMotionStyles(manifest.designNotes.motionMoves)
+    : "";
+  return { ...manifest, stylesCss: manifest.stylesCss.slice(0, -ownedStyles.length), scriptJs: "" };
 }
 
 function setMotionMoves(manifest, moves) {
   const slugs = moves.map((move) => MOTION_SLUGS[move] ?? move);
+  const previousMoves = manifest.designNotes.motionMoves;
+  const previousStyles = typeof buildModule.createOwnedMotionStyles === "function"
+    ? buildModule.createOwnedMotionStyles(previousMoves)
+    : "";
   manifest.designNotes.motionMoves = moves;
   manifest.scriptJs =
     typeof buildModule.createOwnedMotionRuntime === "function"
       ? buildModule.createOwnedMotionRuntime(moves)
       : "";
+  if (previousStyles) {
+    manifest.stylesCss = `${manifest.stylesCss.slice(0, -previousStyles.length)}${buildModule.createOwnedMotionStyles(moves)}`;
+  }
   manifest.indexHtml = manifest.indexHtml.replace(
     /data-motion-moves="[^"]*"/,
     `data-motion-moves="${slugs.join(" ")}"`,
   );
   return manifest;
+}
+
+function appendModelCss(manifest, css) {
+  const ownedStyles = buildModule.createOwnedMotionStyles(manifest.designNotes.motionMoves);
+  manifest.stylesCss = `${manifest.stylesCss.slice(0, -ownedStyles.length)}\n${css}${ownedStyles}`;
 }
 
 function brief() {
@@ -307,6 +328,78 @@ test("owned motion runtime is deterministic, selected move only, and byte exact"
 
   const tampered = { ...result, scriptJs: `${result.scriptJs}\n` };
   assert.throws(() => validateSiteManifest(tampered), /owned motion runtime/i);
+});
+
+test("owned motion CSS is a deterministic final suffix and cannot be altered", async () => {
+  assert.equal(typeof buildModule.createOwnedMotionStyles, "function");
+  const ownedStyles = buildModule.createOwnedMotionStyles(["staged hero entrance"]);
+  assert.equal(ownedStyles, buildModule.createOwnedMotionStyles(["staged hero entrance"]));
+  assert.match(ownedStyles, /prefers-reduced-motion/);
+
+  const result = await buildSite({
+    brief: brief(),
+    structuredRequester: async () => modelManifest(),
+  });
+  assert.ok(result.stylesCss.endsWith(ownedStyles));
+  validateSiteManifest(result);
+
+  const missingByte = { ...result, stylesCss: result.stylesCss.slice(0, -1) };
+  assert.throws(() => validateSiteManifest(missingByte), /owned motion styles/i);
+  const extraByte = { ...result, stylesCss: `${result.stylesCss}\n.model-override { opacity: 0; }` };
+  assert.throws(() => validateSiteManifest(extraByte), /owned motion styles/i);
+});
+
+test("buildSite rejects model CSS that targets Mainstreet owned motion hooks", async () => {
+  const candidate = modelManifest();
+  candidate.stylesCss += "\n[data-motion-target] { opacity: 0.123 !important; }";
+  const result = await buildSite({
+    brief: brief(),
+    structuredRequester: async () => candidate,
+  });
+  assert.equal(result.source, "deterministic-fallback");
+  assert.doesNotMatch(result.stylesCss, /opacity: 0.123 !important/);
+});
+
+test("owned motion contract includes ready gating, rAF refresh, and reduced motion disable state", () => {
+  const styles = buildModule.createOwnedMotionStyles(["pinned chapter passage", "gentle one direction scroll reveals"]);
+  const runtime = buildModule.createOwnedMotionRuntime(["pinned chapter passage", "gentle one direction scroll reveals"]);
+  assert.match(styles, /data-motion-ready/);
+  assert.match(styles, /motion-progress/);
+  assert.match(styles, /prefers-reduced-motion/);
+  assert.match(runtime, /dataset\.motionState = "idle"/);
+  assert.match(runtime, /dataset\.motionState = "disabled"/);
+  assert.match(runtime, /requestAnimationFrame/);
+  assert.match(runtime, /addEventListener\("resize"/);
+  assert.match(runtime, /IntersectionObserver/);
+  assert.match(runtime, /body\.dataset\.motionReady/);
+});
+
+test("source motion targets and panels must remain visible without JavaScript", () => {
+  for (const hiddenState of [
+    "hidden",
+    'aria-hidden="true"',
+    'style="display: none"',
+  ]) {
+    const manifest = safeManifest();
+    manifest.indexHtml = manifest.indexHtml.replace(
+      "<h1>Bread for the day ahead</h1>",
+      `<h1>Bread for the day ahead</h1><p data-motion-target ${hiddenState}>Later target</p>`,
+    );
+    assert.throws(() => validateSiteManifest(manifest), /(?:visible.*motion|motion.*visible|inline style)/i);
+  }
+
+  const interactive = setMotionMoves(safeManifest(), ["horizontal click reel"]);
+  interactive.indexHtml = interactive.indexHtml
+    .replace('data-motion-root="staged-hero-entrance"', 'data-motion-root="horizontal-click-reel"')
+    .replace(
+      "<h1>Bread for the day ahead</h1>",
+      `<h1>Bread for the day ahead</h1>
+        <button type="button" data-motion-control="first">First view</button>
+        <button type="button" data-motion-control="second">Second view</button>
+        <div data-motion-panel="first" hidden><p>First selection</p></div>
+        <div data-motion-panel="second"><p>Second selection</p></div>`,
+    );
+  assert.throws(() => validateSiteManifest(interactive), /(?:visible.*motion.*panel|motion.*panel.*visible)/i);
 });
 
 test("buildSite never accepts model supplied JavaScript bytes", async () => {
@@ -553,7 +646,7 @@ test("validateSiteManifest rejects active or remote content", () => {
   assert.throws(() => validateSiteManifest(scripted), /forbidden html/i);
 
   const remote = safeManifest();
-  remote.stylesCss += "\n.hero { background-image: url(https://example.com/image.jpg); }";
+  appendModelCss(remote, ".hero { background-image: url(https://example.com/image.jpg); }");
   assert.throws(() => validateSiteManifest(remote), /remote or embedded css assets/i);
 
   const unsupportedPolicy = safeManifest();
@@ -594,7 +687,7 @@ test("validateSiteManifest rejects CSS escape sequences", () => {
     '@\\69mport "assets/unplanned.css";',
   ]) {
     const manifest = safeManifest();
-    manifest.stylesCss += `\n${escapedCss}`;
+    appendModelCss(manifest, escapedCss);
     assert.throws(() => validateSiteManifest(manifest), /css.*(?:escape|backslash)/i, escapedCss);
   }
 });
@@ -725,22 +818,58 @@ test("writeSiteFiles writes the fixed public file set without overwrite", async 
   await assert.rejects(writeSiteFiles(siteDir, safeManifest()), /already exists/i);
 });
 
-test("buildRun turns a saved brief into the first immutable cycle", async () => {
+test("buildRun materializes assets before immutable sanitized build provenance", async () => {
   const runDir = path.join(process.cwd(), "tmp", randomUUID(), "runs", "juniper-oven");
   await mkdir(runDir, { recursive: true });
   await writeFile(path.join(runDir, "brief.json"), JSON.stringify(brief()), "utf8");
+  let materializerCalls = 0;
 
   const result = await buildRun({
     runDir,
     buildSiteFn: async () => ({ ...safeManifest(), source: "openai" }),
+    client: { images: { generate: async () => { throw new Error("network must not run"); } } },
+    model: "test-image-model",
+    requestImage: async () => { throw new Error("network must not run"); },
+    materializeAssetsFn: async ({ cycleDir, siteDir, plan, shootDirection, client, model, requestImage }) => {
+      materializerCalls += 1;
+      assert.equal(cycleDir, path.join(runDir, "cycle-01"));
+      assert.equal(shootDirection, safeManifest().designNotes.shootDirection);
+      assert.equal(client.images.generate instanceof Function, true);
+      assert.equal(model, "test-image-model");
+      assert.equal(typeof requestImage, "function");
+      await mkdir(path.join(siteDir, "assets"), { recursive: true });
+      const files = [];
+      for (const item of plan) {
+        const image = createDeterministicPng(item, { width: 8, height: 6 });
+        await writeFile(path.join(siteDir, "assets", item.filename), image, { flag: "wx" });
+        files.push({ filename: item.filename, resolved: false, promptHash: "a".repeat(64) });
+      }
+      const evidence = { schemaVersion: "1.0", allResolved: false, requestCount: 3, successCount: 0, fallbackCount: 3, files };
+      await writeFile(path.join(cycleDir, "assets.json"), JSON.stringify(evidence), { flag: "wx" });
+      return evidence;
+    },
     now: () => new Date("2026-07-17T13:00:00.000Z"),
   });
 
   assert.equal(result.cycle, 1);
+  assert.equal(materializerCalls, 1);
   assert.match(await readFile(path.join(result.siteDir, "index.html"), "utf8"), /Juniper Oven/);
+  assert.match(await readFile(path.join(result.siteDir, "styles.css"), "utf8"), /motion-state/);
+  assert.match(await readFile(path.join(result.siteDir, "script.js"), "utf8"), /requestAnimationFrame/);
+  for (const item of safeManifest().imagePlan) {
+    assert.equal((await readFile(path.join(result.siteDir, "assets", item.filename))).subarray(0, 8).toString("hex"), "89504e470d0a1a0a");
+  }
   const buildRecord = JSON.parse(
     await readFile(path.join(runDir, "cycle-01", "build.json"), "utf8"),
   );
   assert.equal(buildRecord.source, "openai");
   assert.equal(buildRecord.createdAt, "2026-07-17T13:00:00.000Z");
+  assert.deepEqual(buildRecord.assetSummary, {
+    allResolved: false,
+    requestCount: 3,
+    successCount: 0,
+    fallbackCount: 3,
+  });
+  assert.deepEqual(buildRecord.imagePlan, safeManifest().imagePlan);
+  assert.equal(JSON.stringify(buildRecord).includes("network must not run"), false);
 });

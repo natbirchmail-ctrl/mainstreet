@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 
 import {
+  createOwnedMotionStyles,
   hydrateSiteManifest,
   validateSiteManifest,
   writeSiteFiles,
@@ -43,7 +44,7 @@ export async function reviseSite({
         brief,
         currentSite: {
           indexHtml: currentManifest.indexHtml,
-          stylesCss: currentManifest.stylesCss,
+          stylesCss: stripOwnedMotionStyles(currentManifest),
           scriptJs: currentManifest.scriptJs,
           imagePlan: currentManifest.imagePlan,
           designNotes: currentManifest.designNotes,
@@ -153,6 +154,14 @@ export async function reviseRun({
   ]);
 
   return { fromCycle, toCycle, toCycleDir, siteDir, manifest: revisedManifest };
+}
+
+function stripOwnedMotionStyles(manifest) {
+  const ownedStyles = createOwnedMotionStyles(manifest.designNotes.motionMoves);
+  if (!manifest.stylesCss.endsWith(ownedStyles)) {
+    throw new Error("Current site is missing the exact owned motion styles suffix.");
+  }
+  return manifest.stylesCss.slice(0, -ownedStyles.length);
 }
 
 async function readJson(target) {

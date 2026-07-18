@@ -3,12 +3,14 @@ import path from "node:path";
 
 import { requestStructured } from "./lib/openai.js";
 import { resolveInside, writeJsonNew } from "./lib/runs.js";
+import { materializeAssets } from "./assets.js";
 import {
   createOwnedMotionRuntime,
+  createOwnedMotionStyles,
   motionSlugsFor,
 } from "./motion.js";
 
-export { createOwnedMotionRuntime } from "./motion.js";
+export { createOwnedMotionRuntime, createOwnedMotionStyles } from "./motion.js";
 
 const projectRoot = new URL("../", import.meta.url);
 const promptUrl = new URL("prompts/build-system.md", projectRoot);
@@ -73,6 +75,10 @@ export async function buildSite({
 export async function buildRun({
   runDir,
   buildSiteFn = buildSite,
+  materializeAssetsFn = materializeAssets,
+  client,
+  model = process.env.OPENAI_IMAGE_MODEL || "gpt-image-1",
+  requestImage,
   now = () => new Date(),
 }) {
   const briefPath = resolveInside(runDir, "brief.json");
@@ -82,6 +88,15 @@ export async function buildRun({
   const siteDir = resolveInside(cycleDir, "site");
 
   await writeSiteFiles(siteDir, manifest);
+  const assets = await materializeAssetsFn({
+    cycleDir,
+    siteDir,
+    plan: manifest.imagePlan,
+    shootDirection: manifest.designNotes.shootDirection,
+    client,
+    model,
+    requestImage,
+  });
   await writeJsonNew(resolveInside(cycleDir, "build.json"), {
     cycle: 1,
     createdAt: now().toISOString(),
@@ -89,6 +104,7 @@ export async function buildRun({
     fallbackReason: manifest.fallbackReason ?? null,
     designNotes: manifest.designNotes,
     imagePlan: manifest.imagePlan,
+    assetSummary: sanitizeAssetSummary(assets),
   });
 
   return { cycle: 1, cycleDir, siteDir, manifest };
@@ -106,6 +122,7 @@ export function hydrateSiteManifest(manifest) {
   validateModelSiteManifest(manifest);
   const hydrated = {
     ...manifest,
+    stylesCss: `${manifest.stylesCss}\n${createOwnedMotionStyles(manifest.designNotes.motionMoves)}`,
     scriptJs: createOwnedMotionRuntime(manifest.designNotes.motionMoves),
   };
   validateSiteManifest(hydrated);
@@ -150,10 +167,15 @@ function validateManifest(manifest, { modelOutput, allowBuildMetadata }) {
     if (manifest.scriptJs !== "") {
       throw new Error("Model scriptJs must be the empty sentinel.");
     }
+    validateModelMotionCss(manifest.stylesCss);
   } else {
     const expectedRuntime = createOwnedMotionRuntime(motionMoves);
     if (manifest.scriptJs !== expectedRuntime) {
       throw new Error("Site manifest must contain the exact owned motion runtime.");
+    }
+    const expectedStyles = createOwnedMotionStyles(motionMoves);
+    if (!manifest.stylesCss.endsWith(expectedStyles)) {
+      throw new Error("Site manifest must contain the exact owned motion styles suffix.");
     }
   }
 
@@ -161,6 +183,31 @@ function validateManifest(manifest, { modelOutput, allowBuildMetadata }) {
   validateCss(manifest.stylesCss);
   validateVisibleCopy(manifest.indexHtml);
   return manifest;
+}
+
+function validateModelMotionCss(css) {
+  if (/\bdata-motion-(?:root|target|panel|state|visible|selected|progress|ready)\b/i.test(css)) {
+    throw new Error("Model CSS must not target Mainstreet owned motion hooks.");
+  }
+}
+
+function sanitizeAssetSummary(assets) {
+  if (!assets || typeof assets !== "object") {
+    throw new TypeError("Asset materialization did not return evidence.");
+  }
+  const summary = {
+    allResolved: assets.allResolved,
+    requestCount: assets.requestCount,
+    successCount: assets.successCount,
+    fallbackCount: assets.fallbackCount,
+  };
+  if (
+    typeof summary.allResolved !== "boolean" ||
+    Object.values(summary).slice(1).some((value) => !Number.isInteger(value) || value < 0)
+  ) {
+    throw new TypeError("Asset materialization returned invalid summary evidence.");
+  }
+  return summary;
 }
 
 function validateDesignNotes(designNotes) {
@@ -408,6 +455,14 @@ function hasExplicitHiddenState(tag) {
 function validateMotionHooks(html, motionMoves) {
   const expectedSlugs = motionSlugsFor(motionMoves);
   const structure = openingTags(html);
+  const motionTargets = structure.filter(({ raw }) => attributeEntries(raw, "data-motion-target").length === 1);
+  const motionPanels = structure.filter(({ raw }) => attributeEntries(raw, "data-motion-panel").length === 1);
+  if (motionTargets.some((target) => hasExplicitHiddenState(target.raw) || ancestorTagsAt(html, target.index).some(({ raw }) => hasExplicitHiddenState(raw)))) {
+    throw new Error("Every source motion target must remain visible without JavaScript.");
+  }
+  if (motionPanels.some((panel) => hasExplicitHiddenState(panel.raw) || ancestorTagsAt(html, panel.index).some(({ raw }) => hasExplicitHiddenState(raw)))) {
+    throw new Error("Every source motion panel must remain visible without JavaScript.");
+  }
   const declarationTags = structure.filter(({ tagName }) => tagName === "body" || tagName === "main");
   const declarations = declarationTags.flatMap(({ raw }) => attributeEntries(raw, "data-motion-moves"));
   if (declarations.length !== 1 || declarations[0].value !== expectedSlugs.join(" ")) {
@@ -431,7 +486,8 @@ function validateMotionHooks(html, motionMoves) {
       throw new Error("Every motion root must be a complete container element.");
     }
     if (root.entry.value === "staged-hero-entrance" || root.entry.value === "gentle-scroll-reveals") {
-      if (!openingTags(element.inner).some(({ raw }) => attributeEntries(raw, "data-motion-target").length === 1)) {
+      const targets = openingTags(element.inner).filter(({ raw }) => attributeEntries(raw, "data-motion-target").length === 1);
+      if (targets.length === 0) {
         throw new Error("Reveal motion roots must contain data-motion-target elements.");
       }
     }
@@ -847,7 +903,7 @@ footer { display: flex; justify-content: space-between; gap: 1rem; padding: 1.5r
 
   return {
     indexHtml,
-    stylesCss,
+    stylesCss: `${stylesCss}\n${createOwnedMotionStyles(motionMoves)}`,
     scriptJs: createOwnedMotionRuntime(motionMoves),
     imagePlan,
     designNotes: {
