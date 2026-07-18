@@ -6,7 +6,8 @@ import {
   validateSiteManifest,
   writeSiteFiles,
 } from "./build.js";
-import { requestStructured } from "./lib/openai.js";
+import { materializeAssets } from "./assets.js";
+import { requestImage, requestStructured } from "./lib/openai.js";
 import { resolveInside, writeJsonNew } from "./lib/runs.js";
 
 const projectRoot = new URL("../", import.meta.url);
@@ -18,6 +19,7 @@ export async function reviseSite({
   currentManifest,
   critique,
   mechanical,
+  availableAssets,
   model = process.env.OPENAI_MODEL || "gpt-5.6",
   client,
   structuredRequester = requestStructured,
@@ -48,6 +50,7 @@ export async function reviseSite({
           scriptJs: currentManifest.scriptJs,
           imagePlan: currentManifest.imagePlan,
           designNotes: currentManifest.designNotes,
+          availableAssets: sanitizeAvailableAssets(availableAssets),
         },
         critique,
         mechanical,
@@ -75,6 +78,10 @@ export async function reviseRun({
   runDir,
   fromCycle,
   reviseSiteFn = reviseSite,
+  assetMaterializerFn = materializeAssets,
+  imageRequesterFn = requestImage,
+  client,
+  model = process.env.OPENAI_IMAGE_MODEL || "gpt-image-1",
   now = () => new Date(),
 }) {
   if (!Number.isInteger(fromCycle) || fromCycle < 1) {
@@ -95,12 +102,13 @@ export async function reviseRun({
   );
   const currentSiteDir = resolveInside(fromCycleDir, "site");
 
-  const [brief, critique, mechanical, buildRecord, indexHtml, stylesCss, scriptJs] =
+  const [brief, critique, mechanical, buildRecord, priorAssets, indexHtml, stylesCss, scriptJs] =
     await Promise.all([
       readJson(resolveInside(runDir, "brief.json")),
       readJson(resolveInside(fromCycleDir, "critique.json")),
       readJson(resolveInside(fromCycleDir, "mechanical.json")),
       readJson(resolveInside(fromCycleDir, "build.json")),
+      readPriorAssets(resolveInside(fromCycleDir, "assets.json")),
       readFile(resolveInside(currentSiteDir, "index.html"), "utf8"),
       readFile(resolveInside(currentSiteDir, "styles.css"), "utf8"),
       readFile(resolveInside(currentSiteDir, "script.js"), "utf8"),
@@ -118,6 +126,7 @@ export async function reviseRun({
     currentManifest,
     critique,
     mechanical,
+    availableAssets: priorAssets,
   });
 
   const handoff = {
@@ -129,7 +138,7 @@ export async function reviseRun({
     mustKeep: [
       "Confirmed business facts and explicit unknowns",
       "Single page semantic structure",
-      "Owned script and planned local PNG assets only",
+      "Owned local assets and owned motion with visible source without JavaScript",
       "No emoji or visible dash characters",
       "Every current accessibility safeguard",
     ],
@@ -140,6 +149,17 @@ export async function reviseRun({
 
   const siteDir = resolveInside(toCycleDir, "site");
   await writeSiteFiles(siteDir, revisedManifest);
+  const assets = await assetMaterializerFn({
+    cycleDir: toCycleDir,
+    siteDir,
+    plan: revisedManifest.imagePlan,
+    shootDirection: revisedManifest.designNotes.shootDirection,
+    requestImage: imageRequesterFn,
+    client,
+    model,
+    priorAssets,
+    priorSiteDir: currentSiteDir,
+  });
   await Promise.all([
     writeJsonNew(resolveInside(fromCycleDir, "revise.json"), handoff),
     writeJsonNew(resolveInside(toCycleDir, "build.json"), {
@@ -150,6 +170,7 @@ export async function reviseRun({
       fallbackReason: null,
       designNotes: revisedManifest.designNotes,
       imagePlan: revisedManifest.imagePlan,
+      assetSummary: sanitizeAssetSummary(assets),
     }),
   ]);
 
@@ -166,4 +187,54 @@ function stripOwnedMotionStyles(manifest) {
 
 async function readJson(target) {
   return JSON.parse(await readFile(target, "utf8"));
+}
+
+async function readPriorAssets(target) {
+  try {
+    return await readJson(target);
+  } catch (error) {
+    if (error?.code === "ENOENT") {
+      throw new Error("Prior asset evidence assets.json is required for revision.");
+    }
+    throw error;
+  }
+}
+
+function sanitizeAvailableAssets(assets) {
+  if (assets === undefined) return [];
+  if (!assets || !Array.isArray(assets.files)) {
+    throw new TypeError("Prior asset evidence is required for revision.");
+  }
+  return assets.files.map((file) => ({
+    filename: file.filename,
+    path: `assets/${file.filename}`,
+    role: file.role,
+    alt: file.alt,
+    focalPoint: file.focalPoint,
+    mediaType: file.mediaType,
+    bytes: file.bytes,
+    sha256: file.sha256,
+    source: file.source,
+    resolved: file.resolved,
+    errorCode: file.errorCode,
+  }));
+}
+
+function sanitizeAssetSummary(assets) {
+  if (!assets || typeof assets !== "object") {
+    throw new TypeError("Asset materialization did not return evidence.");
+  }
+  const summary = {
+    allResolved: assets.allResolved,
+    requestCount: assets.requestCount,
+    successCount: assets.successCount,
+    fallbackCount: assets.fallbackCount,
+  };
+  if (
+    typeof summary.allResolved !== "boolean" ||
+    Object.values(summary).slice(1).some((value) => !Number.isInteger(value) || value < 0)
+  ) {
+    throw new TypeError("Asset materialization returned invalid summary evidence.");
+  }
+  return summary;
 }

@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 
+import { createDeterministicPng, materializeAssets } from "../../src/assets.js";
 import { createOwnedMotionRuntime, createOwnedMotionStyles, validateSiteManifest } from "../../src/build.js";
 import { reviseRun, reviseSite } from "../../src/revise.js";
 
@@ -71,6 +72,41 @@ function critique() {
   };
 }
 
+function assetSha256(bytes) {
+  return createHash("sha256").update(bytes).digest("hex");
+}
+
+async function writeFirstCycle(runDir, { assetEvidence, siteManifest = manifest() } = {}) {
+  const firstCycle = path.join(runDir, "cycle-01");
+  const siteDir = path.join(firstCycle, "site");
+  await mkdir(siteDir, { recursive: true });
+  await Promise.all([
+    writeFile(path.join(runDir, "brief.json"), JSON.stringify({ business: { name: "Juniper Oven" } }), "utf8"),
+    writeFile(path.join(siteDir, "index.html"), siteManifest.indexHtml, "utf8"),
+    writeFile(path.join(siteDir, "styles.css"), siteManifest.stylesCss, "utf8"),
+    writeFile(path.join(siteDir, "script.js"), siteManifest.scriptJs, "utf8"),
+    writeFile(path.join(firstCycle, "build.json"), JSON.stringify({ designNotes: siteManifest.designNotes, imagePlan: siteManifest.imagePlan }), "utf8"),
+    writeFile(path.join(firstCycle, "critique.json"), JSON.stringify(critique()), "utf8"),
+    writeFile(path.join(firstCycle, "mechanical.json"), JSON.stringify({ passed: true, failures: [] }), "utf8"),
+  ]);
+  if (assetEvidence) {
+    await writeFile(path.join(firstCycle, "assets.json"), JSON.stringify(assetEvidence), "utf8");
+  }
+  return { firstCycle, siteDir };
+}
+
+async function makeResolvedFirstCycle(runDir, siteManifest = manifest()) {
+  const { firstCycle, siteDir } = await writeFirstCycle(runDir, { siteManifest });
+  const assets = await materializeAssets({
+    cycleDir: firstCycle,
+    siteDir,
+    plan: siteManifest.imagePlan,
+    shootDirection: siteManifest.designNotes.shootDirection,
+    requestImage: async ({ prompt }) => createDeterministicPng({ ...siteManifest.imagePlan.find((item) => prompt.endsWith(item.prompt)), prompt }),
+  });
+  return { firstCycle, siteDir, assets };
+}
+
 test("reviseSite supplies current files and fresh critique to the model", async () => {
   let request;
   const revised = await reviseSite({
@@ -96,6 +132,52 @@ test("reviseSite supplies current files and fresh critique to the model", async 
   assert.equal(request.userPayload.critique.score, 76);
 });
 
+test("reviseSite exposes only sanitized available asset descriptors while retaining the authored image plan", async () => {
+  let request;
+  const currentManifest = manifest();
+  await reviseSite({
+    brief: { business: { name: "Juniper Oven" } },
+    currentManifest,
+    critique: critique(),
+    mechanical: { passed: true, failures: [] },
+    availableAssets: {
+      files: currentManifest.imagePlan.map((item, index) => ({
+        ...item,
+        path: `C:\\private\\${item.filename}`,
+        promptHash: "a".repeat(64),
+        mediaType: "image/png",
+        bytes: index + 100,
+        sha256: "b".repeat(64),
+        source: "openai",
+        resolved: true,
+        errorCode: null,
+        providerResponse: "do not expose",
+      })),
+    },
+    structuredRequester: async (value) => {
+      request = value;
+      return manifest("Bread made easier to love", { modelOutput: true });
+    },
+  });
+
+  assert.deepEqual(request.userPayload.currentSite.imagePlan, currentManifest.imagePlan);
+  assert.deepEqual(request.userPayload.currentSite.availableAssets, currentManifest.imagePlan.map((item, index) => ({
+    filename: item.filename,
+    path: `assets/${item.filename}`,
+    role: item.role,
+    alt: item.alt,
+    focalPoint: item.focalPoint,
+    mediaType: "image/png",
+    bytes: index + 100,
+    sha256: "b".repeat(64),
+    source: "openai",
+    resolved: true,
+    errorCode: null,
+  })));
+  assert.equal(JSON.stringify(request.userPayload.currentSite.availableAssets).includes("prompt"), false);
+  assert.equal(JSON.stringify(request.userPayload.currentSite.availableAssets).includes("providerResponse"), false);
+});
+
 test("reviseSite retries one unsafe replacement before accepting it", async () => {
   let calls = 0;
   const unsafe = manifest(undefined, { modelOutput: true });
@@ -118,17 +200,7 @@ test("reviseSite retries one unsafe replacement before accepting it", async () =
 
 test("reviseRun writes a new immutable cycle and a revision handoff", async () => {
   const runDir = path.join(process.cwd(), "tmp", randomUUID(), "run");
-  const firstCycle = path.join(runDir, "cycle-01");
-  await mkdir(path.join(firstCycle, "site"), { recursive: true });
-  await Promise.all([
-    writeFile(path.join(runDir, "brief.json"), JSON.stringify({ business: { name: "Juniper Oven" } }), "utf8"),
-    writeFile(path.join(firstCycle, "site", "index.html"), manifest().indexHtml, "utf8"),
-    writeFile(path.join(firstCycle, "site", "styles.css"), manifest().stylesCss, "utf8"),
-    writeFile(path.join(firstCycle, "site", "script.js"), manifest().scriptJs, "utf8"),
-    writeFile(path.join(firstCycle, "build.json"), JSON.stringify({ designNotes: manifest().designNotes, imagePlan: manifest().imagePlan }), "utf8"),
-    writeFile(path.join(firstCycle, "critique.json"), JSON.stringify(critique()), "utf8"),
-    writeFile(path.join(firstCycle, "mechanical.json"), JSON.stringify({ passed: true, failures: [] }), "utf8"),
-  ]);
+  const { firstCycle } = await makeResolvedFirstCycle(runDir);
 
   const result = await reviseRun({
     runDir,
@@ -148,9 +220,123 @@ test("reviseRun writes a new immutable cycle and a revision handoff", async () =
   );
   const handoff = JSON.parse(await readFile(path.join(firstCycle, "revise.json"), "utf8"));
   assert.deepEqual(handoff.mustFix, critique().revisionBrief.mustFix);
-  assert.ok(handoff.mustKeep.includes("Owned script and planned local PNG assets only"));
+  assert.ok(handoff.mustKeep.includes("Owned local assets and owned motion with visible source without JavaScript"));
   assert.equal(handoff.toCycle, 2);
   assert.match(await readFile(path.join(firstCycle, "site", "index.html"), "utf8"), /Bread for the day ahead/);
+});
+
+test("reviseRun carries verified unchanged assets byte for byte without requesting replacements", async () => {
+  const runDir = path.join(process.cwd(), "tmp", randomUUID(), "run");
+  const { siteDir: priorSiteDir } = await makeResolvedFirstCycle(runDir);
+  const priorBytes = await Promise.all(manifest().imagePlan.map((item) => readFile(path.join(priorSiteDir, "assets", item.filename))));
+  let requests = 0;
+
+  const result = await reviseRun({
+    runDir,
+    fromCycle: 1,
+    reviseSiteFn: async () => ({ ...manifest("A clearer second cycle"), source: "openai-revision" }),
+    requestImage: async () => { requests += 1; throw new Error("must not request"); },
+  });
+
+  assert.equal(requests, 0);
+  for (const [index, item] of manifest().imagePlan.entries()) {
+    const nextBytes = await readFile(path.join(result.siteDir, "assets", item.filename));
+    assert.deepEqual(nextBytes, priorBytes[index]);
+    assert.equal(assetSha256(await readFile(path.join(priorSiteDir, "assets", item.filename))), assetSha256(priorBytes[index]));
+  }
+  assert.deepEqual(JSON.parse(await readFile(path.join(runDir, "cycle-02", "assets.json"), "utf8")).files.map((file) => file.source), ["carried-forward", "carried-forward", "carried-forward"]);
+});
+
+test("reviseRun requests only intentionally changed image plan items and retries unresolved ones", async () => {
+  const runDir = path.join(process.cwd(), "tmp", randomUUID(), "run");
+  const { firstCycle, assets } = await makeResolvedFirstCycle(runDir);
+  const revised = manifest("A clearer second cycle");
+  revised.imagePlan[1] = { ...revised.imagePlan[1], prompt: "Fresh loaves in a revised market display" };
+  assets.files[2] = { ...assets.files[2], resolved: false, source: "deterministic-fallback", errorCode: "IMAGE_REQUEST_FAILED" };
+  await writeFile(path.join(firstCycle, "assets.json"), JSON.stringify(assets), "utf8");
+  let requests = 0;
+
+  const result = await reviseRun({
+    runDir,
+    fromCycle: 1,
+    reviseSiteFn: async () => ({ ...revised, source: "openai-revision" }),
+    imageRequesterFn: async ({ prompt }) => {
+      requests += 1;
+      return createDeterministicPng({ ...revised.imagePlan.find((item) => prompt.endsWith(item.prompt)), prompt });
+    },
+  });
+
+  assert.equal(requests, 2);
+  const nextAssets = JSON.parse(await readFile(path.join(result.toCycleDir, "assets.json"), "utf8"));
+  assert.equal(nextAssets.files[0].source, "carried-forward");
+  assert.equal(nextAssets.files[1].source, "openai");
+  assert.equal(nextAssets.files[2].source, "openai");
+});
+
+test("reviseRun regenerates assets when shoot direction changes", async () => {
+  const runDir = path.join(process.cwd(), "tmp", randomUUID(), "run");
+  await makeResolvedFirstCycle(runDir);
+  const revised = manifest("A clearer second cycle");
+  revised.designNotes = { ...revised.designNotes, shootDirection: "Cool editorial light and precise overhead composition" };
+  let requests = 0;
+
+  await reviseRun({
+    runDir,
+    fromCycle: 1,
+    reviseSiteFn: async () => ({ ...revised, source: "openai-revision" }),
+    imageRequesterFn: async ({ prompt }) => {
+      requests += 1;
+      return createDeterministicPng({ ...revised.imagePlan.find((item) => prompt.endsWith(item.prompt)), prompt });
+    },
+  });
+
+  assert.equal(requests, 3);
+});
+
+test("reviseRun fails closed for missing or mismatched prior asset evidence", async () => {
+  const missingRunDir = path.join(process.cwd(), "tmp", randomUUID(), "run");
+  await writeFirstCycle(missingRunDir);
+  await assert.rejects(
+    reviseRun({ runDir: missingRunDir, fromCycle: 1, reviseSiteFn: async () => ({ ...manifest(), source: "openai-revision" }) }),
+    /prior asset evidence.*assets\.json/i,
+  );
+
+  const mismatchRunDir = path.join(process.cwd(), "tmp", randomUUID(), "run");
+  const { siteDir } = await makeResolvedFirstCycle(mismatchRunDir);
+  await writeFile(path.join(siteDir, "assets", manifest().imagePlan[0].filename), Buffer.from("changed"));
+  await assert.rejects(
+    reviseRun({ runDir: mismatchRunDir, fromCycle: 1, reviseSiteFn: async () => ({ ...manifest(), source: "openai-revision" }), requestImage: async () => { throw new Error("must not request"); } }),
+    /prior asset digest/i,
+  );
+  await assert.rejects(readFile(path.join(mismatchRunDir, "cycle-02", "assets.json")));
+});
+
+test("reviseRun records sanitized next cycle asset evidence and preserves the prior cycle", async () => {
+  const runDir = path.join(process.cwd(), "tmp", randomUUID(), "run");
+  const { firstCycle, siteDir } = await makeResolvedFirstCycle(runDir);
+  const priorSource = await Promise.all(["index.html", "styles.css", "script.js"].map((filename) => readFile(path.join(siteDir, filename), "utf8")));
+  const priorAssets = await Promise.all(manifest().imagePlan.map((item) => readFile(path.join(siteDir, "assets", item.filename))));
+
+  const result = await reviseRun({
+    runDir,
+    fromCycle: 1,
+    reviseSiteFn: async () => ({ ...manifest("A clearer second cycle"), source: "openai-revision" }),
+    requestImage: async () => { throw new Error("must not request"); },
+  });
+
+  const buildRecord = JSON.parse(await readFile(path.join(result.toCycleDir, "build.json"), "utf8"));
+  assert.deepEqual(buildRecord.imagePlan, manifest().imagePlan);
+  assert.deepEqual(buildRecord.designNotes, manifest().designNotes);
+  assert.deepEqual(buildRecord.assetSummary, { allResolved: true, requestCount: 0, successCount: 0, fallbackCount: 0 });
+  assert.equal(JSON.stringify(buildRecord).includes("must not request"), false);
+  assert.deepEqual(
+    await Promise.all(["index.html", "styles.css", "script.js"].map((filename) => readFile(path.join(firstCycle, "site", filename), "utf8"))),
+    priorSource,
+  );
+  assert.deepEqual(
+    await Promise.all(manifest().imagePlan.map((item) => readFile(path.join(firstCycle, "site", "assets", item.filename))),),
+    priorAssets,
+  );
 });
 
 test("revision prompt requests the expanded model sentinel contract", async () => {
@@ -161,6 +347,9 @@ test("revision prompt requests the expanded model sentinel contract", async () =
   assert.match(prompt, /empty `scriptJs` sentinel/i);
   assert.match(prompt, /appends the exact owned motion CSS/i);
   assert.match(prompt, /planned local PNG/i);
+  assert.match(prompt, /preserve existing image plan and assets/i);
+  assert.match(prompt, /reuse filenames and prompts for unchanged assets/i);
+  assert.match(prompt, /new filename or changed prompt only for an intentional replacement/i);
   assert.match(prompt, /data-motion-moves/i);
   for (const [move, slug] of [
     ["pinned chapter passage", "pinned-chapter-passage"],
