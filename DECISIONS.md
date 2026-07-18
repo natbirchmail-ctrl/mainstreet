@@ -36,6 +36,7 @@ Out of scope: modifying the production factory, importing production customer co
 - DECISION: the canonical production alias is the reported URL. The hash deployment URL is retained as deployment metadata because a newly created hash route may lag or be unavailable while the production alias is healthy.
 - DECISION: brand files supplied by the project owner are authorized for this public hackathon repository. Four required assets are tracked. The full source extract is retained only in the ignored recovery area.
 - DECISION: Mainstreet is repository-only software for the hackathon. The package is private to prevent accidental npm publication, while its local `mainstreet` binary remains available through `npm link`.
+- DECISION: the first public push will contain a reconstructed `main` history that preserves commit authors, messages, and timestamps while generalizing two early process references. The original objects remain recoverable in an ignored bundle and a local-only backup ref.
 
 ## Security controls
 
@@ -52,6 +53,8 @@ Out of scope: modifying the production factory, importing production customer co
 - Attempt 4: the first Pages upload completed, but immediate verification used the hash route and degraded to local serving. The record was archived intact. A read back proved the production alias healthy.
 - Attempt 5: the next deployment read misidentified Wrangler's table shaped JSON and tried to recreate the existing project. The fallback record was archived intact, the parser received a regression test, and the corrected deployment verified the production alias with HTTP 200.
 - Attempt 6: the original supplied brand archive disappeared during the build while its extracted files remained unchanged. A new archive of those files and the full source extract were retained in `.trash/`; nothing was discarded.
+- Attempt 7: the public live audit found 12 pixels of overflow at a 320 pixel viewport and proved that HTTP 200 alone could briefly verify a stale Pages alias. The critic added a narrow viewport gate, deployment verification added an exact content digest, the prompts were hardened, and a clean rerun improved from 84 to 86 with a `ship` verdict.
+- Attempt 8: the Cloudflare credential variables were intentionally blanked for an isolated deployment copy. The CLI bound `127.0.0.1:4601`, recorded a verified local fallback, returned the selected site with HTTP 200, and left no listener after the smoke test.
 
 ## Known prototype limits
 

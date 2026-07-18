@@ -74,9 +74,9 @@ mainstreet/
 
 ## Deliverables checklist (hackathon requirements)
 
-- [ ] Functional project
-- [ ] Text description of features (goes in Devpost form; draft it in README)
+- [x] Functional project
+- [x] Text description of features (goes in Devpost form; draft it in README)
 - [ ] Video under 3 minutes on YouTube showing Codex/GPT-5.6 usage
 - [ ] Public repo
-- [ ] README documenting collaboration with Codex
-- [ ] Testing/installation instructions
+- [x] README documenting collaboration with Codex
+- [x] Testing/installation instructions
