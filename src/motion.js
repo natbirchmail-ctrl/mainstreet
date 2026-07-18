@@ -134,10 +134,10 @@ function runtimeBlock(move, slug) {
   }
   if (move === "staged hero entrance") {
     return `${start}
-        window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
           root.dataset.motionState = "active";
-          reveal(root);
-        }));${end}`;
+          window.requestAnimationFrame(() => reveal(root));
+        });${end}`;
   }
   return `${start}
         const targets = [...root.querySelectorAll("[data-motion-target]")];

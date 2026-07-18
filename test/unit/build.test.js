@@ -1,11 +1,15 @@
 import assert from "node:assert/strict";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 
 import * as buildModule from "../../src/build.js";
-import { createDeterministicPng } from "../../src/assets.js";
+import {
+  createDeterministicPng,
+  materializeAssets,
+  validatePngBuffer,
+} from "../../src/assets.js";
 
 const {
   buildSite,
@@ -186,6 +190,10 @@ function appendModelCss(manifest, css) {
   manifest.stylesCss = `${manifest.stylesCss.slice(0, -ownedStyles.length)}\n${css}${ownedStyles}`;
 }
 
+function sha256(value) {
+  return createHash("sha256").update(value).digest("hex");
+}
+
 function brief() {
   return {
     business: {
@@ -314,7 +322,7 @@ test("builder prompt states the minimum expanded response and safety contract", 
 test("owned motion runtime is deterministic, selected move only, and byte exact", async () => {
   assert.equal(typeof buildModule.createOwnedMotionRuntime, "function");
   const staged = buildModule.createOwnedMotionRuntime(["staged hero entrance"]);
-  assert.equal(staged, buildModule.createOwnedMotionRuntime(["staged hero entrance"]));
+  assert.equal(sha256(staged), "8338c7eca7f263025e8db69bc5b8892d974ddca5d1915ca652de1ded12989de6");
   assert.match(staged, /staged-hero-entrance/);
   assert.doesNotMatch(staged, /horizontal-click-reel/);
 
@@ -323,7 +331,7 @@ test("owned motion runtime is deterministic, selected move only, and byte exact"
     structuredRequester: async () => modelManifest(),
   });
   assert.equal(result.source, "openai");
-  assert.equal(result.scriptJs, staged);
+  assert.equal(sha256(result.scriptJs), "8338c7eca7f263025e8db69bc5b8892d974ddca5d1915ca652de1ded12989de6");
   validateSiteManifest(result);
 
   const tampered = { ...result, scriptJs: `${result.scriptJs}\n` };
@@ -333,7 +341,7 @@ test("owned motion runtime is deterministic, selected move only, and byte exact"
 test("owned motion CSS is a deterministic final suffix and cannot be altered", async () => {
   assert.equal(typeof buildModule.createOwnedMotionStyles, "function");
   const ownedStyles = buildModule.createOwnedMotionStyles(["staged hero entrance"]);
-  assert.equal(ownedStyles, buildModule.createOwnedMotionStyles(["staged hero entrance"]));
+  assert.equal(sha256(ownedStyles), "70c6490e51b4fd83e65da84f465638393c12318e3088bc4cedae24fd749232b2");
   assert.match(ownedStyles, /prefers-reduced-motion/);
 
   const result = await buildSite({
@@ -363,6 +371,8 @@ test("buildSite rejects model CSS that targets Mainstreet owned motion hooks", a
 test("owned motion contract includes ready gating, rAF refresh, and reduced motion disable state", () => {
   const styles = buildModule.createOwnedMotionStyles(["pinned chapter passage", "gentle one direction scroll reveals"]);
   const runtime = buildModule.createOwnedMotionRuntime(["pinned chapter passage", "gentle one direction scroll reveals"]);
+  assert.equal(sha256(styles), "202aeecd9909f8f0bb06ce4f2a939c90c92ba13c3ba31fd61c531e14999d2e82");
+  assert.equal(sha256(runtime), "4000a8b1c3acf92e40401bbf75c1b883e7292045b550dd929b36148380bfa394");
   assert.match(styles, /data-motion-ready/);
   assert.match(styles, /motion-progress/);
   assert.match(styles, /prefers-reduced-motion/);
@@ -372,6 +382,39 @@ test("owned motion contract includes ready gating, rAF refresh, and reduced moti
   assert.match(runtime, /addEventListener\("resize"/);
   assert.match(runtime, /IntersectionObserver/);
   assert.match(runtime, /body\.dataset\.motionReady/);
+});
+
+test("staged owned motion paints the active hidden state before revealing targets", () => {
+  const frames = [];
+  const target = { dataset: {} };
+  const root = {
+    dataset: {},
+    querySelectorAll: () => [target],
+  };
+  const body = { dataset: {} };
+  const windowStub = {
+    matchMedia: () => ({ matches: false }),
+    requestAnimationFrame: (callback) => frames.push(callback),
+  };
+  const documentStub = {
+    body,
+    querySelector: () => root,
+  };
+
+  new Function("window", "document", buildModule.createOwnedMotionRuntime(["staged hero entrance"]))(
+    windowStub,
+    documentStub,
+  );
+  assert.equal(root.dataset.motionState, "idle");
+  assert.equal(target.dataset.motionVisible, undefined);
+  assert.equal(body.dataset.motionReady, "true");
+
+  frames.shift()();
+  assert.equal(root.dataset.motionState, "active");
+  assert.equal(target.dataset.motionVisible, undefined);
+
+  frames.shift()();
+  assert.equal(target.dataset.motionVisible, "true");
 });
 
 test("source motion targets and panels must remain visible without JavaScript", () => {
@@ -872,4 +915,46 @@ test("buildRun materializes assets before immutable sanitized build provenance",
   });
   assert.deepEqual(buildRecord.imagePlan, safeManifest().imagePlan);
   assert.equal(JSON.stringify(buildRecord).includes("network must not run"), false);
+});
+
+test("buildRun keeps a complete deterministic site when every real image request fails", async () => {
+  const runDir = path.join(process.cwd(), "tmp", randomUUID(), "runs", "all-fallback");
+  await mkdir(runDir, { recursive: true });
+  await writeFile(path.join(runDir, "brief.json"), JSON.stringify(brief()), "utf8");
+  let requests = 0;
+
+  const result = await buildRun({
+    runDir,
+    buildSiteFn: async () => ({ ...safeManifest(), source: "openai" }),
+    materializeAssetsFn: materializeAssets,
+    requestImage: async () => {
+      requests += 1;
+      throw new Error("provider response must remain private");
+    },
+    now: () => new Date("2026-07-17T14:00:00.000Z"),
+  });
+
+  assert.equal(requests, safeManifest().imagePlan.length);
+  for (const filename of ["index.html", "styles.css", "script.js"]) {
+    assert.ok((await readFile(path.join(result.siteDir, filename))).length > 0, filename);
+  }
+  for (const item of safeManifest().imagePlan) {
+    const image = await readFile(path.join(result.siteDir, "assets", item.filename));
+    assert.equal(validatePngBuffer(image, { expectedWidth: 1536, expectedHeight: 1024 }), image);
+  }
+
+  const assets = JSON.parse(await readFile(path.join(result.cycleDir, "assets.json"), "utf8"));
+  assert.equal(assets.allResolved, false);
+  assert.deepEqual(assets.files.map((file) => file.resolved), [false, false, false]);
+  assert.deepEqual(assets.files.map((file) => file.errorCode), ["IMAGE_REQUEST_FAILED", "IMAGE_REQUEST_FAILED", "IMAGE_REQUEST_FAILED"]);
+  const buildRecord = JSON.parse(await readFile(path.join(result.cycleDir, "build.json"), "utf8"));
+  assert.deepEqual(buildRecord.imagePlan, safeManifest().imagePlan);
+  assert.deepEqual(buildRecord.assetSummary, {
+    allResolved: false,
+    requestCount: 3,
+    successCount: 0,
+    fallbackCount: 3,
+  });
+  assert.equal(JSON.stringify(buildRecord).includes("provider response"), false);
+  assert.equal(Object.hasOwn(buildRecord, "files"), false);
 });
