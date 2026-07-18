@@ -253,6 +253,9 @@ test("reviseRun requests only intentionally changed image plan items and retries
   const revised = manifest("A clearer second cycle");
   revised.imagePlan[1] = { ...revised.imagePlan[1], prompt: "Fresh loaves in a revised market display" };
   assets.files[2] = { ...assets.files[2], resolved: false, source: "deterministic-fallback", errorCode: "IMAGE_REQUEST_FAILED" };
+  assets.allResolved = false;
+  assets.successCount -= 1;
+  assets.fallbackCount += 1;
   await writeFile(path.join(firstCycle, "assets.json"), JSON.stringify(assets), "utf8");
   let requests = 0;
 
