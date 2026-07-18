@@ -14,6 +14,7 @@ const schemaUrl = new URL("prompts/schemas/critique.schema.json", projectRoot);
 const VIEWPORTS = {
   desktop: { width: 1440, height: 900, filename: "desktop-home.png" },
   mobile: { width: 390, height: 844, filename: "mobile-home.png" },
+  narrow: { width: 320, height: 800, filename: null },
 };
 const DIMENSION_MAXIMUMS = {
   layout: 18,
@@ -66,8 +67,13 @@ export async function captureCycle({
       viewport: VIEWPORTS.mobile,
       outputPath: mobilePath,
     });
+    const narrow = await captureViewport({
+      browser,
+      previewUrl: preview.url,
+      viewport: VIEWPORTS.narrow,
+    });
 
-    const failures = collectMechanicalFailures({ desktop, mobile });
+    const failures = collectMechanicalFailures({ desktop, mobile, narrow });
     const mechanical = {
       schemaVersion: "1.0",
       cycle,
@@ -76,9 +82,18 @@ export async function captureCycle({
       metrics: {
         desktop: desktop.metrics,
         mobile: mobile.metrics,
-        consoleErrors: [...desktop.consoleErrors, ...mobile.consoleErrors],
-        pageErrors: [...desktop.pageErrors, ...mobile.pageErrors],
-        externalRequests: [...desktop.externalRequests, ...mobile.externalRequests],
+        narrow: narrow.metrics,
+        consoleErrors: [
+          ...desktop.consoleErrors,
+          ...mobile.consoleErrors,
+          ...narrow.consoleErrors,
+        ],
+        pageErrors: [...desktop.pageErrors, ...mobile.pageErrors, ...narrow.pageErrors],
+        externalRequests: [
+          ...desktop.externalRequests,
+          ...mobile.externalRequests,
+          ...narrow.externalRequests,
+        ],
       },
     };
     const capturedAt = now().toISOString();
@@ -361,7 +376,9 @@ async function captureViewport({ browser, previewUrl, viewport, outputPath }) {
       };
     });
     const visibleText = await page.locator("body").innerText();
-    await page.screenshot({ path: outputPath, fullPage: true, animations: "disabled" });
+    if (outputPath) {
+      await page.screenshot({ path: outputPath, fullPage: true, animations: "disabled" });
+    }
     return { metrics, visibleText, consoleErrors, pageErrors, externalRequests };
   } finally {
     await context.close();

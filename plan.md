@@ -12,8 +12,8 @@ An AI website generator for local small businesses. One input: the business name
 You are the sole code author. This plan is written so you can run the entire build without stopping to ask permission. Follow these rules:
 
 1. **Never stop to ask "may I."** Make the call, note it in `DECISIONS.md`, keep moving. The only thing you may stop for is a missing secret (see rule 4).
-2. **Reference the production pipeline freely.** The private production factory contains proven intake templates, critic-loop prompts, a signature moves catalog, and real run artifacts (screenshots, critiques). Read it only as a reference. Port the ideas. Write the code fresh in this repo — no files copied verbatim, because the submitted work must be new and the commit history proves when it was written.
-3. **This repo goes public for judging.** Nothing sensitive gets committed, ever: no API keys, no tokens, no customer names from the production factory, no workspace paths in committed files (this plan.md is the one exception — scrub the workspace path from it before the final commit, or move it to a `docs/` note with paths generalized).
+2. **Use the approved reference workflow only for general patterns.** Study its intake, critique, and evidence ideas. Write every file fresh in this repository. Do not copy source, prompts, customer data, or artifacts.
+3. **This repo goes public for judging.** Nothing sensitive gets committed, ever: no API keys, tokens, customer names from a reference system, private paths, or credential source metadata.
 4. **Secrets ladder — never block, degrade:**
    - `OPENAI_API_KEY` missing → this is the only hard stop. Print exactly what is needed and where to put it (`.env`), then wait.
    - `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` missing → do NOT stop. Fall back to `mainstreet serve`, which serves the finished site on `http://127.0.0.1:4601/` and prints the URL. Deploy is a bonus, not a gate.
@@ -62,7 +62,7 @@ mainstreet/
 - **Day 1 (Jul 17/18):** repo + scaffold, intake agent working, first build agent output rendering in a browser. Commit milestone: "first generated site."
 - **Day 2 (Jul 18/19):** critic loop end to end with saved artifacts, revise cycle working, deploy + serve commands. Commit milestone: "full pipeline."
 - **Day 3 (Jul 19/20):** quality passes on prompts (this is where the judging is won — iterate on generated-site design quality using the critic scores), 3 example runs committed in `runs/`, optional web UI.
-- **Day 4 (Jul 20/21):** README with "Built with Codex" section, DEMO.md video script, scrub pass (no secrets, no customer names, workspace paths generalized), final commits well before 5 PM PT.
+- **Day 4 (Jul 20/21):** README with "Built with Codex" section, DEMO.md video script, scrub pass, and final commits well before 5 PM PT.
 
 ## Definition of done
 

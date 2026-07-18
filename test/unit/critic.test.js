@@ -127,6 +127,7 @@ test("captureCycle creates deterministic desktop and mobile evidence", async () 
   const evidence = await captureCycle({ siteDir, cycleDir, port: 4600 });
   assert.equal(evidence.mechanical.metrics.desktop.viewportWidth, 1440);
   assert.equal(evidence.mechanical.metrics.mobile.viewportWidth, 390);
+  assert.equal(evidence.mechanical.metrics.narrow.viewportWidth, 320);
   assert.equal(evidence.mechanical.metrics.desktop.horizontalOverflow, false);
   assert.equal(evidence.mechanical.metrics.mobile.horizontalOverflow, false);
   assert.equal(evidence.mechanical.passed, true);
@@ -170,7 +171,7 @@ test("runCriticCycle uses source review when screenshot capture fails", async ()
     runDir,
     cycle: 1,
     captureCycleFn: async () => {
-      throw new Error("browser unavailable at C:\\private\\path");
+      throw new Error("browser unavailable at C:\\example\\site");
     },
     critiqueSourceFn: async () => normalizeCritique(rawCritique()),
   });

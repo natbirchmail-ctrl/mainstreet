@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { createHash } from "node:crypto";
 import { access, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -69,7 +70,15 @@ export async function deployToPages({
       `${deployResult.stdout}\n${deployResult.stderr}`,
     );
     const url = `https://${projectName}.pages.dev/`;
-    const verification = await verifyDeployment({ url, fetchFn, sleep });
+    const expectedDigest = digest(
+      await readFile(resolveInside(siteDir, "index.html")),
+    );
+    const verification = await verifyDeployment({
+      url,
+      expectedDigest,
+      fetchFn,
+      sleep,
+    });
 
     return {
       mode: "cloudflare",
@@ -213,7 +222,7 @@ export function runWrangler(args, { env = process.env } = {}) {
   });
 }
 
-async function verifyDeployment({ url, fetchFn, sleep }) {
+async function verifyDeployment({ url, expectedDigest, fetchFn, sleep }) {
   let status = null;
   for (let attempt = 1; attempt <= 7; attempt += 1) {
     try {
@@ -222,7 +231,8 @@ async function verifyDeployment({ url, fetchFn, sleep }) {
         signal: AbortSignal.timeout(5_000),
       });
       status = response.status;
-      if (response.ok) {
+      const bodyDigest = digest(Buffer.from(await response.arrayBuffer()));
+      if (response.ok && bodyDigest === expectedDigest) {
         return { verified: true, status };
       }
     } catch {
@@ -233,6 +243,10 @@ async function verifyDeployment({ url, fetchFn, sleep }) {
     }
   }
   throw codedError("Cloudflare deployment could not be verified.", "VERIFY_FAILED");
+}
+
+function digest(value) {
+  return createHash("sha256").update(value).digest("hex");
 }
 
 function assertProjectName(value) {

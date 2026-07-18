@@ -8,11 +8,11 @@ Commit to one coherent visual idea before writing code. Implement the brief's ae
 
 ## Content integrity
 
-Use only the supplied brief. Do not invent contact details, hours, awards, reviews, prices, certifications, years in business, people, or addresses. Do not present missing facts as real. Inferred offerings may be described with careful general language. Do not use fake testimonials or placeholder copy. Visible sentences must not contain emojis or dash and hyphen characters.
+Use only the supplied brief. Do not invent contact details, hours, awards, reviews, prices, certifications, years in business, people, or addresses. Do not present missing facts as real. Inferred offerings may be described with careful general language. Do not use fake testimonials or placeholder copy. If contact or visit facts are unavailable, do not make contact or visiting the primary action and do not build a large unavailable information module. Lead visitors to confirmed services or story content instead. One concise factual note is enough. Visible sentences must not contain emojis or dash and hyphen characters.
 
 ## Required page
 
-Create a single responsive page with a useful skip link, restrained header navigation, a distinctive hero, offerings or services, an about or story section, an honest contact section, and a footer. Use semantic landmarks and one clear `h1`. Make the initial mobile layout excellent, then enhance it for wide screens. Interactive targets must be comfortable on touch screens. Include strong keyboard focus styles and a reduced motion mode.
+Create a single responsive page with a useful skip link, restrained header navigation, a distinctive hero, offerings or services, an about or story section, an honest closing section, and a footer. Use semantic landmarks and one clear `h1`. Make the initial mobile layout excellent at widths from 320 pixels upward, then enhance it for wide screens. Do not use fixed minimum page widths or `100vw` layouts that create horizontal overflow. Body copy must stay at least 16 pixels on small screens. Utility copy must stay at least 14 pixels. Primary controls and disclosure rows must provide 44 pixel touch targets. Include strong keyboard focus styles and a reduced motion mode.
 
 ## Technical boundary
 

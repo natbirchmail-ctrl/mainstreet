@@ -34,6 +34,10 @@ test("deployToPages returns the local fallback when credentials are absent", asy
 
 test("deployToPages reads the project, uploads, and verifies the returned URL", async () => {
   const calls = [];
+  const siteDir = path.join(process.cwd(), "tmp", randomUUID(), "site");
+  const expectedHtml = "<!doctype html><title>Mainstreet current</title>";
+  await mkdir(siteDir, { recursive: true });
+  await writeFile(path.join(siteDir, "index.html"), expectedHtml, "utf8");
   const runner = async (args) => {
     calls.push(args);
     if (args.join(" ").includes("project list")) {
@@ -51,11 +55,11 @@ test("deployToPages reads the project, uploads, and verifies the returned URL", 
   };
 
   const result = await deployToPages({
-    siteDir: path.join(process.cwd(), "tmp", "site"),
+    siteDir,
     projectName: "mainstreet-hackathon",
     env: credentials,
     runner,
-    fetchFn: async () => new Response("<!doctype html><title>Mainstreet</title>", { status: 200 }),
+    fetchFn: async () => new Response(expectedHtml, { status: 200 }),
     sleep: async () => {},
   });
 
@@ -69,6 +73,9 @@ test("deployToPages reads the project, uploads, and verifies the returned URL", 
 
 test("deployToPages creates a missing project noninteractively before upload", async () => {
   const calls = [];
+  const siteDir = path.join(process.cwd(), "tmp", randomUUID(), "site");
+  await mkdir(siteDir, { recursive: true });
+  await writeFile(path.join(siteDir, "index.html"), "current deployment", "utf8");
   const runner = async (args) => {
     calls.push(args);
     if (args.join(" ").includes("project list")) {
@@ -85,11 +92,11 @@ test("deployToPages creates a missing project noninteractively before upload", a
   };
 
   const result = await deployToPages({
-    siteDir: process.cwd(),
+    siteDir,
     projectName: "mainstreet-hackathon",
     env: credentials,
     runner,
-    fetchFn: async () => new Response("ok", { status: 200 }),
+    fetchFn: async () => new Response("current deployment", { status: 200 }),
     sleep: async () => {},
   });
 
@@ -97,6 +104,48 @@ test("deployToPages creates a missing project noninteractively before upload", a
   assert.ok(createCall);
   assert.ok(createCall.includes("--production-branch"));
   assert.equal(result.mode, "cloudflare");
+});
+
+test("deployToPages waits until the canonical alias serves the selected site", async () => {
+  const siteDir = path.join(process.cwd(), "tmp", randomUUID(), "site");
+  const expectedHtml = "<!doctype html><title>New release</title>";
+  await mkdir(siteDir, { recursive: true });
+  await writeFile(path.join(siteDir, "index.html"), expectedHtml, "utf8");
+  let fetches = 0;
+  let sleeps = 0;
+
+  const result = await deployToPages({
+    siteDir,
+    projectName: "mainstreet-hackathon",
+    env: credentials,
+    runner: async (args) => {
+      if (args.join(" ").includes("project list")) {
+        return {
+          exitCode: 0,
+          stdout: JSON.stringify([{ name: "mainstreet-hackathon" }]),
+          stderr: "",
+        };
+      }
+      return {
+        exitCode: 0,
+        stdout: "https://new.mainstreet-hackathon.pages.dev",
+        stderr: "",
+      };
+    },
+    fetchFn: async () => {
+      fetches += 1;
+      return new Response(fetches === 1 ? "previous deployment" : expectedHtml, {
+        status: 200,
+      });
+    },
+    sleep: async () => {
+      sleeps += 1;
+    },
+  });
+
+  assert.equal(result.verified, true);
+  assert.equal(fetches, 2);
+  assert.equal(sleeps, 1);
 });
 
 test("deployToPages degrades to local serving after a Cloudflare failure", async () => {

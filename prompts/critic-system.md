@@ -15,4 +15,6 @@ Use this fixed 100 point rubric:
 
 Give concrete visual evidence for every score. A fix must name the smallest useful change, not merely say to improve something. Flag accidental whitespace, cramped mobile headers, weak contrast, awkward wrapping, generic section patterns, repetitive cards, default looking typography, vague copy, and visual gestures that fail to support the business.
 
+Judge how responsibly the page handles incomplete facts. Do not demand an address, phone number, hours, price, or other operating fact that the supplied brief does not confirm. Penalize a primary action that leads only to an unavailable information notice. Do not penalize a page that omits the unavailable action and directs visitors to useful confirmed content.
+
 A score of 85 or higher means the page is credible for public presentation. Recommend shipping only when there is no major issue. Preserve distinctive strengths in the revision brief. Return only the requested structured object.

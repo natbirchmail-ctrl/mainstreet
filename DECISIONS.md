@@ -22,7 +22,7 @@ Out of scope: modifying the production factory, importing production customer co
 ### Assumptions
 
 - ASSUMPTION: `plan.md` is the approved product design. The explicit autonomous build instruction replaces any additional design approval gate.
-- ASSUMPTION: plain ESM JavaScript on Node.js 20 is the fastest reliable clean-room implementation.
+- ASSUMPTION: plain ESM JavaScript on Node.js 22 or newer is the fastest reliable clean-room implementation.
 - ASSUMPTION: helper agents may inspect, research, and verify, but only this root Codex session authors repository files.
 - ASSUMPTION: every cleanup target moves under `.trash/`; nothing is hard-deleted.
 - ASSUMPTION: absent Cloudflare credentials select the documented local server fallback and do not fail a run.
@@ -34,12 +34,14 @@ Out of scope: modifying the production factory, importing production customer co
 - DECISION: each cycle is immutable. The final selector prefers mechanically clean cycles, then chooses the highest score, with a later cycle winning a tie.
 - DECISION: Cloudflare delivery uses the project local pinned Wrangler executable and the stable `mainstreet-hackathon` Pages project. This keeps the public prototype self contained while honoring the authorized least privilege Pages credential.
 - DECISION: the canonical production alias is the reported URL. The hash deployment URL is retained as deployment metadata because a newly created hash route may lag or be unavailable while the production alias is healthy.
+- DECISION: brand files supplied by the project owner are authorized for this public hackathon repository. Four required assets are tracked. The full source extract is retained only in the ignored recovery area.
+- DECISION: Mainstreet is repository-only software for the hackathon. The package is private to prevent accidental npm publication, while its local `mainstreet` binary remains available through `npm link`.
 
 ## Security controls
 
 - Secrets live only in `.env`, which is ignored before the first commit.
 - `.env.example` contains names only.
-- Public artifacts must not contain local machine paths, production customer names, vault metadata, tokens, or copied production source.
+- Public artifacts must not contain local machine paths, production customer names, credential source metadata, tokens, or copied production source.
 - Secret scanning and full-history scanning are required before public release.
 
 ## Attempt log
@@ -49,7 +51,10 @@ Out of scope: modifying the production factory, importing production customer co
 - Attempt 3: the initial dependency tree was moved intact to `.trash/` after a newly published Wrangler release failed the seven day package age gate. Wrangler was pinned to a mature release, the lockfile was regenerated, package provenance checks passed, and `npm audit` reported zero vulnerabilities.
 - Attempt 4: the first Pages upload completed, but immediate verification used the hash route and degraded to local serving. The record was archived intact. A read back proved the production alias healthy.
 - Attempt 5: the next deployment read misidentified Wrangler's table shaped JSON and tried to recreate the existing project. The fallback record was archived intact, the parser received a regression test, and the corrected deployment verified the production alias with HTTP 200.
+- Attempt 6: the original supplied brand archive disappeared during the build while its extracted files remained unchanged. A new archive of those files and the full source extract were retained in `.trash/`; nothing was discarded.
 
-## Found, not fixed
+## Known prototype limits
 
-None.
+- All three demonstration runs improved, but their final critics still returned `revise` because the input lacked confirmed operating details or the rendered mobile design retained quality findings.
+- Fast mode produces a concept site. A real business launch still requires verified facts, owner approval, and human review.
+- The shared Cloudflare Pages alias hosts one promoted example at a time. Per-deployment preview URLs remain in each deployment artifact.
