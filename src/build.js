@@ -249,11 +249,12 @@ function validateHtml(html, imagePlan, motionMoves) {
 }
 
 function validateCsp(html) {
-  if (/\bframe-ancestors\b/i.test(html)) {
+  const parsedHtml = stripHtmlComments(html);
+  if (/\bframe-ancestors\b/i.test(parsedHtml)) {
     throw new Error("frame-ancestors is not valid in an HTML meta policy.");
   }
-  const heads = pairedElements(html, "head");
-  const policies = openingTags(html)
+  const heads = pairedElements(parsedHtml, "head");
+  const policies = openingTags(parsedHtml)
     .filter(({ tagName }) => tagName === "meta")
     .filter(({ raw }) => singleAttribute(raw, "http-equiv")?.toLowerCase() === "content-security-policy")
     .map(({ raw }) => singleAttribute(raw, "content"));
@@ -388,7 +389,10 @@ function validateSectionHooks(html) {
       throw new Error("Every section must contain exactly one descendant data-first-beat.");
     }
     const beat = beats[0].raw;
-    if (hasExplicitHiddenState(beat)) {
+    const hiddenAncestor = ancestorTagsAt(section.inner, beats[0].index).some(({ raw }) =>
+      hasExplicitHiddenState(raw),
+    );
+    if (hasExplicitHiddenState(beat) || hiddenAncestor) {
       throw new Error("Every section must expose a visible data-first-beat.");
     }
   }
@@ -576,10 +580,77 @@ function extractVisibleText(html) {
     .replace(/<style\b[^>]*>[^]*?<\/style>/gi, " ")
     .replace(/<script\b[^>]*>[^]*?<\/script>/gi, " ")
     .replace(/<[^>]+>/g, " ")
-    .replace(/&(?:nbsp|amp|quot|apos|lt|gt);/gi, " ")
-    .replace(/&#(?:x[0-9a-f]+|\d+);/gi, " ")
+    .replace(/&(nbsp|amp|quot|apos|lt|gt|mdash|ndash);/gi, (_, name) =>
+      decodeNamedHtmlEntity(name),
+    )
+    .replace(/&#(x[0-9a-f]+|\d+);/gi, (_, value) => decodeNumericHtmlEntity(value))
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function stripHtmlComments(html) {
+  return html.replace(/<!--[^]*?-->/g, "");
+}
+
+function ancestorTagsAt(html, targetIndex) {
+  const structuralHtml = html.replace(/<!--[^]*?-->/g, (comment) => " ".repeat(comment.length));
+  const stack = [];
+  const voidElements = new Set([
+    "area",
+    "base",
+    "br",
+    "col",
+    "embed",
+    "hr",
+    "img",
+    "input",
+    "link",
+    "meta",
+    "param",
+    "source",
+    "track",
+    "wbr",
+  ]);
+  for (const match of structuralHtml.matchAll(/<(\/)?([a-z][a-z0-9-]*)\b[^>]*>/gi)) {
+    if (match.index >= targetIndex) break;
+    const tagName = match[2].toLowerCase();
+    if (match[1]) {
+      const matchingIndex = stack.findLastIndex((entry) => entry.tagName === tagName);
+      if (matchingIndex !== -1) stack.splice(matchingIndex);
+    } else if (!voidElements.has(tagName) && !/\/>$/.test(match[0])) {
+      stack.push({ tagName, raw: match[0] });
+    }
+  }
+  return stack;
+}
+
+function decodeNamedHtmlEntity(name) {
+  const entities = {
+    nbsp: " ",
+    amp: "&",
+    quot: '"',
+    apos: "'",
+    lt: "<",
+    gt: ">",
+    mdash: "\u2014",
+    ndash: "\u2013",
+  };
+  return entities[name.toLowerCase()];
+}
+
+function decodeNumericHtmlEntity(value) {
+  const codePoint = value[0].toLowerCase() === "x"
+    ? Number.parseInt(value.slice(1), 16)
+    : Number.parseInt(value, 10);
+  if (
+    !Number.isInteger(codePoint) ||
+    codePoint < 0 ||
+    codePoint > 0x10ffff ||
+    (codePoint >= 0xd800 && codePoint <= 0xdfff)
+  ) {
+    return "\ufffd";
+  }
+  return String.fromCodePoint(codePoint);
 }
 
 async function writeNew(target, value) {

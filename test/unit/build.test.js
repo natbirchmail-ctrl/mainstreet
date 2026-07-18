@@ -324,6 +324,11 @@ test("validateSiteManifest requires exact CSP once", () => {
   missing.indexHtml = missing.indexHtml.replace(/\s*<meta http-equiv="Content-Security-Policy"[^>]*>/, "");
   assert.throws(() => validateSiteManifest(missing), /content security policy/i);
 
+  const commented = safeManifest();
+  const commentedCsp = commented.indexHtml.match(/<meta http-equiv="Content-Security-Policy"[^>]*>/)[0];
+  commented.indexHtml = commented.indexHtml.replace(commentedCsp, `<!-- ${commentedCsp} -->`);
+  assert.throws(() => validateSiteManifest(commented), /content security policy/i);
+
   const duplicate = safeManifest();
   const csp = duplicate.indexHtml.match(/<meta http-equiv="Content-Security-Policy"[^>]*>/)[0];
   duplicate.indexHtml = duplicate.indexHtml.replace(csp, `${csp}\n  ${csp}`);
@@ -435,6 +440,18 @@ test("validateSiteManifest enforces section first beat and declared root hooks",
     '<section id="offerings" data-section="offerings" hidden>',
   );
   assert.throws(() => validateSiteManifest(hiddenSection), /visible data-first-beat/i);
+
+  const hiddenWrapper = safeManifest();
+  hiddenWrapper.indexHtml = hiddenWrapper.indexHtml
+    .replace(
+      '<section id="story" data-section="story">\n      <div data-first-beat>',
+      '<section id="story" data-section="story">\n      <div hidden>\n      <div data-first-beat>',
+    )
+    .replace(
+      '      </div>\n    </section>\n  </main>',
+      '      </div>\n      </div>\n    </section>\n  </main>',
+    );
+  assert.throws(() => validateSiteManifest(hiddenWrapper), /visible data-first-beat/i);
 
   const wrongDeclaration = safeManifest();
   wrongDeclaration.indexHtml = wrongDeclaration.indexHtml.replace(
@@ -555,6 +572,18 @@ test("validateSiteManifest rejects dashes, emojis, and placeholders in visible c
   const placeholder = safeManifest();
   placeholder.indexHtml = placeholder.indexHtml.replace("made with care", "lorem ipsum");
   assert.throws(() => validateSiteManifest(placeholder), /placeholder/i);
+
+  for (const entity of ["&mdash;", "&ndash;"]) {
+    const encodedDash = safeManifest();
+    encodedDash.indexHtml = encodedDash.indexHtml.replace("Fresh loaves", `Fresh ${entity} loaves`);
+    assert.throws(() => validateSiteManifest(encodedDash), /dash characters/i, entity);
+  }
+
+  for (const entity of ["&#x1f600;", "&#128512;"]) {
+    const encodedEmoji = safeManifest();
+    encodedEmoji.indexHtml = encodedEmoji.indexHtml.replace("From the oven", `From the oven ${entity}`);
+    assert.throws(() => validateSiteManifest(encodedEmoji), /emoji/i, entity);
+  }
 });
 
 test("buildSite regenerates one unsafe model page before accepting output", async () => {
