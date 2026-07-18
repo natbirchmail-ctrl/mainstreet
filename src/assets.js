@@ -1,10 +1,10 @@
 import { createHash } from "node:crypto";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { lstat, mkdir, open, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { deflateSync, inflateSync } from "node:zlib";
 
-import { ImageRequestError, requestImage as requestOpenAIImage } from "./lib/openai.js";
-import { resolveInside, writeJsonNew } from "./lib/runs.js";
+import { requestImage as requestOpenAIImage } from "./lib/openai.js";
+import { resolveInside } from "./lib/runs.js";
 
 export const MAX_IMAGE_REQUESTS_PER_CYCLE = 5;
 const MAX_PNG_BYTES = 16 * 1024 * 1024;
@@ -147,71 +147,78 @@ export async function materializeAssets({
   priorSiteDir,
 } = {}) {
   validateMaterializationInput({ cycleDir, siteDir, plan, shootDirection, requestImage, priorAssets, priorSiteDir });
-  const priorByFilename = new Map((priorAssets?.files ?? []).map((record) => [record.filename, record]));
-  const files = [];
-  let requestCount = 0;
-  let successCount = 0;
-  let fallbackCount = 0;
+  let evidenceHandle;
+  try {
+    evidenceHandle = await reserveAssetEvidence(cycleDir);
+    await rejectSymlink(resolveInside(siteDir, "assets"));
+    const priorByFilename = new Map((priorAssets?.files ?? []).map((record) => [record.filename, record]));
+    const files = [];
+    let requestCount = 0;
+    let successCount = 0;
+    let fallbackCount = 0;
 
-  for (const item of plan) {
-    const requestPrompt = `${shootDirection}\n\n${item.prompt}`;
-    const promptHash = sha256Hex(requestPrompt);
-    const prior = priorByFilename.get(item.filename);
-    const carried = await carryForwardIfEligible({ prior, priorSiteDir, item, promptHash });
-    let buffer;
-    let source;
-    let resolved;
-    let errorCode = null;
+    for (const item of plan) {
+      const requestPrompt = `${shootDirection}\n\n${item.prompt}`;
+      const promptHash = sha256Hex(requestPrompt);
+      const prior = priorByFilename.get(item.filename);
+      const carried = await carryForwardIfEligible({ prior, priorSiteDir, item, promptHash });
+      let buffer;
+      let source;
+      let resolved;
+      let errorCode = null;
 
-    if (carried) {
-      buffer = carried;
-      source = "carried-forward";
-      resolved = true;
-    } else {
-      requestCount += 1;
-      try {
-        buffer = await requestImage({ client, model, prompt: requestPrompt });
-        buffer = validatePngBuffer(buffer, { expectedWidth: 1536, expectedHeight: 1024 });
-        source = "openai";
+      if (carried) {
+        buffer = carried;
+        source = "carried-forward";
         resolved = true;
-        successCount += 1;
-      } catch {
-        buffer = createDeterministicPng({ ...item, shootDirection });
-        source = "deterministic-fallback";
-        resolved = false;
-        errorCode = "IMAGE_REQUEST_FAILED";
-        fallbackCount += 1;
+      } else {
+        requestCount += 1;
+        try {
+          buffer = await requestImage({ client, model, prompt: requestPrompt });
+          buffer = validatePngBuffer(buffer, { expectedWidth: 1536, expectedHeight: 1024 });
+          source = "openai";
+          resolved = true;
+          successCount += 1;
+        } catch {
+          buffer = createDeterministicPng({ ...item, shootDirection });
+          source = "deterministic-fallback";
+          resolved = false;
+          errorCode = "IMAGE_REQUEST_FAILED";
+          fallbackCount += 1;
+        }
       }
+
+      const assetPath = resolveInside(siteDir, "assets", item.filename);
+      await writeBufferNew(assetPath, buffer);
+      files.push({
+        filename: item.filename,
+        path: `assets/${item.filename}`,
+        role: item.role,
+        alt: item.alt,
+        focalPoint: { x: item.focalPoint.x, y: item.focalPoint.y },
+        promptHash,
+        mediaType: "image/png",
+        bytes: buffer.length,
+        sha256: sha256Hex(buffer),
+        source,
+        resolved,
+        errorCode,
+      });
     }
 
-    const assetPath = resolveInside(siteDir, "assets", item.filename);
-    await writeBufferNew(assetPath, buffer);
-    files.push({
-      filename: item.filename,
-      path: `assets/${item.filename}`,
-      role: item.role,
-      alt: item.alt,
-      focalPoint: { x: item.focalPoint.x, y: item.focalPoint.y },
-      promptHash,
-      mediaType: "image/png",
-      bytes: buffer.length,
-      sha256: sha256Hex(buffer),
-      source,
-      resolved,
-      errorCode,
-    });
+    const evidence = {
+      schemaVersion: "1.0",
+      allResolved: files.every((file) => file.resolved),
+      requestCount,
+      successCount,
+      fallbackCount,
+      files,
+    };
+    await evidenceHandle.writeFile(`${JSON.stringify(evidence, null, 2)}\n`, "utf8");
+    return evidence;
+  } finally {
+    await evidenceHandle?.close();
   }
-
-  const evidence = {
-    schemaVersion: "1.0",
-    allResolved: files.every((file) => file.resolved),
-    requestCount,
-    successCount,
-    fallbackCount,
-    files,
-  };
-  await writeJsonNew(resolveInside(cycleDir, "assets.json"), evidence);
-  return evidence;
 }
 
 async function carryForwardIfEligible({ prior, priorSiteDir, item, promptHash }) {
@@ -220,7 +227,9 @@ async function carryForwardIfEligible({ prior, priorSiteDir, item, promptHash })
   if (!/^[a-f0-9]{64}$/.test(prior.sha256 ?? "") || !Number.isInteger(prior.bytes) || prior.bytes < 1) {
     throw new Error("Prior asset evidence is invalid.");
   }
-  const bytes = await readFile(resolveInside(priorSiteDir, "assets", item.filename));
+  const priorAssetPath = resolveInside(priorSiteDir, "assets", item.filename);
+  await rejectSymlink(priorAssetPath);
+  const bytes = await readFile(priorAssetPath);
   if (bytes.length !== prior.bytes || sha256Hex(bytes) !== prior.sha256) {
     throw new Error("Prior asset digest does not match.");
   }
@@ -229,11 +238,34 @@ async function carryForwardIfEligible({ prior, priorSiteDir, item, promptHash })
 }
 
 async function writeBufferNew(target, bytes) {
+  await rejectSymlink(path.dirname(target));
   await mkdir(path.dirname(target), { recursive: true });
   try {
     await writeFile(target, bytes, { flag: "wx" });
   } catch (error) {
     if (error?.code === "EEXIST") throw new Error(`Asset file already exists: ${target}`);
+    throw error;
+  }
+}
+
+async function reserveAssetEvidence(cycleDir) {
+  const target = resolveInside(cycleDir, "assets.json");
+  await mkdir(path.dirname(target), { recursive: true });
+  try {
+    return await open(target, "wx");
+  } catch (error) {
+    if (error?.code === "EEXIST") throw new Error(`Evidence file already exists: ${target}`);
+    throw error;
+  }
+}
+
+async function rejectSymlink(target) {
+  try {
+    if ((await lstat(target)).isSymbolicLink()) {
+      throw new Error("Symlinked asset paths are not allowed.");
+    }
+  } catch (error) {
+    if (error?.code === "ENOENT") return;
     throw error;
   }
 }

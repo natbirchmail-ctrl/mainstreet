@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -80,6 +80,39 @@ test("validatePngBuffer bounds decompression to the known scanline payload", () 
   assert.throws(() => validatePngBuffer(compressedOversize), /PNG validation failed\./);
 });
 
+test("validatePngBuffer rejects malformed IHDR dimensions and required chunks", () => {
+  const image = createDeterministicPng(plan()[0], { width: 8, height: 6 });
+  const ihdrEnd = 8 + 12 + image.readUInt32BE(8);
+  const ihdr = Buffer.from(image.subarray(16, ihdrEnd - 4));
+  const idatStart = ihdrEnd;
+  const idatEnd = idatStart + 12 + image.readUInt32BE(idatStart);
+  const idat = image.subarray(idatStart, idatEnd);
+  const signature = image.subarray(0, 8);
+
+  const zeroWidth = Buffer.from(ihdr);
+  zeroWidth.writeUInt32BE(0, 0);
+  const invalidHeight = Buffer.from(ihdr);
+  invalidHeight.writeUInt32BE(0, 4);
+  const malformed = [
+    Buffer.concat([signature, chunk("IHDR", zeroWidth), idat, chunk("IEND")]),
+    Buffer.concat([signature, chunk("IHDR", invalidHeight), idat, chunk("IEND")]),
+    Buffer.concat([signature, chunk("IHDR", ihdr), chunk("IEND")]),
+    Buffer.concat([signature, chunk("IHDR", ihdr), idat]),
+  ];
+  for (const candidate of malformed) {
+    assert.throws(() => validatePngBuffer(candidate), /PNG validation failed\./);
+  }
+});
+
+test("validatePngBuffer rejects chunk length overflow before reading chunk data", () => {
+  const image = createDeterministicPng(plan()[0], { width: 8, height: 6 });
+  const ihdrEnd = 8 + 12 + image.readUInt32BE(8);
+  const overflow = Buffer.alloc(12);
+  overflow.writeUInt32BE(0xffffffff, 0);
+  overflow.write("IDAT", 4, "ascii");
+  assert.throws(() => validatePngBuffer(Buffer.concat([image.subarray(0, ihdrEnd), overflow])), /PNG validation failed\./);
+});
+
 test("createDeterministicPng is stable, valid, and changes with the ordered plan tuple", () => {
   const first = createDeterministicPng(plan()[0], { width: 11, height: 7 });
   const same = createDeterministicPng(plan()[0], { width: 11, height: 7 });
@@ -141,8 +174,55 @@ test("materializeAssets rejects over-limit plans before any request or write", a
 test("materializeAssets preserves existing evidence through exclusive writes", async () => {
   const { cycleDir, siteDir } = await fixtureDirectories();
   await writeFile(path.join(cycleDir, "assets.json"), "preserve", "utf8");
-  await assert.rejects(materializeAssets({ cycleDir, siteDir, plan: plan(), shootDirection: "Direction", requestImage: async () => createDeterministicPng(plan()[0]) }), /already exists/i);
+  let requests = 0;
+  await assert.rejects(materializeAssets({ cycleDir, siteDir, plan: plan(), shootDirection: "Direction", requestImage: async () => { requests += 1; return createDeterministicPng(plan()[0]); } }), /already exists/i);
+  assert.equal(requests, 0);
   assert.equal(await readFile(path.join(cycleDir, "assets.json"), "utf8"), "preserve");
+  await assert.rejects(readFile(path.join(siteDir, "assets", "hero.png")));
+});
+
+test("materializeAssets rejects site and prior asset symlinks before asset access", async (t) => {
+  const external = await mkdtemp(path.join(os.tmpdir(), "mainstreet-assets-external-"));
+  const current = await fixtureDirectories();
+  try {
+    await symlink(external, path.join(current.siteDir, "assets"), "junction");
+  } catch (error) {
+    if (["EPERM", "EACCES", "ENOTSUP"].includes(error?.code)) {
+      t.skip("symlink creation is unavailable on this Windows host");
+      return;
+    }
+    throw error;
+  }
+  let requests = 0;
+  await assert.rejects(materializeAssets({ cycleDir: current.cycleDir, siteDir: current.siteDir, plan: plan(), shootDirection: "Direction", requestImage: async () => { requests += 1; } }), /symlink/i);
+  assert.equal(requests, 0);
+
+  const prior = await fixtureDirectories();
+  await mkdir(path.join(prior.siteDir, "assets"), { recursive: true });
+  const linkedTarget = path.join(external, "prior.png");
+  await writeFile(linkedTarget, "not-an-image", "utf8");
+  try {
+    await symlink(linkedTarget, path.join(prior.siteDir, "assets", "hero.png"), "file");
+  } catch (error) {
+    if (["EPERM", "EACCES", "ENOTSUP"].includes(error?.code)) {
+      t.skip("file symlink creation is unavailable on this Windows host");
+      return;
+    }
+    throw error;
+  }
+  const next = await fixtureDirectories();
+  await assert.rejects(
+    materializeAssets({
+      cycleDir: next.cycleDir,
+      siteDir: next.siteDir,
+      plan: plan(),
+      shootDirection: "Direction",
+      priorAssets: { files: [{ filename: "hero.png", promptHash: sha256Hex("Direction\n\nsunlit storefront"), sha256: "0".repeat(64), bytes: 1, resolved: true }] },
+      priorSiteDir: prior.siteDir,
+      requestImage: async () => { throw new Error("must not request"); },
+    }),
+    /symlink/i,
+  );
 });
 
 test("materializeAssets carries verified resolved assets forward and retries unresolved assets", async () => {

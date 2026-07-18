@@ -3,6 +3,8 @@ import OpenAI from "openai";
 const DEFAULT_MODEL = "gpt-5.6";
 const DEFAULT_ATTEMPTS = 3;
 const DEFAULT_IMAGE_MODEL = "gpt-image-1";
+const MAX_IMAGE_PNG_BYTES = 16 * 1024 * 1024;
+const MAX_IMAGE_BASE64_LENGTH = Math.ceil(MAX_IMAGE_PNG_BYTES / 3) * 4;
 
 export class ImageRequestError extends Error {
   constructor() {
@@ -64,6 +66,12 @@ function extractImageBase64(response) {
   const data = response?.data;
   const encoded = data?.[0]?.b64_json;
   if (!Array.isArray(data) || data.length !== 1 || typeof encoded !== "string" || !encoded) {
+    throw new Error("invalid image response");
+  }
+
+  const paddingBytes = encoded.endsWith("==") ? 2 : encoded.endsWith("=") ? 1 : 0;
+  const decodedLength = (encoded.length / 4) * 3 - paddingBytes;
+  if (encoded.length > MAX_IMAGE_BASE64_LENGTH || decodedLength > MAX_IMAGE_PNG_BYTES) {
     throw new Error("invalid image response");
   }
 

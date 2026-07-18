@@ -121,6 +121,31 @@ test("requestImage rejects malformed output with one sanitized stable error", as
   );
 });
 
+test("requestImage rejects oversized base64 before decoding it", async () => {
+  const encodedLimit = Math.ceil((16 * 1024 * 1024) / 3) * 4;
+  const oversized = ["A".repeat(encodedLimit + 4), "A".repeat(encodedLimit)];
+  const originalFrom = Buffer.from;
+  let decodeCalls = 0;
+  Buffer.from = (...args) => {
+    decodeCalls += 1;
+    return originalFrom(...args);
+  };
+  try {
+    for (const b64_json of oversized) {
+      await assert.rejects(
+        requestImage({
+          client: { images: { generate: async () => ({ data: [{ b64_json }] }) } },
+          prompt: "Safe prompt.",
+        }),
+        (error) => error instanceof ImageRequestError && error.code === "IMAGE_REQUEST_FAILED",
+      );
+    }
+  } finally {
+    Buffer.from = originalFrom;
+  }
+  assert.equal(decodeCalls, 0);
+});
+
 test("requestStructured uses the Responses API with a strict JSON schema", async () => {
   const calls = [];
   const client = {
