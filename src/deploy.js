@@ -304,12 +304,17 @@ function normalizeDeploymentFiles({
   verified,
   status,
 }) {
-  const byPath = new Map(
-    (Array.isArray(verificationFiles) ? verificationFiles : []).map((file) => [
-      file?.path,
-      file,
-    ]),
-  );
+  const observedFiles = Array.isArray(verificationFiles) ? verificationFiles : [];
+  const byPath = new Map(observedFiles.map((file) => [file?.path, file]));
+  if (
+    mode === "cloudflare" &&
+    (observedFiles.length !== sourceFiles.length || byPath.size !== sourceFiles.length)
+  ) {
+    throw codedError(
+      "Cloudflare verification evidence is incomplete.",
+      "INCOMPLETE_DEPLOYMENT_EVIDENCE",
+    );
+  }
   return sourceFiles.map((source) => {
     const observed = byPath.get(source.path);
     if (mode === "cloudflare") {
@@ -404,11 +409,6 @@ export function runWrangler(args, { env = process.env } = {}) {
 }
 
 async function verifyDeployment({ url, expectedFiles, fetchFn, sleep }) {
-  let lastFiles = expectedFiles.map((file) => ({
-    ...file,
-    status: null,
-    verified: false,
-  }));
   for (let attempt = 1; attempt <= 7; attempt += 1) {
     const observed = [];
     for (const expected of expectedFiles) {
@@ -435,7 +435,6 @@ async function verifyDeployment({ url, expectedFiles, fetchFn, sleep }) {
         });
       }
     }
-    lastFiles = observed;
     if (observed.length === expectedFiles.length && observed.every((file) => file.verified)) {
       const index = observed.find((file) => file.path === "index.html") ?? observed[0];
       return { verified: true, status: index.status, files: observed };
@@ -444,7 +443,6 @@ async function verifyDeployment({ url, expectedFiles, fetchFn, sleep }) {
       await sleep(500 * 2 ** (attempt - 1));
     }
   }
-  void lastFiles;
   throw codedError("Cloudflare deployment could not be verified.", "VERIFY_FAILED");
 }
 

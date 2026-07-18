@@ -228,6 +228,7 @@ test("deployRun starts a local fallback before recording a truthful URL", async 
   const runDir = path.join(process.cwd(), "tmp", randomUUID(), "run");
   const siteDir = path.join(runDir, "cycle-01", "site");
   await makeCompleteSite(siteDir);
+  await writeEligibility(runDir, 1, true);
   let started = false;
 
   const result = await deployRun({
@@ -248,6 +249,7 @@ test("deployRun starts a local fallback before recording a truthful URL", async 
       started = true;
       return { url: "http://127.0.0.1:4601/", status: 200 };
     },
+    commitResolver: async () => TEST_COMMIT,
     now: () => new Date("2026-07-17T18:00:00.000Z"),
   });
 
@@ -264,6 +266,7 @@ test("deployRun does not record a local URL when the preview cannot bind", async
   const runDir = path.join(process.cwd(), "tmp", randomUUID(), "run");
   const siteDir = path.join(runDir, "cycle-01", "site");
   await makeCompleteSite(siteDir);
+  await writeEligibility(runDir, 1, true);
 
   await assert.rejects(
     deployRun({
@@ -281,6 +284,7 @@ test("deployRun does not record a local URL when the preview cannot bind", async
       startLocalFn: async () => {
         throw new Error("listen EADDRINUSE");
       },
+      commitResolver: async () => TEST_COMMIT,
     }),
     /EADDRINUSE/,
   );
@@ -293,6 +297,8 @@ test("deployRun preserves deployment history across later promotions", async () 
   const runDir = path.join(process.cwd(), "tmp", randomUUID(), "run");
   const siteDir = path.join(runDir, "cycle-01", "site");
   await makeCompleteSite(siteDir);
+  await writeEligibility(runDir, 1, true);
+  const digestManifest = await createSiteDigestManifest(siteDir);
   let tick = 0;
   const deploy = () =>
     deployRun({
@@ -303,10 +309,13 @@ test("deployRun preserves deployment history across later promotions", async () 
       deployFn: async () => ({
         mode: "cloudflare",
         url: "https://mainstreet-hackathon.pages.dev/",
+        immutableUrl: "https://history.mainstreet-hackathon.pages.dev/",
         verified: true,
         status: 200,
-        reason: null,
+        aggregateSha256: digestManifest.aggregateSha256,
+        files: digestManifest.files.map((file) => ({ ...file, status: 200, verified: true })),
       }),
+      commitResolver: async () => TEST_COMMIT,
       now: () => new Date(Date.UTC(2026, 6, 17, 19, 0, tick++)),
     });
 
