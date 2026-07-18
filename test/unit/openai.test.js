@@ -2,9 +2,49 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  ImageRequestError,
   ModelResponseError,
+  requestImage,
   requestStructured,
 } from "../../src/lib/openai.js";
+import { deflateSync } from "node:zlib";
+
+function crc32(buffer) {
+  let value = 0xffffffff;
+  for (const byte of buffer) {
+    value ^= byte;
+    for (let bit = 0; bit < 8; bit += 1) {
+      value = (value >>> 1) ^ (value & 1 ? 0xedb88320 : 0);
+    }
+  }
+  return (value ^ 0xffffffff) >>> 0;
+}
+
+function pngChunk(type, data) {
+  const typeBuffer = Buffer.from(type, "ascii");
+  const chunk = Buffer.alloc(12 + data.length);
+  chunk.writeUInt32BE(data.length, 0);
+  typeBuffer.copy(chunk, 4);
+  data.copy(chunk, 8);
+  chunk.writeUInt32BE(crc32(Buffer.concat([typeBuffer, data])), 8 + data.length);
+  return chunk;
+}
+
+function validPng(width = 1536, height = 1024) {
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(width, 0);
+  ihdr.writeUInt32BE(height, 4);
+  ihdr[8] = 8;
+  ihdr[9] = 2;
+  const raw = Buffer.alloc(height * (1 + width * 3));
+  for (let row = 0; row < height; row += 1) raw[row * (1 + width * 3)] = 0;
+  return Buffer.concat([
+    Buffer.from("89504e470d0a1a0a", "hex"),
+    pngChunk("IHDR", ihdr),
+    pngChunk("IDAT", deflateSync(raw)),
+    pngChunk("IEND", Buffer.alloc(0)),
+  ]);
+}
 
 const schema = {
   type: "object",
@@ -12,6 +52,74 @@ const schema = {
   required: ["ok"],
   additionalProperties: false,
 };
+
+test("requestImage sends one exact PNG landscape request and returns validated bytes", async () => {
+  let calls = 0;
+  let request;
+  const image = validPng();
+  const result = await requestImage({
+    client: {
+      images: {
+        generate: async (value) => {
+          calls += 1;
+          request = value;
+          return { data: [{ b64_json: image.toString("base64") }] };
+        },
+      },
+    },
+    model: "test-image-model",
+    prompt: "A careful test image.",
+  });
+
+  assert.deepEqual(request, {
+    model: "test-image-model",
+    prompt: "A careful test image.",
+    n: 1,
+    size: "1536x1024",
+    quality: "medium",
+    output_format: "png",
+  });
+  assert.equal(calls, 1);
+  assert.deepEqual(result, image);
+});
+
+test("requestImage rejects malformed output with one sanitized stable error", async () => {
+  const providerMessage = "secret prompt = do not retain";
+  for (const response of [
+    { data: [] },
+    { data: [{ b64_json: "not base64" }] },
+    { data: [{ b64_json: Buffer.from("not png").toString("base64") }] },
+  ]) {
+    await assert.rejects(
+      requestImage({ client: { images: { generate: async () => response } }, prompt: "Safe prompt." }),
+      (error) =>
+        error instanceof ImageRequestError &&
+        error.code === "IMAGE_REQUEST_FAILED" &&
+        error.message === "Image generation failed." &&
+        !Object.values(error).some((value) => String(value).includes(providerMessage)),
+    );
+  }
+
+  await assert.rejects(
+    requestImage({
+      client: {
+        images: {
+          generate: async () => {
+            const error = new Error(providerMessage);
+            error.status = 429;
+            throw error;
+          },
+        },
+      },
+      prompt: "Safe prompt.",
+    }),
+    (error) =>
+      error instanceof ImageRequestError &&
+      error.code === "IMAGE_REQUEST_FAILED" &&
+      error.message === "Image generation failed." &&
+      !String(error.stack).includes(providerMessage),
+  );
+});
 
 test("requestStructured uses the Responses API with a strict JSON schema", async () => {
   const calls = [];

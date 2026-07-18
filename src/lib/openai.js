@@ -2,6 +2,15 @@ import OpenAI from "openai";
 
 const DEFAULT_MODEL = "gpt-5.6";
 const DEFAULT_ATTEMPTS = 3;
+const DEFAULT_IMAGE_MODEL = "gpt-image-1";
+
+export class ImageRequestError extends Error {
+  constructor() {
+    super("Image generation failed.");
+    this.name = "ImageRequestError";
+    this.code = "IMAGE_REQUEST_FAILED";
+  }
+}
 
 export class ModelResponseError extends Error {
   constructor(message, { code = "MODEL_RESPONSE_ERROR", retryable = true } = {}) {
@@ -22,6 +31,50 @@ export function createOpenAIClient({ apiKey = process.env.OPENAI_API_KEY } = {})
     maxRetries: 0,
     timeout: 180_000,
   });
+}
+
+export async function requestImage({
+  client = createOpenAIClient(),
+  model = process.env.OPENAI_IMAGE_MODEL || DEFAULT_IMAGE_MODEL,
+  prompt,
+} = {}) {
+  try {
+    if (!prompt?.trim()) {
+      throw new Error("invalid prompt");
+    }
+
+    const response = await client.images.generate({
+      model,
+      prompt,
+      n: 1,
+      size: "1536x1024",
+      quality: "medium",
+      output_format: "png",
+    });
+    const encoded = extractImageBase64(response);
+    const bytes = Buffer.from(encoded, "base64");
+    const { validatePngBuffer } = await import("../assets.js");
+    return validatePngBuffer(bytes, { expectedWidth: 1536, expectedHeight: 1024 });
+  } catch {
+    throw new ImageRequestError();
+  }
+}
+
+function extractImageBase64(response) {
+  const data = response?.data;
+  const encoded = data?.[0]?.b64_json;
+  if (!Array.isArray(data) || data.length !== 1 || typeof encoded !== "string" || !encoded) {
+    throw new Error("invalid image response");
+  }
+
+  if (
+    encoded.length % 4 !== 0 ||
+    !/^[A-Za-z0-9+/]+={0,2}$/.test(encoded) ||
+    Buffer.from(encoded, "base64").toString("base64") !== encoded
+  ) {
+    throw new Error("invalid image response");
+  }
+  return encoded;
 }
 
 export async function requestStructured({
