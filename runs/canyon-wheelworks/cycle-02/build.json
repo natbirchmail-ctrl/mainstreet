@@ -1,12 +1,12 @@
 {
   "cycle": 2,
   "fromCycle": 1,
-  "createdAt": "2026-07-17T23:36:59.451Z",
+  "createdAt": "2026-07-18T00:14:34.997Z",
   "source": "openai-revision",
   "fallbackReason": null,
   "designNotes": {
-    "aesthetic": "The revision keeps the warm desert workshop identity, combining sandstone and cream surfaces with rust panels, charcoal mechanical lines, and large editorial serif headlines. Supporting copy is darker and larger so the practical information now carries more visual weight.",
-    "signatureMove": "The service wheel remains the defining interaction on wide screens. On phones, the crowded labels move into three full width controls beneath a simplified wheel while all service details remain visible in a direct list.",
-    "rationale": "The revised layout preserves the distinctive wheel language and varied section rhythm while improving mobile targets, text contrast, service differentiation, and component spacing. The hero chainring now fits fully inside its rust panel. Because no address, hours, phone number, or email were confirmed, the visit section provides concise honest guidance instead of inventing shop details."
+    "aesthetic": "A sun faded workshop broadsheet using warm paper, dark mechanical linework, rust accents, and spare Tucson terrain geometry. Large editorial serif headings remain the visual anchor while practical copy now has enough size and contrast to carry equal importance.",
+    "signatureMove": "The service section pairs a sticky illustrated wheel with the complete numbered repair list. The wheel turns with page progress on precise pointer devices and remains still on touch screens and when reduced motion is requested.",
+    "rationale": "The revision preserves the distinctive desert workshop identity while raising navigation, labels, service descriptions, visit copy, and footer text to readable sizes. Mobile hero spacing is tighter, the rust panel is darker for stronger contrast, and the approach section now gives a direct recap of confirmed services instead of repeating broad values. Missing visit and contact details are handled with one concise honest line."
   }
 }

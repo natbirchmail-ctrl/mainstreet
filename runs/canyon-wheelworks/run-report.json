@@ -2,16 +2,16 @@
   "schemaVersion": "1.0",
   "slug": "canyon-wheelworks",
   "businessName": "Canyon Wheelworks",
-  "startedAt": "2026-07-17T23:30:41.163Z",
-  "completedAt": "2026-07-17T23:41:40.730Z",
+  "startedAt": "2026-07-18T00:10:19.983Z",
+  "completedAt": "2026-07-18T00:15:42.482Z",
   "status": "completed",
-  "stopReason": "max_cycles_reached",
-  "selectedCycle": 3,
+  "stopReason": "threshold_reached",
+  "selectedCycle": 2,
   "scoresImproved": true,
   "cycles": [
     {
       "cycle": 1,
-      "score": 78,
+      "score": 84,
       "visionScore": null,
       "verdict": "revise",
       "mode": "vision",
@@ -19,17 +19,9 @@
     },
     {
       "cycle": 2,
-      "score": 82,
+      "score": 86,
       "visionScore": null,
-      "verdict": "revise",
-      "mode": "vision",
-      "mechanicalPassed": true
-    },
-    {
-      "cycle": 3,
-      "score": 82,
-      "visionScore": null,
-      "verdict": "revise",
+      "verdict": "ship",
       "mode": "vision",
       "mechanicalPassed": true
     }
@@ -37,12 +29,12 @@
   "delivery": {
     "schemaVersion": "1.0",
     "slug": "canyon-wheelworks",
-    "selectedCycle": 3,
-    "createdAt": "2026-07-17T23:41:40.728Z",
+    "selectedCycle": 2,
+    "createdAt": "2026-07-18T00:15:42.480Z",
     "mode": "cloudflare",
     "projectName": "mainstreet-hackathon",
     "url": "https://mainstreet-hackathon.pages.dev/",
-    "deploymentUrl": "https://0790e671.mainstreet-hackathon.pages.dev/",
+    "deploymentUrl": "https://5e81fe26.mainstreet-hackathon.pages.dev/",
     "verified": true,
     "status": 200,
     "reason": null

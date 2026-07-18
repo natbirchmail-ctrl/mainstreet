@@ -2,7 +2,7 @@
   "schemaVersion": "1.0",
   "fromCycle": 1,
   "toCycle": 2,
-  "createdAt": "2026-07-17T23:36:59.449Z",
+  "createdAt": "2026-07-18T00:14:34.996Z",
   "targetScore": 85,
   "mustKeep": [
     "Confirmed business facts and explicit unknowns",
@@ -12,17 +12,16 @@
     "Every current accessibility safeguard"
   ],
   "mustFix": [
-    "Provide an actionable walk-in destination and contact path using confirmed shop details.",
-    "Increase mobile navigation, body copy, and service-label sizes to legible minimums.",
-    "Replace the cramped labels around the mobile wheel with accessible service controls.",
-    "Differentiate each service with at least one practical, confirmed detail."
+    "Increase all undersized mobile navigation, body, service-description, visit, and footer text to a readable minimum of 14px.",
+    "Increase small desktop supporting copy modestly so practical service information does not disappear beneath the display typography.",
+    "Tighten the gap before the mobile hero illustration."
   ],
   "preserve": [
-    "The desert workshop palette and strong cream/rust/charcoal section changes.",
-    "The editorial serif headline style and confident hero composition.",
-    "The bicycle wheel as the signature visual and service-navigation concept.",
-    "The varied section layouts and direct, plainspoken tone.",
-    "The complete mobile list of all three service descriptions."
+    "The warm paper, dark ink, and rust Tucson palette.",
+    "The oversized editorial serif headlines and restrained uppercase labels.",
+    "The bicycle-wheel service illustration and visible numbered service list.",
+    "The honest handling of unavailable address, hours, phone, and email details.",
+    "The strong full-width mobile service button and uncluttered section dividers."
   ],
   "mechanicalFailures": []
 }

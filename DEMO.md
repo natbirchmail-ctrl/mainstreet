@@ -70,11 +70,11 @@ Narration:
 
 ### 1:18 to 1:48: The critic loop
 
-Visual: Place Canyon Wheelworks cycle 1 and cycle 3 desktop screenshots side by side. Overlay `78` on cycle 1 and `82` on cycle 3. Cut to the matching mobile screenshots.
+Visual: Place Canyon Wheelworks cycle 1 and cycle 2 desktop screenshots side by side. Overlay `84` on cycle 1 and `86` on cycle 2. Cut to the matching mobile screenshots.
 
 Narration:
 
-> Canyon Wheelworks began at 78. The critic called out hierarchy, legibility, conversion clarity, and visual consistency. Two targeted revisions raised the best score to 82. All three cycles passed the mechanical browser gates.
+> Canyon Wheelworks began at 84. The critic called out hierarchy, legibility, conversion clarity, and visual consistency. One targeted revision raised the score to 86 and earned a ship verdict. Both cycles passed desktop, mobile, and narrow viewport browser gates.
 
 ### 1:48 to 2:10: How it works
 

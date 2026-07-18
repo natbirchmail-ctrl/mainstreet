@@ -1,124 +1,107 @@
 {
   "rubricVersion": "1.0",
-  "score": 78,
+  "score": 84,
   "verdict": "revise",
-  "summary": "A distinctive, well-composed desert-workshop identity gives Canyon Wheelworks more character than a typical local-service page. The wheel motif, strong editorial headlines, and restrained palette support the business well. However, the primary walk-in conversion path ends without an address, hours, phone number, or actionable contact method, while very small navigation, labels, and body copy weaken mobile usability and visible accessibility. The page looks polished but is not yet credible for public presentation.",
+  "summary": "A distinctive, business-appropriate desert workshop design with excellent editorial composition and a strong bicycle-wheel motif. The page communicates the confirmed services responsibly and does not turn missing contact details into a dead-end primary action. It falls just short of presentation-ready because much of the practical copy and navigation is visibly too small, especially on mobile, weakening readability and usability.",
   "dimensions": {
     "layout": {
-      "score": 15,
-      "evidence": "The desktop hero has a confident split composition, and the service and about sections use varied, balanced arrangements rather than repetitive card grids. Mobile sections stack logically, but the wheel labels become crowded and several sections use more vertical space than their limited content warrants.",
-      "fix": "On mobile, replace the three labels attached to the small wheel with a compact three-item selector directly beneath it."
+      "score": 16,
+      "evidence": "Desktop sections use a disciplined grid, generous margins, and clear dividers; the hero illustration, service wheel, and three-column workshop section are well balanced. Mobile reflows into a coherent single column without clipping, although the hero becomes vertically loose because the text, secondary link, and illustration are separated by sizable gaps.",
+      "fix": "Reduce the mobile gap above the hero illustration by about 20–24px while keeping the existing single-column order."
     },
     "hierarchy": {
-      "score": 13,
-      "evidence": "Oversized serif headlines, red eyebrow labels, and dark or rust section changes create clear milestones. Primary actions are easy to find in the hero. Lower-level body copy and service descriptions are so small that they recede excessively, especially in the walk-in section.",
-      "fix": "Increase service descriptions and walk-in supporting copy by 2px while preserving the current headline scale."
+      "score": 14,
+      "evidence": "Large serif headlines, red uppercase labels, and numbered service rows create an immediately understandable reading order. The primary hero button is prominent, while the underlined secondary action remains subordinate. Small supporting copy sometimes becomes so visually quiet that it nearly drops out of the hierarchy.",
+      "fix": "Increase supporting body and service-description text one size while leaving the headline scale unchanged."
     },
     "color": {
-      "score": 10,
-      "evidence": "Sandstone, cream, rust, and charcoal form a cohesive Tucson workshop palette, and the major headline and button combinations have strong contrast. Muted gray copy on cream is noticeably weaker, particularly at the small sizes used throughout the page.",
-      "fix": "Change muted body text from gray to the main charcoal at approximately 80–90% opacity."
+      "score": 11,
+      "evidence": "The paper cream, dark ink, and rust palette is cohesive, warm, and strongly associated with the supplied Tucson workshop direction. The rust visit section provides an effective tonal break, though its small white copy has less visual strength than the larger white headline.",
+      "fix": "Use a slightly darker rust background or increase the small white visit copy to strengthen its effective contrast."
     },
     "typography": {
-      "score": 11,
-      "evidence": "The display serif supplies a memorable editorial voice and most headline wrapping is controlled. The mobile navigation, wheel labels, eyebrows, footer text, and several paragraphs are extremely small; the all-caps wheel controls are especially difficult to scan.",
-      "fix": "Set all functional labels and navigation text to at least 12px and regular body copy to at least 15px on mobile."
+      "score": 12,
+      "evidence": "The display serif gives the page a memorable editorial character and wraps attractively in the major headings. However, service descriptions, header navigation, footer text, labels, and several mobile paragraphs appear around caption size; dense uppercase labels also rely on very small letterforms.",
+      "fix": "Set all functional navigation and body copy to at least 14px on mobile, with service descriptions at 14–15px and roughly 1.45 line height."
     },
     "mobile": {
-      "score": 11,
-      "evidence": "The desktop design is thoughtfully restructured rather than merely scaled down, and all three service descriptions remain visible as promised. However, the header links have tiny tap targets, the wheel controls are cramped, and information-dense copy near the footer requires excessive visual effort.",
-      "fix": "Give each mobile header link a minimum 44px-high tap area and simplify the wheel controls into full-width labeled buttons."
+      "score": 13,
+      "evidence": "The mobile screenshot has no horizontal overflow, preserves all services as ordinary content, uses a full-width primary button, and keeps the service illustration static and legible. The compact two-row header works structurally, but its navigation and brand text are undersized, and multiple paragraphs require close reading.",
+      "fix": "Increase mobile header links and the wordmark to at least 12–14px and enlarge the body copy without changing the overall composition."
     },
     "specificity": {
-      "score": 7,
-      "evidence": "The copy consistently names Tucson, commuters, tune ups, flat fixes, maintenance, and walk-in service. The mechanical wheel treatment also fits bicycle repair. Still, the offerings remain broad and lack prices, turnaround expectations, repair inclusions, or other practical shop-level detail.",
-      "fix": "Add one confirmed detail beneath each service, such as what the service includes, expected turnaround, or a starting price."
+      "score": 8,
+      "evidence": "Tucson, commuter repair, walk-ins, flat fixes, tune-ups, and the wheel diagram make the page recognizably relevant to this shop. Phrases such as “careful maintenance,” “dependable attention,” and “without the fuss” recur without adding much concrete information, making parts of the middle page feel like generalized brand language.",
+      "fix": "Replace one repeated values statement with a concise confirmed summary such as “Tune-ups, flat fixes, and routine upkeep for everyday bicycles.”"
     },
     "accessibility": {
-      "score": 7,
-      "evidence": "Large headlines and primary controls generally contrast well, and the visible service list avoids making the wheel the only route to information. Small type, tiny navigation targets, miniature wheel labels, and low-emphasis gray paragraphs create visible readability and touch-access concerns.",
-      "fix": "Raise mobile body and control sizes, enforce 44-by-44px tap targets, and darken muted copy."
+      "score": 6,
+      "evidence": "A visible skip link is supplied in the text, controls have clear rectangular or underlined affordances, and dark ink generally contrasts well with the cream backgrounds. The pervasive tiny navigation, footer, description, and uppercase label text—especially on the 390px view—is a substantial readability barrier, and the small white text on rust compounds the problem.",
+      "fix": "Raise every interactive label and informational paragraph below 14px to at least 14px on mobile, preserving underlines and button boundaries."
     },
     "polish": {
       "score": 4,
-      "evidence": "Borders, spacing, geometric illustrations, and section transitions are consistently executed, with no obvious broken assets. The desktop hero wheel is aggressively cropped at the right edge, and the unresolved contact disclaimer makes the finished page feel like a styled placeholder rather than a complete storefront.",
-      "fix": "Replace the disclaimer with a compact, actionable shop-information block once confirmed details are available."
+      "evidence": "Borders, numbering, illustration line weights, palette, and spacing feel consistently art-directed rather than template-like. The footer is clean, and missing operating facts are stated honestly. The remaining small-type problem and slightly loose mobile hero spacing prevent a fully finished result.",
+      "fix": "Complete one responsive typography pass and tighten the mobile hero spacing before release."
     }
   },
   "strengths": [
-    "The wheel motif is distinctive, business-relevant, and consistently reused without becoming a generic decorative flourish.",
-    "The desert-inspired cream, rust, and charcoal palette creates an appropriate Tucson identity.",
-    "Desktop compositions vary effectively across hero, services, about, and walk-in sections.",
-    "The oversized serif typography gives the shop a recognizable voice and creates strong primary hierarchy.",
-    "Mobile retains all service details instead of depending on an interaction that may be difficult on touch devices."
+    "The oversized editorial serif and warm desert palette give the shop a distinctive, credible identity.",
+    "The bicycle-wheel illustration directly supports the repair business rather than functioning as unrelated decoration.",
+    "All three confirmed services remain plainly visible on desktop and mobile.",
+    "The page handles incomplete contact facts responsibly: it discloses their absence and directs the visitor back to useful confirmed services instead of presenting a dead primary action.",
+    "The mobile layout preserves the desktop character without overflow or repetitive card stacking."
   ],
   "issues": [
     {
       "priority": 1,
       "severity": "major",
-      "dimension": "specificity",
-      "evidence": "The primary message repeatedly asks visitors to bring in a bike, but the page provides no address, hours, phone number, email, map link, or other actionable next step. Instead, it displays a warning that these details are not listed.",
-      "impact": "A visitor cannot confidently visit or contact the shop, so the central conversion path is a dead end.",
-      "fix": "Add a confirmed address, current opening hours, and at least one contact method beside the walk-in call to action before publication."
+      "dimension": "accessibility",
+      "evidence": "On mobile, navigation, service descriptions, workshop copy, footer text, and several labels are visibly very small; some captions appear near 9–11px.",
+      "impact": "Visitors with ordinary low vision or less-than-ideal screens may struggle to read the core service and visit information, making the page unsuitable for public release in its current state.",
+      "fix": "Increase mobile body, service, navigation, and footer text to a minimum visible size of 14px, using at least 1.4 line height for paragraphs."
     },
     {
       "priority": 2,
       "severity": "medium",
-      "dimension": "mobile",
-      "evidence": "Mobile header links and wheel labels are rendered at very small sizes with limited surrounding space; the three labels around the wheel are particularly compressed.",
-      "impact": "Navigation and service selection are harder to read and tap accurately on a phone.",
-      "fix": "Use 44px-high header link areas and move the three service labels into a stacked button row below the wheel."
+      "dimension": "typography",
+      "evidence": "Desktop service descriptions and supporting copy are also disproportionately small compared with the very large display headlines.",
+      "impact": "The dramatic hierarchy comes at the expense of practical information, making the page feel more editorial than service-oriented.",
+      "fix": "Increase desktop supporting copy by 1–2px while retaining the current display-heading sizes."
     },
     {
       "priority": 3,
-      "severity": "medium",
-      "dimension": "accessibility",
-      "evidence": "Multiple paragraphs, footer links, eyebrows, and service labels appear near the lower limit of legibility, with muted gray text placed on cream backgrounds.",
-      "impact": "Visitors with reduced vision or poor mobile viewing conditions may struggle to read core service information.",
-      "fix": "Use a 15px minimum for body copy, a 12px minimum for functional labels, and darker charcoal for secondary text."
+      "severity": "minor",
+      "dimension": "layout",
+      "evidence": "The mobile hero leaves a broad vertical break between “Read the shop story” and the framed Tucson illustration.",
+      "impact": "The illustration feels slightly detached from the hero message and lengthens the first screen sequence unnecessarily.",
+      "fix": "Reduce that mobile margin by approximately 20–24px."
     },
     {
       "priority": 4,
-      "severity": "medium",
-      "dimension": "typography",
-      "evidence": "The large display headlines dominate while service descriptions and supporting copy are disproportionately small, especially in the mobile service cards and rust walk-in panel.",
-      "impact": "The page communicates mood more strongly than practical information, weakening scanning and comprehension.",
-      "fix": "Increase supporting paragraphs by 2px and add slightly more line height without changing headline sizes."
-    },
-    {
-      "priority": 5,
-      "severity": "minor",
-      "dimension": "polish",
-      "evidence": "The desktop hero’s wheel illustration is cut off at the right viewport edge, including the outer dot ring.",
-      "impact": "The intentional mechanical graphic can read as an accidental overflow or incomplete crop.",
-      "fix": "Scale the desktop hero wheel down enough to retain the full outer dot ring within the rust panel."
-    },
-    {
-      "priority": 6,
       "severity": "minor",
       "dimension": "specificity",
-      "evidence": "Service descriptions repeat broad phrases such as “routine service,” “repair service,” and “general bicycle maintenance” without explaining concrete inclusions.",
-      "impact": "The three offerings feel less differentiated than their strong visual presentation suggests.",
-      "fix": "Add one concise, confirmed inclusion or decision criterion to each service description."
+      "evidence": "“Careful,” “dependable,” “everyday,” and “neighborhood” recur across the hero, services, approach section, and value list.",
+      "impact": "Repetition dilutes otherwise strong local and service-specific positioning.",
+      "fix": "Replace one middle-page values passage with a direct recap of the three confirmed repair offerings."
     }
   ],
   "revisionBrief": {
     "mustFix": [
-      "Provide an actionable walk-in destination and contact path using confirmed shop details.",
-      "Increase mobile navigation, body copy, and service-label sizes to legible minimums.",
-      "Replace the cramped labels around the mobile wheel with accessible service controls.",
-      "Differentiate each service with at least one practical, confirmed detail."
+      "Increase all undersized mobile navigation, body, service-description, visit, and footer text to a readable minimum of 14px.",
+      "Increase small desktop supporting copy modestly so practical service information does not disappear beneath the display typography.",
+      "Tighten the gap before the mobile hero illustration."
     ],
     "preserve": [
-      "The desert workshop palette and strong cream/rust/charcoal section changes.",
-      "The editorial serif headline style and confident hero composition.",
-      "The bicycle wheel as the signature visual and service-navigation concept.",
-      "The varied section layouts and direct, plainspoken tone.",
-      "The complete mobile list of all three service descriptions."
+      "The warm paper, dark ink, and rust Tucson palette.",
+      "The oversized editorial serif headlines and restrained uppercase labels.",
+      "The bicycle-wheel service illustration and visible numbered service list.",
+      "The honest handling of unavailable address, hours, phone, and email details.",
+      "The strong full-width mobile service button and uncluttered section dividers."
     ]
   },
   "cycle": 1,
   "mode": "vision",
-  "createdAt": "2026-07-17T23:34:56.724Z",
+  "createdAt": "2026-07-18T00:13:31.434Z",
   "mechanicalPassed": true
 }

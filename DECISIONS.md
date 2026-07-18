@@ -55,6 +55,6 @@ Out of scope: modifying the production factory, importing production customer co
 
 ## Known prototype limits
 
-- All three demonstration runs improved, but their final critics still returned `revise` because the input lacked confirmed operating details or the rendered mobile design retained quality findings.
+- All three demonstration runs improved. Canyon Wheelworks reached the `ship` threshold after the final quality hardening pass. Harborlight Flower Studio and Juniper Oven remain `revise` because their inputs lack confirmed operating details or their rendered mobile designs retain quality findings.
 - Fast mode produces a concept site. A real business launch still requires verified facts, owner approval, and human review.
 - The shared Cloudflare Pages alias hosts one promoted example at a time. Per-deployment preview URLs remain in each deployment artifact.

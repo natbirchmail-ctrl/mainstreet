@@ -107,11 +107,11 @@ These scores come from the committed critic artifacts. They are design review si
 
 | Business | Score path | Selected cycle | Final verdict | Mechanical result | Evidence |
 | --- | --- | ---: | --- | --- | --- |
-| Canyon Wheelworks | 78 to 82 to 82 | 3 | Revise | Passed every cycle | [Run report](runs/canyon-wheelworks/RUN-REPORT.md) |
+| Canyon Wheelworks | 84 to 86 | 2 | Ship | Passed every cycle | [Run report](runs/canyon-wheelworks/RUN-REPORT.md) |
 | Harborlight Flower Studio | 72 to 77 to 79 | 3 | Revise | Passed every cycle | [Run report](runs/harborlight-flower-studio/RUN-REPORT.md) |
 | Juniper Oven | 60 to 78 to 79 | 3 | Revise | Cycle 1 failed; cycles 2 and 3 passed | [Run report](runs/juniper-oven/RUN-REPORT.md) |
 
-All three selected scores improved over the initial pass, but none reached the 85 point ship threshold. The critic withheld approval because confirmed operating details were absent and some mobile typography remained small. Mainstreet publishes the best available concept without pretending that incomplete business facts are launch ready.
+All three selected scores improved over the initial pass. Canyon Wheelworks reached the 85 point ship threshold after the public quality gates were tightened. The other critics withheld approval because confirmed operating details were absent and some mobile typography remained small. Mainstreet publishes the best available concept without pretending that incomplete business facts are launch ready.
 
 ### Canyon Wheelworks: first pass
 
@@ -122,10 +122,10 @@ All three selected scores improved over the initial pass, but none reached the 8
 ### Canyon Wheelworks: selected pass
 
 <p align="center">
-  <img src="runs/canyon-wheelworks/cycle-03/screenshots/desktop-home.png" width="760" alt="Canyon Wheelworks cycle 3 desktop screenshot">
+  <img src="runs/canyon-wheelworks/cycle-02/screenshots/desktop-home.png" width="760" alt="Canyon Wheelworks cycle 2 desktop screenshot">
 </p>
 
-The selected site scored 82, four points above the first pass. All three cycles, mobile captures, source files, mechanical reports, and full critiques remain under `runs/canyon-wheelworks/`.
+The selected site scored 86, two points above its stronger first pass and eight points above the earlier prompt baseline retained in Git history. Both cycles, mobile captures, source files, narrow viewport metrics, mechanical reports, and full critiques remain under `runs/canyon-wheelworks/`.
 
 ## Run artifacts
 

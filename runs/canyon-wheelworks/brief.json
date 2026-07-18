@@ -4,32 +4,32 @@
   "business": {
     "name": "Canyon Wheelworks",
     "city": "Tucson, AZ",
-    "category": "Neighborhood bicycle repair shop",
-    "summary": "A Tucson bicycle repair shop focused on commuter tune ups, flat fixes, and careful maintenance. Walk in service is welcome."
+    "category": "Bicycle repair shop",
+    "summary": "A neighborhood bicycle repair shop offering commuter tune ups, flat fixes, and careful maintenance with walk in service welcome."
   },
   "audience": {
-    "primary": "Tucson commuters and neighborhood riders who depend on their bicycles for everyday trips",
+    "primary": "Tucson commuters and neighborhood cyclists",
     "needs": [
-      "Clear repair options",
-      "Careful maintenance",
+      "Dependable repairs",
       "Convenient walk in service",
-      "Straightforward service information"
+      "Careful routine maintenance",
+      "Clear information about services"
     ]
   },
   "offerings": [
     {
-      "name": "Commuter Tune Ups",
-      "description": "Routine service focused on keeping everyday bicycles working smoothly.",
+      "name": "Commuter tune ups",
+      "description": "Routine attention to help everyday bicycles ride smoothly and reliably.",
       "confidence": "confirmed"
     },
     {
-      "name": "Flat Fixes",
-      "description": "Repair service for flat bicycle tires.",
+      "name": "Flat fixes",
+      "description": "Walk in help for flat tires and related tire issues.",
       "confidence": "confirmed"
     },
     {
-      "name": "Careful Maintenance",
-      "description": "General bicycle maintenance based on the condition and needs of each bike.",
+      "name": "Careful maintenance",
+      "description": "Thoughtful upkeep for bicycles that need regular service.",
       "confidence": "confirmed"
     }
   ],
@@ -40,29 +40,29 @@
       "Careful",
       "Dependable"
     ],
-    "voice": "Plainspoken, helpful, and grounded in everyday riding.",
-    "aesthetic": "A desert workshop look with warm sandstone tones, dark mechanical details, strong typography, and close bicycle component photography.",
+    "voice": "Direct, helpful, and grounded in everyday cycling.",
+    "aesthetic": "A warm desert workshop look with sun faded paper tones, dark ink, simple bicycle diagrams, and subtle references to Tucson terrain.",
     "signatureMove": {
-      "name": "Service Wheel",
-      "description": "A bicycle wheel diagram highlights each repair service as visitors move through the page. Selecting a spoke reveals the matching service details beside it.",
-      "touchFallback": "On touch devices, every spoke is a labeled button and all service details remain available in a simple list below the wheel.",
-      "reducedMotion": "With reduced motion enabled, the wheel remains still and every service label is visible without animation."
+      "name": "Rolling Service Wheel",
+      "description": "A simple illustrated bicycle wheel turns gently as visitors move through the service list, while every service remains visible as regular page content.",
+      "touchFallback": "On touch screens, the complete service list stays visible and the wheel appears as a static illustration.",
+      "reducedMotion": "When reduced motion is enabled, the wheel remains still and all content stays visible."
     },
     "palette": {
-      "background": "#F3E8D2",
-      "surface": "#FFF9EE",
-      "text": "#24231F",
-      "accent": "#B84F2E"
+      "background": "#F3E8D0",
+      "surface": "#FFF9ED",
+      "text": "#252822",
+      "accent": "#B64A2B"
     }
   },
   "content": {
     "eyebrow": "Neighborhood bicycle repair in Tucson",
-    "headline": "Keep Your Everyday Ride Moving",
-    "subheadline": "Commuter tune ups, flat fixes, and careful maintenance with walk in service welcome.",
-    "about": "Canyon Wheelworks is a neighborhood bicycle repair shop in Tucson. We focus on commuter tune ups, flat fixes, and careful maintenance for everyday bicycles.",
-    "primaryAction": "Bring In Your Bike",
-    "secondaryAction": "Explore Services",
-    "contactPrompt": "Walk in with your bike and tell us what needs attention."
+    "headline": "Careful bike repair for everyday Tucson rides",
+    "subheadline": "Bring your bike in for commuter tune ups, flat fixes, and thoughtful maintenance. Walk ins are welcome.",
+    "about": "Canyon Wheelworks is a neighborhood shop focused on keeping everyday bicycles in good working order. The approach is practical, careful, and suited to riders who depend on their bikes.",
+    "primaryAction": "Plan a visit",
+    "secondaryAction": "See repair services",
+    "contactPrompt": "Walk in with your bike or contact the shop once current details are available."
   },
   "contact": {
     "phone": null,
@@ -91,29 +91,27 @@
     "inferred": [
       {
         "label": "Primary audience",
-        "value": "Tucson commuters and neighborhood riders",
+        "value": "Tucson commuters and neighborhood cyclists",
         "confidence": "high"
       },
       {
         "label": "Positioning",
-        "value": "Practical neighborhood care for bicycles used in everyday travel",
+        "value": "Practical neighborhood care for everyday bicycles",
         "confidence": "high"
       },
       {
-        "label": "Brand direction",
-        "value": "A warm desert workshop identity with mechanical details",
+        "label": "Visual direction",
+        "value": "Warm desert workshop style with simple bicycle diagrams",
         "confidence": "medium"
       }
     ],
     "needed": [
-      "Street address",
       "Phone number",
       "Email address",
+      "Street address",
       "Opening hours",
-      "Detailed service list",
-      "Service prices",
-      "Typical turnaround times",
-      "Payment methods"
+      "Service pricing",
+      "Typical turnaround times"
     ]
   }
 }

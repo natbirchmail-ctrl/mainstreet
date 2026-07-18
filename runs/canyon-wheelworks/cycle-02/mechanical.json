@@ -14,7 +14,7 @@
       "missingAltCount": 0,
       "brokenAnchors": [],
       "smallTargets": [],
-      "visibleTextLength": 1395
+      "visibleTextLength": 1217
     },
     "mobile": {
       "viewportWidth": 390,
@@ -26,7 +26,19 @@
       "missingAltCount": 0,
       "brokenAnchors": [],
       "smallTargets": [],
-      "visibleTextLength": 1728
+      "visibleTextLength": 1217
+    },
+    "narrow": {
+      "viewportWidth": 320,
+      "viewportHeight": 800,
+      "scrollWidth": 320,
+      "horizontalOverflow": false,
+      "h1Count": 1,
+      "mainCount": 1,
+      "missingAltCount": 0,
+      "brokenAnchors": [],
+      "smallTargets": [],
+      "visibleTextLength": 1217
     },
     "consoleErrors": [],
     "pageErrors": [],
