@@ -1,8 +1,9 @@
-import { spawn } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
 import { createHash } from "node:crypto";
-import { access, readFile } from "node:fs/promises";
+import { access, lstat, readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { promisify } from "node:util";
 
 import { resolveInside, writeJsonNew } from "./lib/runs.js";
 import { findLatestSite } from "./serve.js";
@@ -10,9 +11,39 @@ import { findLatestSite } from "./serve.js";
 const LOCAL_URL = "http://127.0.0.1:4601/";
 const DEFAULT_PROJECT = "mainstreet-hackathon";
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
+const execFileAsync = promisify(execFile);
 const wranglerBin = fileURLToPath(
   new URL("../node_modules/wrangler/bin/wrangler.js", import.meta.url),
 );
+
+export async function createSiteDigestManifest(siteDir) {
+  const root = path.resolve(siteDir);
+  const rootStat = await lstat(root);
+  if (!rootStat.isDirectory() || rootStat.isSymbolicLink()) {
+    throw codedError("Deployment site root must be a real directory.", "INVALID_SITE_ROOT");
+  }
+
+  const files = [];
+  await collectSiteFiles(root, root, files);
+  if (files.length === 0) {
+    throw codedError("Deployment site contains no files.", "EMPTY_SITE");
+  }
+  files.sort((left, right) => left.path.localeCompare(right.path, "en"));
+
+  const aggregate = createHash("sha256");
+  for (const file of files) {
+    aggregate.update(file.path, "utf8");
+    aggregate.update("\0", "utf8");
+    aggregate.update(String(file.bytes), "utf8");
+    aggregate.update("\0", "utf8");
+    aggregate.update(file.sha256, "utf8");
+    aggregate.update("\n", "utf8");
+  }
+  return {
+    aggregateSha256: aggregate.digest("hex"),
+    files,
+  };
+}
 
 export async function deployToPages({
   siteDir,
@@ -21,9 +52,11 @@ export async function deployToPages({
   runner = runWrangler,
   fetchFn = fetch,
   sleep = defaultSleep,
+  digestManifest,
 }) {
+  const manifest = digestManifest || (await createSiteDigestManifest(siteDir));
   if (!env.CLOUDFLARE_API_TOKEN?.trim() || !env.CLOUDFLARE_ACCOUNT_ID?.trim()) {
-    return localFallback("missing_credentials");
+    return localFallback("missing_credentials", manifest);
   }
 
   try {
@@ -66,16 +99,13 @@ export async function deployToPages({
       { env },
     );
     assertCommandSucceeded(deployResult, "DEPLOY_FAILED");
-    const deploymentUrl = parseDeploymentUrl(
+    const immutableUrl = parseDeploymentUrl(
       `${deployResult.stdout}\n${deployResult.stderr}`,
     );
     const url = `https://${projectName}.pages.dev/`;
-    const expectedDigest = digest(
-      await readFile(resolveInside(siteDir, "index.html")),
-    );
     const verification = await verifyDeployment({
       url,
-      expectedDigest,
+      expectedFiles: manifest.files,
       fetchFn,
       sleep,
     });
@@ -84,14 +114,17 @@ export async function deployToPages({
       mode: "cloudflare",
       projectName,
       url,
-      deploymentUrl,
+      deploymentUrl: immutableUrl,
+      immutableUrl,
       verified: verification.verified,
       status: verification.status,
+      aggregateSha256: manifest.aggregateSha256,
+      files: verification.files,
       reason: null,
     };
   } catch (error) {
     return {
-      ...localFallback("cloudflare_failed"),
+      ...localFallback("cloudflare_failed", manifest),
       errorCode: error?.code || error?.name || "CLOUDFLARE_ERROR",
     };
   }
@@ -104,10 +137,27 @@ export async function deployRun({
   siteDir,
   deployFn = deployToPages,
   startLocalFn = null,
+  commitResolver = resolveGitCommit,
   now = () => new Date(),
 }) {
+  if (!Number.isInteger(selectedCycle) || selectedCycle < 1 || selectedCycle > 3) {
+    throw new TypeError("Selected cycle must be an integer from 1 through 3.");
+  }
   const resolvedSiteDir = siteDir || (await findSelectedSite(runDir));
-  let result = await deployFn({ siteDir: resolvedSiteDir });
+  const expectedSiteDir = resolveInside(
+    runDir,
+    `cycle-${String(selectedCycle).padStart(2, "0")}`,
+    "site",
+  );
+  if (path.resolve(resolvedSiteDir) !== path.resolve(expectedSiteDir)) {
+    throw new Error("Selected site directory does not match the selected cycle.");
+  }
+
+  const digestManifest = await createSiteDigestManifest(resolvedSiteDir);
+  const shipEligible = await readShipEligibility(runDir, selectedCycle);
+  let result = shipEligible
+    ? await deployFn({ siteDir: resolvedSiteDir, digestManifest })
+    : localFallback("not_ship_eligible", digestManifest);
   if (result.mode === "local" && startLocalFn) {
     const preview = await startLocalFn({ root: resolvedSiteDir, port: 4601 });
     result = {
@@ -115,17 +165,51 @@ export async function deployRun({
       url: preview.url,
       verified: true,
       status: preview.status ?? null,
+      files: digestManifest.files.map((file) => ({
+        ...file,
+        status: preview.status ?? null,
+        verified: true,
+      })),
     };
   }
+  const commit = await commitResolver();
+  const files = normalizeDeploymentFiles({
+    sourceFiles: digestManifest.files,
+    verificationFiles: result.files,
+    mode: result.mode,
+    verified: result.verified,
+    status: result.status,
+  });
   const artifact = {
-    schemaVersion: "1.0",
+    schemaVersion: "2.0",
+    mode: result.mode,
     slug,
     selectedCycle,
+    commit: normalizeCommit(commit),
+    url: result.url,
+    immutableUrl: result.immutableUrl ?? result.deploymentUrl ?? null,
     createdAt: now().toISOString(),
-    ...result,
+    status: result.status ?? null,
+    verified: result.verified === true,
+    aggregateSha256: digestManifest.aggregateSha256,
+    files,
   };
   await writeJsonNew(await nextDeploymentArtifactPath(runDir), artifact);
   return artifact;
+}
+
+export async function resolveGitCommit() {
+  try {
+    const { stdout } = await execFileAsync("git", ["rev-parse", "HEAD"], {
+      cwd: projectRoot,
+      windowsHide: true,
+      timeout: 10_000,
+      encoding: "utf8",
+    });
+    return normalizeCommit(stdout.trim());
+  } catch {
+    return "unavailable";
+  }
 }
 
 async function nextDeploymentArtifactPath(runDir) {
@@ -157,6 +241,103 @@ async function pathExists(target) {
     }
     throw error;
   }
+}
+
+async function collectSiteFiles(root, currentDir, files) {
+  const entries = await readdir(currentDir, { withFileTypes: true });
+  entries.sort((left, right) => left.name.localeCompare(right.name, "en"));
+  for (const entry of entries) {
+    const target = path.join(currentDir, entry.name);
+    const stat = await lstat(target);
+    if (stat.isSymbolicLink()) {
+      throw codedError("Deployment site cannot contain linked paths.", "LINKED_SITE_PATH");
+    }
+    if (stat.isDirectory()) {
+      await collectSiteFiles(root, target, files);
+      continue;
+    }
+    if (!stat.isFile()) {
+      throw codedError("Deployment site contains a non-file entry.", "INVALID_SITE_ENTRY");
+    }
+
+    const relative = path.relative(root, target).split(path.sep).join("/");
+    if (
+      !/^[A-Za-z0-9._-]+(?:\/[A-Za-z0-9._-]+)*$/.test(relative) ||
+      relative.split("/").some((segment) => segment === "." || segment === ".." || segment.startsWith("."))
+    ) {
+      throw codedError("Deployment site contains an unsafe relative path.", "UNSAFE_SITE_PATH");
+    }
+    const bytes = await readFile(target);
+    files.push({
+      path: relative,
+      bytes: bytes.length,
+      sha256: digest(bytes),
+    });
+  }
+}
+
+async function readShipEligibility(runDir, selectedCycle) {
+  try {
+    const critique = JSON.parse(
+      await readFile(
+        resolveInside(
+          runDir,
+          `cycle-${String(selectedCycle).padStart(2, "0")}`,
+          "critique.json",
+        ),
+        "utf8",
+      ),
+    );
+    return critique?.shipEligible === true && critique?.mode === "vision";
+  } catch (error) {
+    if (error?.code === "ENOENT" || error instanceof SyntaxError) {
+      return false;
+    }
+    throw error;
+  }
+}
+
+function normalizeDeploymentFiles({
+  sourceFiles,
+  verificationFiles,
+  mode,
+  verified,
+  status,
+}) {
+  const byPath = new Map(
+    (Array.isArray(verificationFiles) ? verificationFiles : []).map((file) => [
+      file?.path,
+      file,
+    ]),
+  );
+  return sourceFiles.map((source) => {
+    const observed = byPath.get(source.path);
+    if (mode === "cloudflare") {
+      if (
+        !observed ||
+        observed.bytes !== source.bytes ||
+        observed.sha256 !== source.sha256 ||
+        observed.verified !== true
+      ) {
+        throw codedError(
+          "Cloudflare verification evidence is incomplete.",
+          "INCOMPLETE_DEPLOYMENT_EVIDENCE",
+        );
+      }
+    }
+    return {
+      path: source.path,
+      bytes: source.bytes,
+      sha256: source.sha256,
+      status: observed?.status ?? status ?? null,
+      verified: observed?.verified === true || (mode === "local" && verified === true),
+    };
+  });
+}
+
+function normalizeCommit(value) {
+  const commit = String(value ?? "").trim().toLowerCase();
+  return /^[a-f0-9]{40}(?:[a-f0-9]{24})?$/.test(commit) ? commit : "unavailable";
 }
 
 export async function findSelectedSite(runDir) {
@@ -222,27 +403,60 @@ export function runWrangler(args, { env = process.env } = {}) {
   });
 }
 
-async function verifyDeployment({ url, expectedDigest, fetchFn, sleep }) {
-  let status = null;
+async function verifyDeployment({ url, expectedFiles, fetchFn, sleep }) {
+  let lastFiles = expectedFiles.map((file) => ({
+    ...file,
+    status: null,
+    verified: false,
+  }));
   for (let attempt = 1; attempt <= 7; attempt += 1) {
-    try {
-      const response = await fetchFn(url, {
-        redirect: "follow",
-        signal: AbortSignal.timeout(5_000),
-      });
-      status = response.status;
-      const bodyDigest = digest(Buffer.from(await response.arrayBuffer()));
-      if (response.ok && bodyDigest === expectedDigest) {
-        return { verified: true, status };
+    const observed = [];
+    for (const expected of expectedFiles) {
+      const targetUrl = canonicalFileUrl(url, expected.path);
+      try {
+        const response = await fetchFn(targetUrl, {
+          redirect: "follow",
+          signal: AbortSignal.timeout(5_000),
+        });
+        const body = Buffer.from(await response.arrayBuffer());
+        observed.push({
+          ...expected,
+          status: response.status,
+          verified:
+            response.ok &&
+            body.length === expected.bytes &&
+            digest(body) === expected.sha256,
+        });
+      } catch {
+        observed.push({
+          ...expected,
+          status: null,
+          verified: false,
+        });
       }
-    } catch {
-      status = null;
+    }
+    lastFiles = observed;
+    if (observed.length === expectedFiles.length && observed.every((file) => file.verified)) {
+      const index = observed.find((file) => file.path === "index.html") ?? observed[0];
+      return { verified: true, status: index.status, files: observed };
     }
     if (attempt < 7) {
       await sleep(500 * 2 ** (attempt - 1));
     }
   }
+  void lastFiles;
   throw codedError("Cloudflare deployment could not be verified.", "VERIFY_FAILED");
+}
+
+function canonicalFileUrl(baseUrl, relativePath) {
+  if (relativePath === "index.html") {
+    return new URL(baseUrl).href;
+  }
+  const encodedPath = relativePath
+    .split("/")
+    .map((segment) => encodeURIComponent(segment))
+    .join("/");
+  return new URL(encodedPath, baseUrl).href;
 }
 
 function digest(value) {
@@ -269,13 +483,20 @@ function assertCommandSucceeded(result, code) {
   }
 }
 
-function localFallback(reason) {
+function localFallback(reason, manifest = { aggregateSha256: null, files: [] }) {
   return {
     mode: "local",
     projectName: null,
     url: LOCAL_URL,
+    immutableUrl: null,
     verified: false,
     status: null,
+    aggregateSha256: manifest.aggregateSha256,
+    files: manifest.files.map((file) => ({
+      ...file,
+      status: null,
+      verified: false,
+    })),
     reason,
   };
 }

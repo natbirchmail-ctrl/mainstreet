@@ -5,6 +5,7 @@ import path from "node:path";
 import test from "node:test";
 
 import {
+  createSiteDigestManifest,
   deployRun,
   deployToPages,
   findSelectedSite,
@@ -15,11 +16,54 @@ const credentials = {
   CLOUDFLARE_API_TOKEN: "test-token-not-real",
   CLOUDFLARE_ACCOUNT_ID: "test-account",
 };
+const TEST_COMMIT = "a".repeat(40);
+
+async function makeCompleteSite(siteDir, label = "Mainstreet current") {
+  await mkdir(path.join(siteDir, "assets"), { recursive: true });
+  await Promise.all([
+    writeFile(path.join(siteDir, "index.html"), `<!doctype html><title>${label}</title>`, "utf8"),
+    writeFile(path.join(siteDir, "styles.css"), "body { color: #171717; }", "utf8"),
+    writeFile(path.join(siteDir, "script.js"), "'use strict';\n", "utf8"),
+    writeFile(path.join(siteDir, "assets", "hero.png"), Buffer.from([137, 80, 78, 71, 1, 2, 3])),
+  ]);
+}
+
+async function writeEligibility(runDir, cycle, shipEligible) {
+  const cycleDir = path.join(runDir, `cycle-${String(cycle).padStart(2, "0")}`);
+  await mkdir(cycleDir, { recursive: true });
+  await writeFile(
+    path.join(cycleDir, "critique.json"),
+    JSON.stringify({ mode: "vision", shipEligible }),
+    "utf8",
+  );
+}
+
+test("site digest includes every public byte in stable path order", async () => {
+  const siteDir = path.join(process.cwd(), "tmp", randomUUID(), "site");
+  await makeCompleteSite(siteDir);
+
+  const first = await createSiteDigestManifest(siteDir);
+  const second = await createSiteDigestManifest(siteDir);
+
+  assert.deepEqual(
+    first.files.map((file) => file.path),
+    ["assets/hero.png", "index.html", "script.js", "styles.css"],
+  );
+  assert.deepEqual(second, first);
+  assert.match(first.aggregateSha256, /^[a-f0-9]{64}$/);
+  for (const file of first.files) {
+    assert.deepEqual(Object.keys(file).sort(), ["bytes", "path", "sha256"]);
+    assert.ok(file.bytes > 0);
+    assert.match(file.sha256, /^[a-f0-9]{64}$/);
+  }
+});
 
 test("deployToPages returns the local fallback when credentials are absent", async () => {
   let called = false;
+  const siteDir = path.join(process.cwd(), "tmp", randomUUID(), "site");
+  await makeCompleteSite(siteDir);
   const result = await deployToPages({
-    siteDir: process.cwd(),
+    siteDir,
     env: {},
     runner: async () => {
       called = true;
@@ -149,8 +193,10 @@ test("deployToPages waits until the canonical alias serves the selected site", a
 });
 
 test("deployToPages degrades to local serving after a Cloudflare failure", async () => {
+  const siteDir = path.join(process.cwd(), "tmp", randomUUID(), "site");
+  await makeCompleteSite(siteDir);
   const result = await deployToPages({
-    siteDir: process.cwd(),
+    siteDir,
     env: credentials,
     runner: async () => ({ exitCode: 1, stdout: "", stderr: "denied" }),
   });
@@ -181,7 +227,7 @@ test("findSelectedSite honors the final run report", async () => {
 test("deployRun starts a local fallback before recording a truthful URL", async () => {
   const runDir = path.join(process.cwd(), "tmp", randomUUID(), "run");
   const siteDir = path.join(runDir, "cycle-01", "site");
-  await mkdir(siteDir, { recursive: true });
+  await makeCompleteSite(siteDir);
   let started = false;
 
   const result = await deployRun({
@@ -217,7 +263,7 @@ test("deployRun starts a local fallback before recording a truthful URL", async 
 test("deployRun does not record a local URL when the preview cannot bind", async () => {
   const runDir = path.join(process.cwd(), "tmp", randomUUID(), "run");
   const siteDir = path.join(runDir, "cycle-01", "site");
-  await mkdir(siteDir, { recursive: true });
+  await makeCompleteSite(siteDir);
 
   await assert.rejects(
     deployRun({
@@ -246,7 +292,7 @@ test("deployRun does not record a local URL when the preview cannot bind", async
 test("deployRun preserves deployment history across later promotions", async () => {
   const runDir = path.join(process.cwd(), "tmp", randomUUID(), "run");
   const siteDir = path.join(runDir, "cycle-01", "site");
-  await mkdir(siteDir, { recursive: true });
+  await makeCompleteSite(siteDir);
   let tick = 0;
   const deploy = () =>
     deployRun({
@@ -278,4 +324,153 @@ test("deployRun preserves deployment history across later promotions", async () 
     ).createdAt,
     second.createdAt,
   );
+});
+
+test("deployToPages verifies HTML, CSS, script, and image bytes on the canonical alias", async () => {
+  const siteDir = path.join(process.cwd(), "tmp", randomUUID(), "site");
+  await makeCompleteSite(siteDir, "Whole site");
+  const expected = new Map([
+    ["/", await readFile(path.join(siteDir, "index.html"))],
+    ["/styles.css", await readFile(path.join(siteDir, "styles.css"))],
+    ["/script.js", await readFile(path.join(siteDir, "script.js"))],
+    ["/assets/hero.png", await readFile(path.join(siteDir, "assets", "hero.png"))],
+  ]);
+  const fetched = [];
+
+  const result = await deployToPages({
+    siteDir,
+    projectName: "mainstreet-hackathon",
+    env: credentials,
+    runner: async (args) => {
+      if (args.join(" ").includes("project list")) {
+        return { exitCode: 0, stdout: JSON.stringify([{ name: "mainstreet-hackathon" }]), stderr: "" };
+      }
+      return { exitCode: 0, stdout: "https://whole.mainstreet-hackathon.pages.dev", stderr: "" };
+    },
+    fetchFn: async (url) => {
+      const pathname = new URL(url).pathname;
+      fetched.push(pathname);
+      return new Response(expected.get(pathname), { status: expected.has(pathname) ? 200 : 404 });
+    },
+    sleep: async () => {},
+  });
+
+  assert.equal(result.mode, "cloudflare");
+  assert.equal(result.verified, true);
+  assert.deepEqual([...new Set(fetched)].sort(), ["/", "/assets/hero.png", "/script.js", "/styles.css"]);
+  assert.equal(result.files.length, 4);
+  assert.ok(result.files.every((file) => file.status === 200 && file.verified === true));
+});
+
+test("one stale image prevents Cloudflare verification even when index HTML matches", async () => {
+  const siteDir = path.join(process.cwd(), "tmp", randomUUID(), "site");
+  await makeCompleteSite(siteDir, "Fresh HTML");
+
+  const result = await deployToPages({
+    siteDir,
+    projectName: "mainstreet-hackathon",
+    env: credentials,
+    runner: async (args) => {
+      if (args.join(" ").includes("project list")) {
+        return { exitCode: 0, stdout: JSON.stringify([{ name: "mainstreet-hackathon" }]), stderr: "" };
+      }
+      return { exitCode: 0, stdout: "https://stale.mainstreet-hackathon.pages.dev", stderr: "" };
+    },
+    fetchFn: async (url) => {
+      const pathname = new URL(url).pathname;
+      if (pathname === "/") return new Response(await readFile(path.join(siteDir, "index.html")), { status: 200 });
+      if (pathname === "/assets/hero.png") return new Response("stale image", { status: 200 });
+      const relative = pathname.slice(1);
+      return new Response(await readFile(path.join(siteDir, relative)), { status: 200 });
+    },
+    sleep: async () => {},
+  });
+
+  assert.equal(result.mode, "local");
+  assert.equal(result.verified, false);
+  assert.equal(result.reason, "cloudflare_failed");
+});
+
+test("deployRun records only the public allowlist bound to cycle, commit, and all files", async () => {
+  const runDir = path.join(process.cwd(), "tmp", randomUUID(), "run");
+  const siteDir = path.join(runDir, "cycle-02", "site");
+  await makeCompleteSite(siteDir, "Allowlist");
+  await writeEligibility(runDir, 2, true);
+  const digestManifest = await createSiteDigestManifest(siteDir);
+
+  const result = await deployRun({
+    runDir,
+    slug: "allowlist-proof",
+    selectedCycle: 2,
+    siteDir,
+    deployFn: async () => ({
+      mode: "cloudflare",
+      url: "https://mainstreet-hackathon.pages.dev/",
+      immutableUrl: "https://allowlist.mainstreet-hackathon.pages.dev/",
+      verified: true,
+      status: 200,
+      aggregateSha256: digestManifest.aggregateSha256,
+      files: digestManifest.files.map((file) => ({ ...file, status: 200, verified: true })),
+      providerOutput: "must not persist",
+      projectName: "must-not-persist",
+    }),
+    commitResolver: async () => TEST_COMMIT,
+    now: () => new Date("2026-07-17T20:00:00.000Z"),
+  });
+
+  assert.deepEqual(Object.keys(result).sort(), [
+    "aggregateSha256",
+    "commit",
+    "createdAt",
+    "files",
+    "immutableUrl",
+    "mode",
+    "schemaVersion",
+    "selectedCycle",
+    "slug",
+    "status",
+    "url",
+    "verified",
+  ]);
+  assert.equal(result.slug, "allowlist-proof");
+  assert.equal(result.selectedCycle, 2);
+  assert.equal(result.commit, TEST_COMMIT);
+  assert.equal(result.aggregateSha256, digestManifest.aggregateSha256);
+  assert.equal(JSON.stringify(result).includes("must not persist"), false);
+  assert.ok(result.files.every((file) =>
+    JSON.stringify(Object.keys(file).sort()) === JSON.stringify(["bytes", "path", "sha256", "status", "verified"])
+  ));
+});
+
+test("deployRun never calls Cloudflare for a noneligible selected cycle", async () => {
+  const runDir = path.join(process.cwd(), "tmp", randomUUID(), "run");
+  const siteDir = path.join(runDir, "cycle-01", "site");
+  await makeCompleteSite(siteDir, "Local only");
+  await writeEligibility(runDir, 1, false);
+  let cloudflareCalled = false;
+  let localStarted = false;
+
+  const result = await deployRun({
+    runDir,
+    slug: "local-only",
+    selectedCycle: 1,
+    siteDir,
+    deployFn: async () => {
+      cloudflareCalled = true;
+      throw new Error("must not deploy");
+    },
+    startLocalFn: async ({ root, port }) => {
+      assert.equal(root, siteDir);
+      assert.equal(port, 4601);
+      localStarted = true;
+      return { url: "http://127.0.0.1:4601/", status: 200 };
+    },
+    commitResolver: async () => TEST_COMMIT,
+  });
+
+  assert.equal(cloudflareCalled, false);
+  assert.equal(localStarted, true);
+  assert.equal(result.mode, "local");
+  assert.equal(result.url, "http://127.0.0.1:4601/");
+  assert.equal(result.immutableUrl, null);
 });
