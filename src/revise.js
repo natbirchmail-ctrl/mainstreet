@@ -1,6 +1,10 @@
 import { readFile } from "node:fs/promises";
 
-import { validateSiteManifest, writeSiteFiles } from "./build.js";
+import {
+  hydrateSiteManifest,
+  validateSiteManifest,
+  writeSiteFiles,
+} from "./build.js";
 import { requestStructured } from "./lib/openai.js";
 import { resolveInside, writeJsonNew } from "./lib/runs.js";
 
@@ -20,6 +24,7 @@ export async function reviseSite({
   if (!brief?.business?.name || !currentManifest?.indexHtml || !critique?.issues) {
     throw new TypeError("Brief, current site, and critique are required for revision.");
   }
+  validateSiteManifest(currentManifest);
 
   const [systemPrompt, schema] = await Promise.all([
     readFile(promptUrl, "utf8"),
@@ -39,6 +44,8 @@ export async function reviseSite({
         currentSite: {
           indexHtml: currentManifest.indexHtml,
           stylesCss: currentManifest.stylesCss,
+          scriptJs: currentManifest.scriptJs,
+          imagePlan: currentManifest.imagePlan,
           designNotes: currentManifest.designNotes,
         },
         critique,
@@ -53,8 +60,8 @@ export async function reviseSite({
     });
 
     try {
-      validateSiteManifest(candidate);
-      return { ...candidate, source: "openai-revision" };
+      const hydrated = hydrateSiteManifest(candidate);
+      return { ...hydrated, source: "openai-revision" };
     } catch (error) {
       lastValidationError = error;
     }
@@ -87,7 +94,7 @@ export async function reviseRun({
   );
   const currentSiteDir = resolveInside(fromCycleDir, "site");
 
-  const [brief, critique, mechanical, buildRecord, indexHtml, stylesCss] =
+  const [brief, critique, mechanical, buildRecord, indexHtml, stylesCss, scriptJs] =
     await Promise.all([
       readJson(resolveInside(runDir, "brief.json")),
       readJson(resolveInside(fromCycleDir, "critique.json")),
@@ -95,11 +102,14 @@ export async function reviseRun({
       readJson(resolveInside(fromCycleDir, "build.json")),
       readFile(resolveInside(currentSiteDir, "index.html"), "utf8"),
       readFile(resolveInside(currentSiteDir, "styles.css"), "utf8"),
+      readFile(resolveInside(currentSiteDir, "script.js"), "utf8"),
     ]);
 
   const currentManifest = {
     indexHtml,
     stylesCss,
+    scriptJs,
+    imagePlan: buildRecord.imagePlan,
     designNotes: buildRecord.designNotes,
   };
   const revisedManifest = await reviseSiteFn({
@@ -118,7 +128,7 @@ export async function reviseRun({
     mustKeep: [
       "Confirmed business facts and explicit unknowns",
       "Single page semantic structure",
-      "No JavaScript or external assets",
+      "Owned script and planned local PNG assets only",
       "No emoji or visible dash characters",
       "Every current accessibility safeguard",
     ],
@@ -138,6 +148,7 @@ export async function reviseRun({
       source: revisedManifest.source,
       fallbackReason: null,
       designNotes: revisedManifest.designNotes,
+      imagePlan: revisedManifest.imagePlan,
     }),
   ]);
 

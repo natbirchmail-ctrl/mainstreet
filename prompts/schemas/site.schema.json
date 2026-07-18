@@ -2,19 +2,73 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "properties": {
-    "indexHtml": { "type": "string" },
-    "stylesCss": { "type": "string" },
+    "indexHtml": { "type": "string", "minLength": 1, "maxLength": 120000 },
+    "stylesCss": { "type": "string", "minLength": 1, "maxLength": 80000 },
+    "scriptJs": { "type": "string", "const": "" },
+    "imagePlan": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "properties": {
+          "filename": {
+            "type": "string",
+            "minLength": 5,
+            "maxLength": 80,
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.png$"
+          },
+          "role": { "type": "string", "minLength": 1, "maxLength": 64 },
+          "alt": { "type": "string", "minLength": 1, "maxLength": 180 },
+          "prompt": { "type": "string", "minLength": 1, "maxLength": 1200 },
+          "focalPoint": {
+            "type": "object",
+            "properties": {
+              "x": { "type": "number", "minimum": 0, "maximum": 1 },
+              "y": { "type": "number", "minimum": 0, "maximum": 1 }
+            },
+            "required": ["x", "y"],
+            "additionalProperties": false
+          }
+        },
+        "required": ["filename", "role", "alt", "prompt", "focalPoint"],
+        "additionalProperties": false
+      }
+    },
     "designNotes": {
       "type": "object",
       "properties": {
-        "aesthetic": { "type": "string" },
-        "signatureMove": { "type": "string" },
-        "rationale": { "type": "string" }
+        "aesthetic": { "type": "string", "minLength": 1, "maxLength": 400 },
+        "signatureMove": { "type": "string", "minLength": 1, "maxLength": 400 },
+        "rationale": { "type": "string", "minLength": 1, "maxLength": 800 },
+        "shootDirection": { "type": "string", "minLength": 1, "maxLength": 800 },
+        "motionMoves": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 2,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "pinned chapter passage",
+              "horizontal click reel",
+              "numbered story stepper",
+              "staged hero entrance",
+              "gentle one direction scroll reveals"
+            ]
+          }
+        }
       },
-      "required": ["aesthetic", "signatureMove", "rationale"],
+      "required": [
+        "aesthetic",
+        "signatureMove",
+        "rationale",
+        "shootDirection",
+        "motionMoves"
+      ],
       "additionalProperties": false
     }
   },
-  "required": ["indexHtml", "stylesCss", "designNotes"],
+  "required": ["indexHtml", "stylesCss", "scriptJs", "imagePlan", "designNotes"],
   "additionalProperties": false
 }
