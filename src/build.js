@@ -167,7 +167,7 @@ function validateManifest(manifest, { modelOutput, allowBuildMetadata }) {
     if (manifest.scriptJs !== "") {
       throw new Error("Model scriptJs must be the empty sentinel.");
     }
-    validateModelMotionCss(manifest.stylesCss);
+    validateModelMotionCss(manifest.stylesCss, manifest.indexHtml);
   } else {
     const expectedRuntime = createOwnedMotionRuntime(motionMoves);
     if (manifest.scriptJs !== expectedRuntime) {
@@ -185,10 +185,52 @@ function validateManifest(manifest, { modelOutput, allowBuildMetadata }) {
   return manifest;
 }
 
-function validateModelMotionCss(css) {
-  if (/\bdata-motion-(?:root|target|panel|state|visible|selected|progress|ready)\b/i.test(css)) {
+function validateModelMotionCss(css, html) {
+  if (/\bdata-(?:motion-[a-z0-9-]+|first-beat)\b/i.test(css) || /--motion-[a-z0-9-]+/i.test(css)) {
     throw new Error("Model CSS must not target Mainstreet owned motion hooks.");
   }
+  const hooked = openingTags(html).filter(({ raw }) =>
+    ["data-first-beat", "data-motion-root", "data-motion-target", "data-motion-panel", "data-motion-control"].some(
+      (attribute) => attributeEntries(raw, attribute).length > 0,
+    ),
+  );
+  const protectedTags = [...hooked];
+  for (const hook of hooked) protectedTags.push(...ancestorTagsAt(html, hook.index));
+  for (const match of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+    const selectors = match[1].trim();
+    const declarations = match[2];
+    if (!hasHookOverrideDeclaration(declarations)) continue;
+    if (selectors.split(",").some((selector) => protectedTags.some((tag) => selectorCouldMatchTag(selector, tag)))) {
+      throw new Error("Model CSS must not hide or override hooked source DOM.");
+    }
+  }
+}
+
+function hasHookOverrideDeclaration(declarations) {
+  for (const match of declarations.matchAll(/(?:^|;)\s*([a-z-]+)\s*:\s*([^;}]*)/gi)) {
+    const property = match[1].toLowerCase();
+    const value = match[2].trim().toLowerCase();
+    if (property === "opacity") return true;
+    if (property === "display" && /\bnone\b/.test(value)) return true;
+    if (property === "visibility" && /\b(?:hidden|collapse)\b/.test(value)) return true;
+    if (["transform", "translate", "rotate", "scale", "clip", "clip-path"].includes(property)) return true;
+    if (/^(?:animation|transition)(?:-|$)/.test(property)) return true;
+    if (property === "content-visibility" && /\bhidden\b/.test(value)) return true;
+    if (["width", "height", "max-width", "max-height"].includes(property) && /^0(?:\D|$)/.test(value)) return true;
+    if ((property === "filter" || property === "backdrop-filter") && /opacity\(\s*0(?:\D|$)/.test(value)) return true;
+  }
+  return false;
+}
+
+function selectorCouldMatchTag(selector, tag) {
+  const normalized = selector.trim();
+  if (!normalized || normalized.startsWith("@")) return false;
+  if (/(?:^|[\s>+~,(])\*(?=$|[\s>+~,:.)\[])/.test(normalized)) return true;
+  const id = singleAttribute(tag.raw, "id");
+  if (id && normalized.includes(`#${id}`)) return true;
+  const classes = (singleAttribute(tag.raw, "class") ?? "").split(/\s+/).filter(Boolean);
+  if (classes.some((className) => normalized.includes(`.${className}`))) return true;
+  return new RegExp(`(?:^|[\\s>+~,(])${tag.tagName}(?=$|[\\s>+~,:.)\\[])`, "i").test(normalized);
 }
 
 function sanitizeAssetSummary(assets) {

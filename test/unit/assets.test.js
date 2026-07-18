@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, readFile, symlink, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rename, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -236,9 +236,15 @@ test("materializeAssets rejects site and prior asset symlinks before asset acces
   assert.equal(requests, 0);
 
   const prior = await fixtureDirectories();
-  await mkdir(path.join(prior.siteDir, "assets"), { recursive: true });
+  const priorEvidence = await materializeAssets({
+    cycleDir: prior.cycleDir,
+    siteDir: prior.siteDir,
+    plan: plan(),
+    shootDirection: "Direction",
+    requestImage: async ({ prompt }) => createDeterministicPng({ ...plan().find((item) => prompt.endsWith(item.prompt)), prompt }),
+  });
   const linkedTarget = path.join(external, "prior.png");
-  await writeFile(linkedTarget, "not-an-image", "utf8");
+  await rename(path.join(prior.siteDir, "assets", "hero.png"), linkedTarget);
   try {
     await symlink(linkedTarget, path.join(prior.siteDir, "assets", "hero.png"), "file");
   } catch (error) {
@@ -255,12 +261,170 @@ test("materializeAssets rejects site and prior asset symlinks before asset acces
       siteDir: next.siteDir,
       plan: plan(),
       shootDirection: "Direction",
-      priorAssets: { files: [{ filename: "hero.png", promptHash: sha256Hex("Direction\n\nsunlit storefront"), sha256: "0".repeat(64), bytes: 1, resolved: true }] },
+      priorAssets: priorEvidence,
       priorSiteDir: prior.siteDir,
       requestImage: async () => { throw new Error("must not request"); },
     }),
     /symlink/i,
   );
+});
+
+test("materializeAssets rejects cycle and site junction ancestors before any write", async (t) => {
+  const cases = [
+    {
+      name: "cycle-01",
+      arrange: async () => {
+        const runRoot = await mkdtemp(path.join(os.tmpdir(), "mainstreet-run-root-"));
+        const external = await mkdtemp(path.join(os.tmpdir(), "mainstreet-cycle-junction-"));
+        await mkdir(path.join(external, "site"), { recursive: true });
+        const cycleDir = path.join(runRoot, "cycle-01");
+        await symlink(external, cycleDir, "junction");
+        return { cycleDir, siteDir: path.join(cycleDir, "site"), external };
+      },
+    },
+    {
+      name: "cycle-02/site",
+      arrange: async () => {
+        const runRoot = await mkdtemp(path.join(os.tmpdir(), "mainstreet-run-root-"));
+        const cycleDir = path.join(runRoot, "cycle-02");
+        const external = await mkdtemp(path.join(os.tmpdir(), "mainstreet-site-junction-"));
+        await mkdir(cycleDir, { recursive: true });
+        const siteDir = path.join(cycleDir, "site");
+        await symlink(external, siteDir, "junction");
+        return { cycleDir, siteDir, external };
+      },
+    },
+  ];
+
+  for (const scenario of cases) {
+    await t.test(scenario.name, async (subtest) => {
+      let fixture;
+      try {
+        fixture = await scenario.arrange();
+      } catch (error) {
+        if (["EPERM", "EACCES", "ENOTSUP"].includes(error?.code)) {
+          subtest.skip("junction creation is unavailable on this Windows host");
+          return;
+        }
+        throw error;
+      }
+      let requests = 0;
+      await assert.rejects(
+        materializeAssets({
+          cycleDir: fixture.cycleDir,
+          siteDir: fixture.siteDir,
+          plan: plan(),
+          shootDirection: "Direction",
+          requestImage: async () => { requests += 1; },
+        }),
+        /symlink|junction|linked path/i,
+      );
+      assert.equal(requests, 0);
+      await assert.rejects(readFile(path.join(fixture.cycleDir, "assets.json.pending")));
+      await assert.rejects(readFile(path.join(fixture.external, "assets.json.pending")));
+    });
+  }
+});
+
+test("materializeAssets rejects a prior site root junction before reading assets", async (t) => {
+  const previous = await fixtureDirectories();
+  const prior = await materializeAssets({
+    cycleDir: previous.cycleDir,
+    siteDir: previous.siteDir,
+    plan: plan(),
+    shootDirection: "Direction",
+    requestImage: async ({ prompt }) => createDeterministicPng({ ...plan().find((item) => prompt.endsWith(item.prompt)), prompt }),
+  });
+  const linkedRunRoot = await mkdtemp(path.join(os.tmpdir(), "mainstreet-prior-root-"));
+  const linkedCycle = path.join(linkedRunRoot, "cycle-01");
+  await mkdir(linkedCycle, { recursive: true });
+  const priorSiteDir = path.join(linkedCycle, "site");
+  try {
+    await symlink(previous.siteDir, priorSiteDir, "junction");
+  } catch (error) {
+    if (["EPERM", "EACCES", "ENOTSUP"].includes(error?.code)) {
+      t.skip("junction creation is unavailable on this Windows host");
+      return;
+    }
+    throw error;
+  }
+  const next = await fixtureDirectories();
+  let requests = 0;
+  await assert.rejects(
+    materializeAssets({
+      cycleDir: next.cycleDir,
+      siteDir: next.siteDir,
+      plan: plan(),
+      shootDirection: "Direction",
+      priorAssets: prior,
+      priorSiteDir,
+      requestImage: async () => { requests += 1; },
+    }),
+    /symlink|junction|linked path/i,
+  );
+  assert.equal(requests, 0);
+  await assert.rejects(readFile(path.join(next.cycleDir, "assets.json.pending")));
+});
+
+test("materializeAssets strictly rejects malformed or laundered prior evidence before writes", async (t) => {
+  const previous = await fixtureDirectories();
+  const prior = await materializeAssets({
+    cycleDir: previous.cycleDir,
+    siteDir: previous.siteDir,
+    plan: plan(),
+    shootDirection: "Direction",
+    requestImage: async ({ prompt }) => createDeterministicPng({ ...plan().find((item) => prompt.endsWith(item.prompt)), prompt }),
+  });
+  const cases = [
+    ["missing schema", (evidence) => { delete evidence.schemaVersion; }],
+    ["wrong request count", (evidence) => { evidence.requestCount += 1; }],
+    ["wrong allResolved", (evidence) => { evidence.allResolved = false; }],
+    ["duplicate filename", (evidence) => { evidence.files[1] = { ...evidence.files[1], filename: evidence.files[0].filename, path: evidence.files[0].path }; }],
+    ["unsafe filename", (evidence) => { evidence.files[0].filename = "../hero.png"; }],
+    ["missing record field", (evidence) => { delete evidence.files[0].mediaType; }],
+    ["plan metadata mismatch", (evidence) => { evidence.files[0].role = "laundered-role"; }],
+    ["resolved fallback laundering", (evidence) => {
+      evidence.files[0] = { ...evidence.files[0], source: "deterministic-fallback", resolved: true, errorCode: null };
+      evidence.successCount = 2;
+      evidence.fallbackCount = 1;
+    }],
+  ];
+
+  for (const [name, mutate] of cases) {
+    await t.test(name, async () => {
+      const next = await fixtureDirectories();
+      const malformed = structuredClone(prior);
+      mutate(malformed);
+      let requests = 0;
+      await assert.rejects(
+        materializeAssets({
+          cycleDir: next.cycleDir,
+          siteDir: next.siteDir,
+          plan: plan(),
+          shootDirection: "Direction",
+          priorAssets: malformed,
+          priorSiteDir: previous.siteDir,
+          requestImage: async () => { requests += 1; },
+        }),
+        /prior asset evidence/i,
+      );
+      assert.equal(requests, 0);
+      await assert.rejects(readFile(path.join(next.cycleDir, "assets.json.pending")));
+    });
+  }
+});
+
+test("materializeAssets requires the exact safe plan item shape before writes", async () => {
+  const current = await fixtureDirectories();
+  const malformedPlan = plan();
+  malformedPlan[0] = { ...malformedPlan[0], providerHint: "forbidden" };
+  let requests = 0;
+  await assert.rejects(
+    materializeAssets({ cycleDir: current.cycleDir, siteDir: current.siteDir, plan: malformedPlan, shootDirection: "Direction", requestImage: async () => { requests += 1; } }),
+    /asset plan/i,
+  );
+  assert.equal(requests, 0);
+  await assert.rejects(readFile(path.join(current.cycleDir, "assets.json.pending")));
 });
 
 test("materializeAssets carries verified resolved assets forward and retries unresolved assets", async () => {
@@ -273,6 +437,9 @@ test("materializeAssets carries verified resolved assets forward and retries unr
     requestImage: async ({ prompt }) => createDeterministicPng({ ...plan().find((item) => prompt.endsWith(item.prompt)), prompt }, { width: 1536, height: 1024 }),
   });
   prior.files[1] = { ...prior.files[1], resolved: false, source: "deterministic-fallback", errorCode: "IMAGE_REQUEST_FAILED" };
+  prior.allResolved = false;
+  prior.successCount = 2;
+  prior.fallbackCount = 1;
   const next = await fixtureDirectories();
   let requests = 0;
   const result = await materializeAssets({

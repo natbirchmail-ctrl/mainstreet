@@ -11,6 +11,9 @@ const MAX_PNG_BYTES = 16 * 1024 * 1024;
 const MAX_PNG_DIMENSION = 4096;
 const PNG_SIGNATURE = Buffer.from("89504e470d0a1a0a", "hex");
 const SAFE_FILENAME = /^[a-z0-9]+(?:-[a-z0-9]+)*\.png$/;
+const PLAN_ITEM_FIELDS = ["filename", "role", "alt", "prompt", "focalPoint"];
+const EVIDENCE_FIELDS = ["schemaVersion", "allResolved", "requestCount", "successCount", "fallbackCount", "files"];
+const EVIDENCE_FILE_FIELDS = ["filename", "path", "role", "alt", "focalPoint", "promptHash", "mediaType", "bytes", "sha256", "source", "resolved", "errorCode"];
 
 export class PngValidationError extends Error {
   constructor() {
@@ -146,11 +149,18 @@ export async function materializeAssets({
   priorAssets,
   priorSiteDir,
 } = {}) {
-  validateMaterializationInput({ cycleDir, siteDir, plan, shootDirection, requestImage, priorAssets, priorSiteDir });
+  const paths = validateMaterializationInput({ cycleDir, siteDir, plan, shootDirection, requestImage, priorAssets, priorSiteDir });
+  if (priorAssets) validatePriorAssetEvidence(priorAssets, plan, shootDirection);
+  await assertNoLinkedPath(paths.runRoot, paths.cycleDir);
+  await assertNoLinkedPath(paths.runRoot, paths.siteDir);
+  await assertNoLinkedPath(paths.runRoot, resolveInside(paths.siteDir, "assets"));
+  if (paths.priorRunRoot) {
+    await assertNoLinkedPath(paths.priorRunRoot, paths.priorSiteDir);
+    await assertNoLinkedPath(paths.priorRunRoot, resolveInside(paths.priorSiteDir, "assets"));
+  }
   let evidenceReservation;
   try {
-    evidenceReservation = await reserveAssetEvidence(cycleDir);
-    await rejectSymlink(resolveInside(siteDir, "assets"));
+    evidenceReservation = await reserveAssetEvidence(paths.cycleDir, paths.runRoot);
     const priorByFilename = new Map((priorAssets?.files ?? []).map((record) => [record.filename, record]));
     const files = [];
     let requestCount = 0;
@@ -161,7 +171,7 @@ export async function materializeAssets({
       const requestPrompt = `${shootDirection}\n\n${item.prompt}`;
       const promptHash = sha256Hex(requestPrompt);
       const prior = priorByFilename.get(item.filename);
-      const carried = await carryForwardIfEligible({ prior, priorSiteDir, item, promptHash });
+      const carried = await carryForwardIfEligible({ prior, priorSiteDir: paths.priorSiteDir, priorRunRoot: paths.priorRunRoot, item, promptHash });
       let buffer;
       let source;
       let resolved;
@@ -188,8 +198,8 @@ export async function materializeAssets({
         }
       }
 
-      const assetPath = resolveInside(siteDir, "assets", item.filename);
-      await writeBufferNew(assetPath, buffer);
+      const assetPath = resolveInside(paths.siteDir, "assets", item.filename);
+      await writeBufferNew(assetPath, buffer, paths.runRoot);
       files.push({
         filename: item.filename,
         path: `assets/${item.filename}`,
@@ -217,6 +227,7 @@ export async function materializeAssets({
     await evidenceReservation.handle.writeFile(`${JSON.stringify(evidence, null, 2)}\n`, "utf8");
     await evidenceReservation.handle.close();
     evidenceReservation.handle = null;
+    await assertNoLinkedPath(paths.runRoot, paths.cycleDir);
     await assertEvidenceAbsent(evidenceReservation.finalPath);
     await rename(evidenceReservation.pendingPath, evidenceReservation.finalPath);
     return evidence;
@@ -225,14 +236,14 @@ export async function materializeAssets({
   }
 }
 
-async function carryForwardIfEligible({ prior, priorSiteDir, item, promptHash }) {
+async function carryForwardIfEligible({ prior, priorSiteDir, priorRunRoot, item, promptHash }) {
   if (!prior || prior.filename !== item.filename || prior.promptHash !== promptHash || prior.resolved !== true) return null;
   if (!priorSiteDir) throw new Error("Prior asset directory is required.");
   if (!/^[a-f0-9]{64}$/.test(prior.sha256 ?? "") || !Number.isInteger(prior.bytes) || prior.bytes < 1) {
     throw new Error("Prior asset evidence is invalid.");
   }
   const priorAssetPath = resolveInside(priorSiteDir, "assets", item.filename);
-  await rejectSymlink(priorAssetPath);
+  await assertNoLinkedPath(priorRunRoot, priorAssetPath);
   const bytes = await readFile(priorAssetPath);
   if (bytes.length !== prior.bytes || sha256Hex(bytes) !== prior.sha256) {
     throw new Error("Prior asset digest does not match.");
@@ -241,9 +252,10 @@ async function carryForwardIfEligible({ prior, priorSiteDir, item, promptHash })
   return bytes;
 }
 
-async function writeBufferNew(target, bytes) {
-  await rejectSymlink(path.dirname(target));
+async function writeBufferNew(target, bytes, runRoot) {
+  await assertNoLinkedPath(runRoot, target);
   await mkdir(path.dirname(target), { recursive: true });
+  await assertNoLinkedPath(runRoot, target);
   try {
     await writeFile(target, bytes, { flag: "wx" });
   } catch (error) {
@@ -252,10 +264,12 @@ async function writeBufferNew(target, bytes) {
   }
 }
 
-async function reserveAssetEvidence(cycleDir) {
+async function reserveAssetEvidence(cycleDir, runRoot) {
   const finalPath = resolveInside(cycleDir, "assets.json");
   const pendingPath = resolveInside(cycleDir, "assets.json.pending");
+  await assertNoLinkedPath(runRoot, cycleDir);
   await mkdir(path.dirname(finalPath), { recursive: true });
+  await assertNoLinkedPath(runRoot, cycleDir);
   await assertEvidenceAbsent(finalPath);
   await assertEvidenceAbsent(pendingPath);
   let handle;
@@ -284,27 +298,107 @@ async function assertEvidenceAbsent(target) {
   throw new Error(`Evidence file already exists: ${target}`);
 }
 
-async function rejectSymlink(target) {
-  try {
-    if ((await lstat(target)).isSymbolicLink()) {
-      throw new Error("Symlinked asset paths are not allowed.");
-    }
-  } catch (error) {
-    if (error?.code === "ENOENT") return;
-    throw error;
-  }
-}
-
 function validateMaterializationInput({ cycleDir, siteDir, plan, shootDirection, requestImage, priorAssets, priorSiteDir }) {
   if (!cycleDir || !siteDir || !shootDirection?.trim() || typeof requestImage !== "function") throw new TypeError("Invalid asset materialization input.");
   if (!Array.isArray(plan) || plan.length < 3 || plan.length > MAX_IMAGE_REQUESTS_PER_CYCLE) throw new TypeError("Asset plan must contain three to five items.");
   if ((priorAssets && !priorSiteDir) || (!priorAssets && priorSiteDir)) throw new TypeError("Prior assets and site directory must be supplied together.");
+  const normalizedCycleDir = path.resolve(cycleDir);
+  const runRoot = path.dirname(normalizedCycleDir);
+  const normalizedSiteDir = path.resolve(siteDir);
+  if (!/^cycle-\d{2}$/.test(path.basename(normalizedCycleDir)) || normalizedSiteDir !== path.join(normalizedCycleDir, "site")) {
+    throw new TypeError("Asset paths must use one cycle directory and its site child.");
+  }
   const filenames = new Set();
   for (const item of plan) {
-    if (!item || typeof item !== "object" || !SAFE_FILENAME.test(item.filename ?? "") || filenames.has(item.filename)) throw new TypeError("Asset plan contains an unsafe filename.");
+    if (!isPlainObject(item) || !hasExactKeys(item, PLAN_ITEM_FIELDS) || !isPlainObject(item.focalPoint) || !hasExactKeys(item.focalPoint, ["x", "y"]) || !SAFE_FILENAME.test(item.filename ?? "") || filenames.has(item.filename)) throw new TypeError("Asset plan contains an unsafe filename or shape.");
     filenames.add(item.filename);
     if (!item.role?.trim() || !item.alt?.trim() || !item.prompt?.trim() || !isFocalPoint(item.focalPoint)) throw new TypeError("Asset plan contains an invalid item.");
   }
+  let normalizedPriorSiteDir;
+  let priorRunRoot;
+  if (priorSiteDir) {
+    normalizedPriorSiteDir = path.resolve(priorSiteDir);
+    const priorCycleDir = path.dirname(normalizedPriorSiteDir);
+    priorRunRoot = path.dirname(priorCycleDir);
+    if (path.basename(normalizedPriorSiteDir) !== "site" || !/^cycle-\d{2}$/.test(path.basename(priorCycleDir))) {
+      throw new TypeError("Prior asset paths must use one cycle site directory.");
+    }
+  }
+  return { cycleDir: normalizedCycleDir, siteDir: normalizedSiteDir, runRoot, priorSiteDir: normalizedPriorSiteDir, priorRunRoot };
+}
+
+function validatePriorAssetEvidence(evidence, plan, shootDirection) {
+  const fail = () => { throw new TypeError("Prior asset evidence is invalid."); };
+  if (!isPlainObject(evidence) || !hasExactKeys(evidence, EVIDENCE_FIELDS) || evidence.schemaVersion !== "1.0") fail();
+  if (!Array.isArray(evidence.files) || evidence.files.length < 3 || evidence.files.length > MAX_IMAGE_REQUESTS_PER_CYCLE) fail();
+  for (const count of [evidence.requestCount, evidence.successCount, evidence.fallbackCount]) {
+    if (!Number.isInteger(count) || count < 0 || count > MAX_IMAGE_REQUESTS_PER_CYCLE) fail();
+  }
+  if (typeof evidence.allResolved !== "boolean") fail();
+
+  const planByFilename = new Map(plan.map((item) => [item.filename, item]));
+  const filenames = new Set();
+  let openaiCount = 0;
+  let fallbackCount = 0;
+  for (const file of evidence.files) {
+    if (!isPlainObject(file) || !hasExactKeys(file, EVIDENCE_FILE_FIELDS) || !SAFE_FILENAME.test(file.filename ?? "") || filenames.has(file.filename)) fail();
+    filenames.add(file.filename);
+    if (
+      file.path !== `assets/${file.filename}` || file.mediaType !== "image/png" ||
+      typeof file.role !== "string" || !file.role.trim() || typeof file.alt !== "string" || !file.alt.trim() ||
+      !isPlainObject(file.focalPoint) || !hasExactKeys(file.focalPoint, ["x", "y"]) || !isFocalPoint(file.focalPoint) || !/^[a-f0-9]{64}$/.test(file.promptHash ?? "") ||
+      !/^[a-f0-9]{64}$/.test(file.sha256 ?? "") || !Number.isInteger(file.bytes) || file.bytes < 1
+    ) fail();
+    const validState =
+      ((file.source === "openai" || file.source === "carried-forward") && file.resolved === true && file.errorCode === null) ||
+      (file.source === "deterministic-fallback" && file.resolved === false && file.errorCode === "IMAGE_REQUEST_FAILED");
+    if (!validState) fail();
+    if (file.source === "openai") openaiCount += 1;
+    if (file.source === "deterministic-fallback") fallbackCount += 1;
+
+    const planned = planByFilename.get(file.filename);
+    if (planned && (
+      file.role !== planned.role || file.alt !== planned.alt ||
+      file.focalPoint.x !== planned.focalPoint.x || file.focalPoint.y !== planned.focalPoint.y
+    )) fail();
+    if (planned && file.promptHash === sha256Hex(`${shootDirection}\n\n${planned.prompt}`) && file.resolved !== true && file.source !== "deterministic-fallback") fail();
+  }
+  if (
+    evidence.successCount !== openaiCount || evidence.fallbackCount !== fallbackCount ||
+    evidence.requestCount !== openaiCount + fallbackCount ||
+    evidence.allResolved !== evidence.files.every((file) => file.resolved)
+  ) fail();
+}
+
+async function assertNoLinkedPath(trustedRoot, target) {
+  const root = path.resolve(trustedRoot);
+  const resolvedTarget = path.resolve(target);
+  const relative = path.relative(root, resolvedTarget);
+  if (relative === "" || relative.startsWith("..") || path.isAbsolute(relative)) {
+    if (relative === "") return;
+    throw new Error("Asset path escapes the trusted run root.");
+  }
+  let current = root;
+  for (const segment of relative.split(path.sep)) {
+    current = path.join(current, segment);
+    try {
+      if ((await lstat(current)).isSymbolicLink()) {
+        throw new Error("Symlink, junction, or linked path ancestors are not allowed.");
+      }
+    } catch (error) {
+      if (error?.code === "ENOENT") return;
+      throw error;
+    }
+  }
+}
+
+function isPlainObject(value) {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value) && Object.getPrototypeOf(value) === Object.prototype;
+}
+
+function hasExactKeys(value, fields) {
+  const keys = Object.keys(value);
+  return keys.length === fields.length && fields.every((field) => Object.hasOwn(value, field));
 }
 
 function isFocalPoint(value) {

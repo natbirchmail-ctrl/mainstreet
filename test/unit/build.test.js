@@ -3,6 +3,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
+import { chromium } from "playwright";
 
 import * as buildModule from "../../src/build.js";
 import {
@@ -366,6 +367,66 @@ test("buildSite rejects model CSS that targets Mainstreet owned motion hooks", a
   });
   assert.equal(result.source, "deterministic-fallback");
   assert.doesNotMatch(result.stylesCss, /opacity: 0.123 !important/);
+});
+
+test("buildSite rejects indirect CSS that can hide or override hooked source DOM", async (t) => {
+  const attacks = [
+    ["target class opacity", ".motion-copy { opacity: 0 !important; }"],
+    ["first beat class visibility", ".offerings-copy { visibility: hidden; }"],
+    ["root ancestor transform", ".hero-shell { transform: none !important; }"],
+    ["first beat attribute", "[data-first-beat] { display: none; }"],
+    ["owned custom property", ":root { --motion-progress: 1; }"],
+  ];
+  for (const [name, attack] of attacks) {
+    await t.test(name, async () => {
+      const candidate = modelManifest();
+      candidate.indexHtml = candidate.indexHtml
+        .replace("<div data-first-beat data-motion-target>", '<div class="motion-copy" data-first-beat data-motion-target>')
+        .replace('<section id="hero"', '<section class="hero-shell" id="hero"')
+        .replace('<div data-first-beat>\n        <h2>From the oven</h2>', '<div class="offerings-copy" data-first-beat>\n        <h2>From the oven</h2>');
+      candidate.stylesCss += `\n${attack}`;
+      const result = await buildSite({ brief: brief(), structuredRequester: async () => candidate });
+      assert.equal(result.source, "deterministic-fallback");
+      assert.equal(result.stylesCss.includes(attack), false);
+    });
+  }
+});
+
+test("owned styles keep every hooked element visibly rendered when JavaScript is disabled", async () => {
+  const manifest = setMotionMoves(safeManifest(), ["horizontal click reel"]);
+  manifest.indexHtml = manifest.indexHtml
+    .replace('data-motion-root="staged-hero-entrance"', 'data-motion-root="horizontal-click-reel"')
+    .replace(
+      "<h1>Bread for the day ahead</h1>",
+      `<h1>Bread for the day ahead</h1>
+        <button type="button" data-motion-control="first">First view</button>
+        <button type="button" data-motion-control="second">Second view</button>
+        <div data-motion-panel="first"><p>First selection</p></div>
+        <div data-motion-panel="second"><p>Second selection</p></div>`,
+    );
+  validateSiteManifest(manifest);
+  const browser = await chromium.launch({ headless: true });
+  try {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const page = await context.newPage();
+    const browserHtml = manifest.indexHtml
+      .replace(/<meta http-equiv="Content-Security-Policy"[^>]*>/i, "")
+      .replace('<link rel="stylesheet" href="styles.css">', `<style>${manifest.stylesCss}</style>`)
+      .replace('<script src="script.js" defer></script>', "");
+    await page.setContent(browserHtml);
+    const states = await page.locator("[data-first-beat], [data-motion-target], [data-motion-panel]").evaluateAll((elements) =>
+      elements.map((element) => {
+        const style = getComputedStyle(element);
+        const bounds = element.getBoundingClientRect();
+        return { display: style.display, visibility: style.visibility, opacity: Number(style.opacity), width: bounds.width, height: bounds.height };
+      }),
+    );
+    assert.ok(states.length >= 5);
+    assert.ok(states.every((state) => state.display !== "none" && state.visibility === "visible" && state.opacity >= 0.95 && state.width > 0 && state.height > 0), JSON.stringify(states));
+    await context.close();
+  } finally {
+    await browser.close();
+  }
 });
 
 test("owned motion contract includes ready gating, rAF refresh, and reduced motion disable state", () => {
