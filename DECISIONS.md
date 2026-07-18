@@ -55,6 +55,7 @@ Out of scope: modifying the production factory, importing production customer co
 - Attempt 6: the original supplied brand archive disappeared during the build while its extracted files remained unchanged. A new archive of those files and the full source extract were retained in `.trash/`; nothing was discarded.
 - Attempt 7: the public live audit found 12 pixels of overflow at a 320 pixel viewport and proved that HTTP 200 alone could briefly verify a stale Pages alias. The critic added a narrow viewport gate, deployment verification added an exact content digest, the prompts were hardened, and a clean rerun improved from 84 to 86 with a `ship` verdict.
 - Attempt 8: the Cloudflare credential variables were intentionally blanked for an isolated deployment copy. The CLI bound `127.0.0.1:4601`, recorded a verified local fallback, returned the selected site with HTTP 200, and left no listener after the smoke test.
+- Attempt 9: the repository history was rebuilt commit for commit with its original authorship, timestamps, messages, and final tree while removing private workstation references from the public object graph. The sanitized `main` branch was pushed alone, the rendered GitHub README loaded without broken images or console warnings, and the original local history was preserved under ignored `.trash/` recovery storage.
 
 ## Known prototype limits
 

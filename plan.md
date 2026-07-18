@@ -77,6 +77,6 @@ mainstreet/
 - [x] Functional project
 - [x] Text description of features (goes in Devpost form; draft it in README)
 - [ ] Video under 3 minutes on YouTube showing Codex/GPT-5.6 usage
-- [ ] Public repo
+- [x] Public repo
 - [x] README documenting collaboration with Codex
 - [x] Testing/installation instructions
