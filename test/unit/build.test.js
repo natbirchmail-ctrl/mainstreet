@@ -32,6 +32,39 @@ const MOTION_SLUGS = {
   "gentle one direction scroll reveals": "gentle-scroll-reveals",
 };
 
+const API_SUPPORTED_SCHEMA_KEYWORDS = new Set([
+  "$schema",
+  "type",
+  "properties",
+  "required",
+  "additionalProperties",
+  "enum",
+  "minLength",
+  "maxLength",
+  "pattern",
+  "minItems",
+  "maxItems",
+  "items",
+  "minimum",
+  "maximum",
+]);
+
+function assertApiCompatibleSchema(schema, path = "$") {
+  for (const [keyword, value] of Object.entries(schema)) {
+    assert.ok(
+      API_SUPPORTED_SCHEMA_KEYWORDS.has(keyword),
+      `Unsupported strict schema keyword ${keyword} at ${path}`,
+    );
+    if (keyword === "properties") {
+      for (const [propertyName, propertySchema] of Object.entries(value)) {
+        assertApiCompatibleSchema(propertySchema, `${path}.properties.${propertyName}`);
+      }
+    } else if (keyword === "items" && value && typeof value === "object") {
+      assertApiCompatibleSchema(value, `${path}.items`);
+    }
+  }
+}
+
 function safeManifest() {
   const motionMoves = ["staged hero entrance"];
   return {
@@ -190,7 +223,8 @@ test("site schema exposes exactly the strict five field model contract", async (
     "stylesCss",
   ]);
   assert.deepEqual([...schema.required].sort(), Object.keys(schema.properties).sort());
-  assert.equal(schema.properties.scriptJs.const, "");
+  assert.deepEqual(schema.properties.scriptJs.enum, [""]);
+  assert.equal(Object.hasOwn(schema.properties.scriptJs, "const"), false);
 
   const imagePlan = schema.properties.imagePlan;
   assert.equal(imagePlan.minItems, 3);
@@ -222,8 +256,9 @@ test("site schema exposes exactly the strict five field model contract", async (
   ]);
   assert.equal(designNotes.properties.motionMoves.minItems, 1);
   assert.equal(designNotes.properties.motionMoves.maxItems, 2);
-  assert.equal(designNotes.properties.motionMoves.uniqueItems, true);
+  assert.equal(Object.hasOwn(designNotes.properties.motionMoves, "uniqueItems"), false);
   assert.deepEqual(designNotes.properties.motionMoves.items.enum, MOTION_MOVES);
+  assertApiCompatibleSchema(schema);
 });
 
 test("builder prompt states the minimum expanded response and safety contract", async () => {
@@ -240,6 +275,19 @@ test("builder prompt states the minimum expanded response and safety contract", 
   assert.match(prompt, /data-motion-moves/i);
   assert.match(prompt, /data-section/i);
   assert.match(prompt, /data-first-beat/i);
+  for (const [move, slug] of Object.entries(MOTION_SLUGS)) {
+    assert.ok(prompt.includes(`\`${move}\` maps to \`${slug}\``));
+  }
+  assert.ok(
+    prompt.includes(
+      "Staged hero entrance and gentle one direction scroll reveals roots require at least one `[data-motion-target]`.",
+    ),
+  );
+  assert.ok(
+    prompt.includes(
+      "Horizontal click reel and numbered story stepper roots require at least two button `[data-motion-control]` elements and at least two matching `[data-motion-panel]` elements.",
+    ),
+  );
 });
 
 test("owned motion runtime is deterministic, selected move only, and byte exact", async () => {

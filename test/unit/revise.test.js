@@ -159,6 +159,25 @@ test("revision prompt requests the expanded model sentinel contract", async () =
   assert.match(prompt, /empty `scriptJs` sentinel/i);
   assert.match(prompt, /planned local PNG/i);
   assert.match(prompt, /data-motion-moves/i);
+  for (const [move, slug] of [
+    ["pinned chapter passage", "pinned-chapter-passage"],
+    ["horizontal click reel", "horizontal-click-reel"],
+    ["numbered story stepper", "numbered-story-stepper"],
+    ["staged hero entrance", "staged-hero-entrance"],
+    ["gentle one direction scroll reveals", "gentle-scroll-reveals"],
+  ]) {
+    assert.ok(prompt.includes(`\`${move}\` maps to \`${slug}\``));
+  }
+  assert.ok(
+    prompt.includes(
+      "Staged hero entrance and gentle one direction scroll reveals roots require at least one `[data-motion-target]`.",
+    ),
+  );
+  assert.ok(
+    prompt.includes(
+      "Horizontal click reel and numbered story stepper roots require at least two button `[data-motion-control]` elements and at least two matching `[data-motion-panel]` elements.",
+    ),
+  );
 });
 
 test("reviseRun rejects a fourth cycle", async () => {
