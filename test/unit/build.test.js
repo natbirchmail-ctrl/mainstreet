@@ -516,6 +516,41 @@ test("validateSiteManifest rejects active or remote content", () => {
   assert.throws(() => validateSiteManifest(unsupportedPolicy), /frame-ancestors/i);
 });
 
+test("validateSiteManifest rejects inert containers around required source", () => {
+  const policyInTemplate = safeManifest();
+  const csp = policyInTemplate.indexHtml.match(/<meta http-equiv="Content-Security-Policy"[^>]*>/)[0];
+  policyInTemplate.indexHtml = policyInTemplate.indexHtml.replace(csp, `<template>${csp}</template>`);
+  assert.throws(() => validateSiteManifest(policyInTemplate), /forbidden html|inert container/i);
+
+  const scriptInNoscript = safeManifest();
+  const script = '<script src="script.js" defer></script>';
+  scriptInNoscript.indexHtml = scriptInNoscript.indexHtml.replace(script, `<noscript>${script}</noscript>`);
+  assert.throws(() => validateSiteManifest(scriptInNoscript), /forbidden html|inert container/i);
+
+  const firstBeatInTemplate = safeManifest();
+  firstBeatInTemplate.indexHtml = firstBeatInTemplate.indexHtml
+    .replace(
+      '<section id="hero" data-section="hero" data-motion-root="staged-hero-entrance">\n      <div',
+      '<section id="hero" data-section="hero" data-motion-root="staged-hero-entrance">\n      <template>\n      <div',
+    )
+    .replace(
+      '      </div>\n    </section>\n    <section id="offerings"',
+      '      </div>\n      </template>\n    </section>\n    <section id="offerings"',
+    );
+  assert.throws(() => validateSiteManifest(firstBeatInTemplate), /forbidden html|inert container/i);
+});
+
+test("validateSiteManifest rejects CSS escape sequences", () => {
+  for (const escapedCss of [
+    ".hero { background-image: \\75rl(assets/unplanned.png); }",
+    '@\\69mport "assets/unplanned.css";',
+  ]) {
+    const manifest = safeManifest();
+    manifest.stylesCss += `\n${escapedCss}`;
+    assert.throws(() => validateSiteManifest(manifest), /css.*(?:escape|backslash)/i, escapedCss);
+  }
+});
+
 test("validateSiteManifest rejects encoded active links and altered script sources", () => {
   const encodedActiveLink = safeManifest();
   encodedActiveLink.indexHtml = encodedActiveLink.indexHtml.replace(
@@ -573,7 +608,7 @@ test("validateSiteManifest rejects dashes, emojis, and placeholders in visible c
   placeholder.indexHtml = placeholder.indexHtml.replace("made with care", "lorem ipsum");
   assert.throws(() => validateSiteManifest(placeholder), /placeholder/i);
 
-  for (const entity of ["&mdash;", "&ndash;"]) {
+  for (const entity of ["&mdash;", "&ndash;", "&hyphen;"]) {
     const encodedDash = safeManifest();
     encodedDash.indexHtml = encodedDash.indexHtml.replace("Fresh loaves", `Fresh ${entity} loaves`);
     assert.throws(() => validateSiteManifest(encodedDash), /dash characters/i, entity);

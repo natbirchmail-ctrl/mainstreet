@@ -230,7 +230,7 @@ function validateHtml(html, imagePlan, motionMoves) {
   validateResourceBoundary(html);
 
   if (
-    /<(?:iframe|object|embed|form|base|style|source|audio|video|track|picture|svg|math)\b/i.test(html) ||
+    /<(?:iframe|object|embed|form|base|style|source|audio|video|track|picture|svg|math|template|noscript)\b/i.test(html) ||
     /\son[a-z]+\s*=/i.test(html)
   ) {
     throw new Error("Generated site contains forbidden HTML or active content.");
@@ -466,6 +466,9 @@ function validateInteractiveRoot(innerHtml) {
 }
 
 function validateCss(css) {
+  if (/\\/.test(css)) {
+    throw new Error("Generated CSS must not contain escape backslashes.");
+  }
   if (
     /@import\b|url\s*\(|expression\s*\(|(?:^|[;{]\s*)behavior\s*:|(?:https?:|data\s*:|blob\s*:)/im.test(css)
   ) {
@@ -580,7 +583,7 @@ function extractVisibleText(html) {
     .replace(/<style\b[^>]*>[^]*?<\/style>/gi, " ")
     .replace(/<script\b[^>]*>[^]*?<\/script>/gi, " ")
     .replace(/<[^>]+>/g, " ")
-    .replace(/&(nbsp|amp|quot|apos|lt|gt|mdash|ndash);/gi, (_, name) =>
+    .replace(/&(nbsp|amp|quot|apos|lt|gt|mdash|ndash|hyphen);/gi, (_, name) =>
       decodeNamedHtmlEntity(name),
     )
     .replace(/&#(x[0-9a-f]+|\d+);/gi, (_, value) => decodeNumericHtmlEntity(value))
@@ -634,6 +637,7 @@ function decodeNamedHtmlEntity(name) {
     gt: ">",
     mdash: "\u2014",
     ndash: "\u2013",
+    hyphen: "\u2010",
   };
   return entities[name.toLowerCase()];
 }
