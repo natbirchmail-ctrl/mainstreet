@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { lstat, mkdir, open, readFile, writeFile } from "node:fs/promises";
+import { lstat, mkdir, open, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { deflateSync, inflateSync } from "node:zlib";
 
@@ -147,9 +147,9 @@ export async function materializeAssets({
   priorSiteDir,
 } = {}) {
   validateMaterializationInput({ cycleDir, siteDir, plan, shootDirection, requestImage, priorAssets, priorSiteDir });
-  let evidenceHandle;
+  let evidenceReservation;
   try {
-    evidenceHandle = await reserveAssetEvidence(cycleDir);
+    evidenceReservation = await reserveAssetEvidence(cycleDir);
     await rejectSymlink(resolveInside(siteDir, "assets"));
     const priorByFilename = new Map((priorAssets?.files ?? []).map((record) => [record.filename, record]));
     const files = [];
@@ -214,10 +214,14 @@ export async function materializeAssets({
       fallbackCount,
       files,
     };
-    await evidenceHandle.writeFile(`${JSON.stringify(evidence, null, 2)}\n`, "utf8");
+    await evidenceReservation.handle.writeFile(`${JSON.stringify(evidence, null, 2)}\n`, "utf8");
+    await evidenceReservation.handle.close();
+    evidenceReservation.handle = null;
+    await assertEvidenceAbsent(evidenceReservation.finalPath);
+    await rename(evidenceReservation.pendingPath, evidenceReservation.finalPath);
     return evidence;
   } finally {
-    await evidenceHandle?.close();
+    await evidenceReservation?.handle?.close();
   }
 }
 
@@ -249,14 +253,35 @@ async function writeBufferNew(target, bytes) {
 }
 
 async function reserveAssetEvidence(cycleDir) {
-  const target = resolveInside(cycleDir, "assets.json");
-  await mkdir(path.dirname(target), { recursive: true });
+  const finalPath = resolveInside(cycleDir, "assets.json");
+  const pendingPath = resolveInside(cycleDir, "assets.json.pending");
+  await mkdir(path.dirname(finalPath), { recursive: true });
+  await assertEvidenceAbsent(finalPath);
+  await assertEvidenceAbsent(pendingPath);
+  let handle;
   try {
-    return await open(target, "wx");
+    handle = await open(pendingPath, "wx");
   } catch (error) {
-    if (error?.code === "EEXIST") throw new Error(`Evidence file already exists: ${target}`);
+    if (error?.code === "EEXIST") throw new Error(`Evidence file already exists: ${pendingPath}`);
     throw error;
   }
+  try {
+    await assertEvidenceAbsent(finalPath);
+  } catch (error) {
+    await handle.close();
+    throw error;
+  }
+  return { handle, pendingPath, finalPath };
+}
+
+async function assertEvidenceAbsent(target) {
+  try {
+    await lstat(target);
+  } catch (error) {
+    if (error?.code === "ENOENT") return;
+    throw error;
+  }
+  throw new Error(`Evidence file already exists: ${target}`);
 }
 
 async function rejectSymlink(target) {

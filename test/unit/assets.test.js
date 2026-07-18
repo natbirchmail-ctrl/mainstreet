@@ -160,6 +160,7 @@ test("materializeAssets writes sequential provider successes and one determinist
     validatePngBuffer(bytes, { expectedWidth: 1536, expectedHeight: 1024 });
   }
   assert.deepEqual(JSON.parse(await readFile(path.join(cycleDir, "assets.json"), "utf8")), result);
+  await assert.rejects(readFile(path.join(cycleDir, "assets.json.pending")));
 });
 
 test("materializeAssets rejects over-limit plans before any request or write", async () => {
@@ -179,6 +180,43 @@ test("materializeAssets preserves existing evidence through exclusive writes", a
   assert.equal(requests, 0);
   assert.equal(await readFile(path.join(cycleDir, "assets.json"), "utf8"), "preserve");
   await assert.rejects(readFile(path.join(siteDir, "assets", "hero.png")));
+});
+
+test("materializeAssets treats a pending evidence reservation as occupied before requests", async () => {
+  const { cycleDir, siteDir } = await fixtureDirectories();
+  await writeFile(path.join(cycleDir, "assets.json.pending"), "pending", "utf8");
+  let requests = 0;
+  await assert.rejects(
+    materializeAssets({ cycleDir, siteDir, plan: plan(), shootDirection: "Direction", requestImage: async () => { requests += 1; } }),
+    /already exists/i,
+  );
+  assert.equal(requests, 0);
+  assert.equal(await readFile(path.join(cycleDir, "assets.json.pending"), "utf8"), "pending");
+  await assert.rejects(readFile(path.join(cycleDir, "assets.json")));
+});
+
+test("materializeAssets leaves only immutable pending evidence after a later asset write failure", async () => {
+  const { cycleDir, siteDir } = await fixtureDirectories();
+  await mkdir(path.join(siteDir, "assets"), { recursive: true });
+  await writeFile(path.join(siteDir, "assets", "hero.png"), "preserve", "utf8");
+  let requests = 0;
+  await assert.rejects(
+    materializeAssets({
+      cycleDir,
+      siteDir,
+      plan: plan(),
+      shootDirection: "Direction",
+      requestImage: async ({ prompt }) => {
+        requests += 1;
+        return createDeterministicPng({ ...plan()[0], prompt });
+      },
+    }),
+    /already exists/i,
+  );
+  assert.equal(requests, 1);
+  await assert.rejects(readFile(path.join(cycleDir, "assets.json")));
+  assert.equal(await readFile(path.join(cycleDir, "assets.json.pending"), "utf8"), "");
+  assert.equal(await readFile(path.join(siteDir, "assets", "hero.png"), "utf8"), "preserve");
 });
 
 test("materializeAssets rejects site and prior asset symlinks before asset access", async (t) => {
