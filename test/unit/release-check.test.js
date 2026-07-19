@@ -659,6 +659,7 @@ test("missing and invalid cycle evidence report artifact rules", async (t) => {
     ["CRC corruption", corruptPngCrc],
     ["missing IDAT", removePngIdat],
     ["corrupt compressed data", corruptPngCompressedData],
+    ["trailing compressed payload", appendPngIdatPayload],
   ]) {
     await t.test(`critic screenshot rejects ${name} with updated bytes and digest`, async () => {
       const fixture = await makeFixture();
@@ -2098,6 +2099,23 @@ function corruptPngCompressedData(value) {
     ...pngChunks(value).map((chunk) =>
       chunk.type === "IDAT"
         ? pngChunk("IDAT", Buffer.from([0, 1, 2, 3]))
+        : value.subarray(chunk.start, chunk.end),
+    ),
+  ]);
+}
+
+function appendPngIdatPayload(value) {
+  const chunks = pngChunks(value);
+  const target = chunks.findLast((chunk) => chunk.type === "IDAT");
+  if (!target) throw new Error("fixture PNG has no IDAT chunk");
+  return Buffer.concat([
+    pngSignature,
+    ...chunks.map((chunk) =>
+      chunk === target
+        ? pngChunk(
+            "IDAT",
+            Buffer.concat([chunk.data, Buffer.from([0xde, 0xad, 0xbe, 0xef])]),
+          )
         : value.subarray(chunk.start, chunk.end),
     ),
   ]);

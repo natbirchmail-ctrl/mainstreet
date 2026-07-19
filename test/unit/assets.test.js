@@ -32,6 +32,26 @@ function chunk(type, data = Buffer.alloc(0)) {
   return result;
 }
 
+function appendToLastIdat(image, trailing) {
+  let offset = 8;
+  let target = null;
+  while (offset < image.length) {
+    const length = image.readUInt32BE(offset);
+    const end = offset + 12 + length;
+    const type = image.subarray(offset + 4, offset + 8).toString("ascii");
+    if (type === "IDAT") {
+      target = { offset, end, data: image.subarray(offset + 8, offset + 8 + length) };
+    }
+    offset = end;
+  }
+  if (!target) throw new Error("fixture PNG has no IDAT chunk");
+  return Buffer.concat([
+    image.subarray(0, target.offset),
+    chunk("IDAT", Buffer.concat([target.data, trailing])),
+    image.subarray(target.end),
+  ]);
+}
+
 function plan() {
   return [
     { filename: "hero.png", role: "hero", alt: "A storefront", prompt: "sunlit storefront", focalPoint: { x: 0.5, y: 0.4 } },
@@ -78,6 +98,12 @@ test("validatePngBuffer bounds decompression to the known scanline payload", () 
   const iend = chunk("IEND");
   const compressedOversize = Buffer.concat([image.subarray(0, ihdrEnd), oversizedIdat, iend]);
   assert.throws(() => validatePngBuffer(compressedOversize), /PNG validation failed\./);
+});
+
+test("validatePngBuffer rejects trailing bytes inside a CRC-valid IDAT", () => {
+  const image = createDeterministicPng(plan()[0], { width: 8, height: 6 });
+  const malformed = appendToLastIdat(image, Buffer.from([0xde, 0xad, 0xbe, 0xef]));
+  assert.throws(() => validatePngBuffer(malformed), /PNG validation failed\./);
 });
 
 test("validatePngBuffer rejects malformed IHDR dimensions and required chunks", () => {

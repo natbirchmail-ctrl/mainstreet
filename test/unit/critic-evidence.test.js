@@ -44,6 +44,45 @@ const ALTERNATE_RESOLVED_PNG = createDeterministicPng({
 
 const MOTION_MOVES = Object.keys(MOTION_MOVE_SLUGS);
 
+function pngCrc32(...buffers) {
+  let value = 0xffffffff;
+  for (const buffer of buffers) {
+    for (const byte of buffer) {
+      value ^= byte;
+      for (let bit = 0; bit < 8; bit += 1) {
+        value = (value >>> 1) ^ (value & 1 ? 0xedb88320 : 0);
+      }
+    }
+  }
+  return (value ^ 0xffffffff) >>> 0;
+}
+
+function appendToLastIdat(image, trailing) {
+  let offset = 8;
+  let target = null;
+  while (offset < image.length) {
+    const length = image.readUInt32BE(offset);
+    const end = offset + 12 + length;
+    const type = image.subarray(offset + 4, offset + 8);
+    if (type.toString("ascii") === "IDAT") {
+      target = { offset, end, type, data: image.subarray(offset + 8, offset + 8 + length) };
+    }
+    offset = end;
+  }
+  if (!target) throw new Error("fixture PNG has no IDAT chunk");
+  const data = Buffer.concat([target.data, trailing]);
+  const replacement = Buffer.alloc(12 + data.length);
+  replacement.writeUInt32BE(data.length, 0);
+  target.type.copy(replacement, 4);
+  data.copy(replacement, 8);
+  replacement.writeUInt32BE(pngCrc32(target.type, data), 8 + data.length);
+  return Buffer.concat([
+    image.subarray(0, target.offset),
+    replacement,
+    image.subarray(target.end),
+  ]);
+}
+
 test("rendered evidence publishes the fixed viewport contract", () => {
   assert.equal(EVIDENCE_VIEWPORTS, CANONICAL_VIEWPORTS);
   assert.deepEqual(EVIDENCE_VIEWPORTS, {
@@ -523,6 +562,44 @@ test("completed packets reject tampered full page bytes and critic manifest dige
       );
     });
   }
+});
+
+test("completed packets reject trailing bytes inside a CRC-valid IDAT with a matching manifest", async () => {
+  const fixture = await writeFixture({ move: "staged hero entrance" });
+  const evidence = await captureRenderedEvidence({
+    siteDir: fixture.siteDir,
+    cycleDir: fixture.cycleDir,
+    port: 4601,
+  });
+  const screenshotPath = evidence.fullPagePaths.desktop;
+  const malformed = appendToLastIdat(
+    await readFile(screenshotPath),
+    Buffer.from([0xde, 0xad, 0xbe, 0xef]),
+  );
+  await writeFile(screenshotPath, malformed);
+
+  const manifestPath = path.join(
+    fixture.cycleDir,
+    "screenshots",
+    "critic",
+    "manifest.json",
+  );
+  const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+  manifest.viewports.desktop.bytes = malformed.length;
+  manifest.viewports.desktop.sha256 = sha256Hex(malformed);
+  await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
+
+  await assert.rejects(
+    captureRenderedEvidence({
+      siteDir: fixture.siteDir,
+      cycleDir: fixture.cycleDir,
+      port: 4601,
+      startServer: async () => {
+        throw new Error("invalid completed evidence must not be recaptured");
+      },
+    }),
+    (error) => error?.code === "EVIDENCE_PACKET_INVALID",
+  );
 });
 
 test("completed critic packets cannot be transplanted onto another canonical capture", async () => {

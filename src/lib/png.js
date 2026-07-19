@@ -130,9 +130,18 @@ export function inspectPngBuffer(
     if (!Number.isSafeInteger(expectedLength) || expectedLength > maxDecodedBytes) {
       throw new Error("invalid png");
     }
-    const raw = inflateSync(Buffer.concat(idatChunks), {
+    const compressed = Buffer.concat(idatChunks);
+    const inflated = inflateSync(compressed, {
+      info: true,
       maxOutputLength: expectedLength,
     });
+    const raw = inflated.buffer;
+    if (
+      !Number.isSafeInteger(inflated.engine?.bytesWritten) ||
+      inflated.engine.bytesWritten !== compressed.length
+    ) {
+      throw new Error("invalid png");
+    }
     if (raw.length !== expectedLength) throw new Error("invalid png");
     for (let row = 0; row < height; row += 1) {
       if (raw[row * (stride + 1)] > 4) throw new Error("invalid png");
