@@ -111,6 +111,50 @@ const POSIX_MACHINE_PATH = new RegExp(
   String.raw`(?:^|[\s"'\x60(=:[,])\/(?:Users|home|opt|var|tmp|etc|mnt|srv|workspace|workspaces|Volumes|private)\/[^\s"'\x60]+`,
   "im",
 );
+const HISTORICAL_ABSOLUTE_PATH_ATTESTATIONS = new Set([
+  historicalAttestationKey(
+    "test/unit/critic.test.js",
+    "07e8c300359258bdfc760d0aa652ba31501700b4",
+    "be91293e0347cacb0d53133ab3a16484cdd90c0b988e7bc48c8eedf8420b8e4d",
+    9131,
+  ),
+  historicalAttestationKey(
+    "test/unit/critic.test.js",
+    "3b49ae9b1d85f823e11198af6c69322e9c79eda3",
+    "255663823186a119e266443dedca6fa920f33638cacfc9c92d64a8a134f19c86",
+    6504,
+  ),
+  historicalAttestationKey(
+    "test/unit/critic.test.js",
+    "ae51d4961f2701f938fcb103a76ab875638e5e4a",
+    "38deef84dac7ce96ad2816c5776fa4c0555a3a89ae60622c595fb2d4a48745f8",
+    8273,
+  ),
+  historicalAttestationKey(
+    "test/unit/critic.test.js",
+    "e72f4c0401073a2e9a47f2ad9679d063d233a01e",
+    "4066a0aeee4d97b9c173fe803eb516242423b7a0daa81bbde7ffb7bb8bdae330",
+    8202,
+  ),
+  historicalAttestationKey(
+    "test/unit/revise.test.js",
+    "3b3bf0e08845fde652856177fd67df33d6432443",
+    "daa64020f72dda21a865f6acfc710e450e6b775ea6b0c540b6ebab9640daad07",
+    19172,
+  ),
+  historicalAttestationKey(
+    "test/unit/revise.test.js",
+    "a932750ae48b89fdeed66ca194d2adfcbdc7a476",
+    "1ed3178b80a8a30c4e0ec269a4258d1992af433332b2e18f8e59ab0784a96fe9",
+    17910,
+  ),
+  historicalAttestationKey(
+    "test/unit/revise.test.js",
+    "759b61da342abac05150628fe9405554f53484ce",
+    "70a2b65f2f757b0f8df2f01c37fd3ea18441482b5595d35b6073fdab5dcb2418",
+    17823,
+  ),
+]);
 const PNG_SIGNATURE = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
 const MODULE_PATH = fileURLToPath(import.meta.url);
 
@@ -231,7 +275,13 @@ async function scanReachableHistory({ runGit, findings }) {
   for (const { object, path: relativePath } of historyEntries.values()) {
     const value = blobs.get(object);
     if (!value) throw new Error("History object unavailable.");
-    scanContent(findings, relativePath, value);
+    scanContent(findings, relativePath, value, {
+      suppressAbsoluteMachinePath: isAttestedHistoricalAbsolutePath({
+        relativePath,
+        object,
+        value,
+      }),
+    });
     if (relativePath === ENV_EXAMPLE_FILE && invalidEnvironmentExample(value)) {
       findings.add("ENV_TRACKED", relativePath);
     }
@@ -1289,16 +1339,22 @@ function applyTrackedPathRules(findings, relativePath) {
   }
 }
 
-function scanContent(findings, relativePath, value) {
+function scanContent(
+  findings,
+  relativePath,
+  value,
+  { suppressAbsoluteMachinePath = false } = {},
+) {
   const text = decodeText(value);
   if (text === null) return;
   if (hasSecretAssignment(text)) {
     findings.add("SECRET_ASSIGNMENT", relativePath);
   }
   if (
-    WINDOWS_MACHINE_PATH.test(text) ||
-    UNC_MACHINE_PATH.test(text) ||
-    POSIX_MACHINE_PATH.test(text)
+    !suppressAbsoluteMachinePath &&
+    (WINDOWS_MACHINE_PATH.test(text) ||
+      UNC_MACHINE_PATH.test(text) ||
+      POSIX_MACHINE_PATH.test(text))
   ) {
     findings.add("ABSOLUTE_MACHINE_PATH", relativePath);
   }
@@ -1306,6 +1362,18 @@ function scanContent(findings, relativePath, value) {
   if (CONFIDENTIAL_TERMS.some((term) => lower.includes(term))) {
     findings.add("CONFIDENTIAL_SOURCE_TERM", relativePath);
   }
+}
+
+function isAttestedHistoricalAbsolutePath({ relativePath, object, value }) {
+  if (!Buffer.isBuffer(value)) return false;
+  const sha256 = createHash("sha256").update(value).digest("hex");
+  return HISTORICAL_ABSOLUTE_PATH_ATTESTATIONS.has(
+    historicalAttestationKey(relativePath, object, sha256, value.length),
+  );
+}
+
+function historicalAttestationKey(relativePath, object, sha256, bytes) {
+  return `${relativePath}\0${object}\0${sha256}\0${bytes}`;
 }
 
 function hasSecretAssignment(text) {

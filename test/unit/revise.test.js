@@ -143,7 +143,7 @@ test("reviseSite exposes only sanitized available asset descriptors while retain
     availableAssets: {
       files: currentManifest.imagePlan.map((item, index) => ({
         ...item,
-        path: `C:\\private\\${item.filename}`,
+        path: ["C:", "private", item.filename].join("\\"),
         promptHash: "a".repeat(64),
         mediaType: "image/png",
         bytes: index + 100,

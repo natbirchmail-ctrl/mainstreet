@@ -63,6 +63,50 @@ const defaultExamples = [
   "canyon-wheelworks",
 ];
 const pngSignature = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
+const approvedHistoricalAbsolutePathFixtures = Object.freeze([
+  Object.freeze({
+    path: "test/unit/critic.test.js",
+    object: "07e8c300359258bdfc760d0aa652ba31501700b4",
+    sha256: "be91293e0347cacb0d53133ab3a16484cdd90c0b988e7bc48c8eedf8420b8e4d",
+    bytes: 9131,
+  }),
+  Object.freeze({
+    path: "test/unit/critic.test.js",
+    object: "3b49ae9b1d85f823e11198af6c69322e9c79eda3",
+    sha256: "255663823186a119e266443dedca6fa920f33638cacfc9c92d64a8a134f19c86",
+    bytes: 6504,
+  }),
+  Object.freeze({
+    path: "test/unit/critic.test.js",
+    object: "ae51d4961f2701f938fcb103a76ab875638e5e4a",
+    sha256: "38deef84dac7ce96ad2816c5776fa4c0555a3a89ae60622c595fb2d4a48745f8",
+    bytes: 8273,
+  }),
+  Object.freeze({
+    path: "test/unit/critic.test.js",
+    object: "e72f4c0401073a2e9a47f2ad9679d063d233a01e",
+    sha256: "4066a0aeee4d97b9c173fe803eb516242423b7a0daa81bbde7ffb7bb8bdae330",
+    bytes: 8202,
+  }),
+  Object.freeze({
+    path: "test/unit/revise.test.js",
+    object: "3b3bf0e08845fde652856177fd67df33d6432443",
+    sha256: "daa64020f72dda21a865f6acfc710e450e6b775ea6b0c540b6ebab9640daad07",
+    bytes: 19172,
+  }),
+  Object.freeze({
+    path: "test/unit/revise.test.js",
+    object: "a932750ae48b89fdeed66ca194d2adfcbdc7a476",
+    sha256: "1ed3178b80a8a30c4e0ec269a4258d1992af433332b2e18f8e59ab0784a96fe9",
+    bytes: 17910,
+  }),
+  Object.freeze({
+    path: "test/unit/revise.test.js",
+    object: "759b61da342abac05150628fe9405554f53484ce",
+    sha256: "70a2b65f2f757b0f8df2f01c37fd3ea18441482b5595d35b6073fdab5dcb2418",
+    bytes: 17823,
+  }),
+]);
 
 test("release checker exports the public API and formats stable rule path lines", () => {
   assert.equal(typeof checkRelease, "function");
@@ -329,6 +373,110 @@ test("deleted historical matches remain findings without hashes or matched text"
   assert.equal(output.includes(secret), false);
   assert.equal(output.includes(fixture.root), false);
   assert.equal(/[a-f0-9]{40}/i.test(output), false);
+});
+
+test("exact attested historical fixture blobs suppress only ABSOLUTE_MACHINE_PATH", async (t) => {
+  for (const fixture of approvedHistoricalAbsolutePathFixtures) {
+    await t.test(`${fixture.path} ${fixture.object.slice(0, 8)}`, async () => {
+      const value = await readProjectBlob(fixture.object);
+      assert.equal(value.length, fixture.bytes);
+      assert.equal(digest(value), fixture.sha256);
+
+      const unapproved = await checkSyntheticHistory([
+        { ...fixture, object: differentObjectId(fixture.object), value },
+      ]);
+      assertFinding(unapproved, "ABSOLUTE_MACHINE_PATH", fixture.path);
+
+      const approved = await checkSyntheticHistory([{ ...fixture, value }]);
+      assertNoFinding(approved, "ABSOLUTE_MACHINE_PATH", fixture.path);
+    });
+  }
+});
+
+test("attested historical bytes remain rejected by the current index scan", async () => {
+  const fixture = approvedHistoricalAbsolutePathFixtures.at(-1);
+  const value = await readProjectBlob(fixture.object);
+  const root = path.join(fixtureRoot, randomUUID());
+  await writeOwnedFile(root, fixture.path, value);
+
+  const result = await checkRelease({
+    repoRoot: root,
+    expectedSlugs: ["example-run"],
+    git: syntheticGit({ trackedPaths: [fixture.path] }),
+  });
+
+  assertFinding(result, "ABSOLUTE_MACHINE_PATH", fixture.path);
+});
+
+test("historical fixture attestation fails closed for every tuple or byte mismatch", async (t) => {
+  const fixture = approvedHistoricalAbsolutePathFixtures.at(-1);
+  const value = await readProjectBlob(fixture.object);
+  const sameLengthAlteration = Buffer.from(value);
+  sameLengthAlteration[0] ^= 1;
+
+  for (const [name, entry] of [
+    ["repository path", { ...fixture, path: "test/unit/copied-revise.test.js", value }],
+    ["Git blob object", { ...fixture, object: differentObjectId(fixture.object), value }],
+    ["SHA256 and bytes", { ...fixture, value: sameLengthAlteration }],
+    ["byte length", { ...fixture, value: Buffer.concat([value, Buffer.from("\n")]) }],
+  ]) {
+    await t.test(name, async () => {
+      const result = await checkSyntheticHistory([entry]);
+      assertFinding(result, "ABSOLUTE_MACHINE_PATH", entry.path);
+    });
+  }
+});
+
+test("a new deleted historical machine path fails closed", async () => {
+  const relativePath = "test/unit/new-deleted-fixture.test.js";
+  const value = Buffer.from(
+    `const machinePath = ${JSON.stringify(["C:", "synthetic", "fixture.txt"].join("\\"))};\n`,
+  );
+  const object = gitBlobObjectId(value);
+  const result = await checkSyntheticHistory([{ path: relativePath, object, value }]);
+
+  assertFinding(result, "ABSOLUTE_MACHINE_PATH", relativePath);
+});
+
+test("historical attestation never suppresses nonabsolute security rules", async () => {
+  const fixture = approvedHistoricalAbsolutePathFixtures.at(-1);
+  const approvedValue = await readProjectBlob(fixture.object);
+  const secret = ["sk", "attestation", "0123456789abcdef"].join("-");
+  const value = Buffer.concat([
+    approvedValue,
+    Buffer.from(`\n${secretKey()}=${secret}\n`),
+  ]);
+  const result = await checkSyntheticHistory([{ ...fixture, value }]);
+
+  assertFinding(result, "ABSOLUTE_MACHINE_PATH", fixture.path);
+  assertFinding(result, "SECRET_ASSIGNMENT", fixture.path);
+  const output = formatFindings(result.findings);
+  assert.equal(output.includes(secret), false);
+  assert.equal(output.includes(fixture.object), false);
+  assert.equal(output.includes(fixture.sha256), false);
+});
+
+test("historical attestation failures remain redacted and deterministic", async () => {
+  const fixture = approvedHistoricalAbsolutePathFixtures.at(-1);
+  const value = await readProjectBlob(fixture.object);
+  const newPath = "test/unit/new-deleted-fixture.test.js";
+  const newValue = Buffer.from(
+    `const machinePath = ${JSON.stringify(["D:", "synthetic", "fixture.txt"].join("\\"))};\n`,
+  );
+  const entries = [
+    { ...fixture, object: differentObjectId(fixture.object), value },
+    { path: newPath, object: gitBlobObjectId(newValue), value: newValue },
+  ];
+
+  const first = formatFindings((await checkSyntheticHistory(entries)).findings);
+  const second = formatFindings(
+    (await checkSyntheticHistory(entries.toReversed())).findings,
+  );
+  assert.equal(first, second);
+  assert.equal(first.includes(fixture.object), false);
+  assert.equal(first.includes(fixture.sha256), false);
+  assert.equal(first.includes("D:"), false);
+  assert.equal(first.includes(projectRoot), false);
 });
 
 test("the example set must match the expected slugs exactly", async () => {
@@ -1509,6 +1657,85 @@ async function git(root, args) {
   });
 }
 
+async function readProjectBlob(object) {
+  const { stdout } = await execFileAsync(
+    "git",
+    ["-C", projectRoot, "cat-file", "blob", object],
+    {
+      encoding: "buffer",
+      maxBuffer: 8 * 1024 * 1024,
+      windowsHide: true,
+    },
+  );
+  return stdout;
+}
+
+function checkSyntheticHistory(entries) {
+  return checkRelease({
+    repoRoot: projectRoot,
+    expectedSlugs: ["example-run"],
+    git: syntheticGit({ historyEntries: entries }),
+  });
+}
+
+function syntheticGit({
+  historyEntries = [],
+  trackedPaths = [],
+  untrackedPaths = [],
+} = {}) {
+  const commits = new Map(
+    historyEntries.map((entry, index) => [`synthetic-commit-${index}`, entry]),
+  );
+  const blobs = new Map(historyEntries.map((entry) => [entry.object, entry.value]));
+  return async (args, { input } = {}) => {
+    const command = args.join(" ");
+    if (command === "ls-files -z") return nulPaths(trackedPaths);
+    if (command === "ls-files --deleted -z") return Buffer.alloc(0);
+    if (command === "ls-files --others --exclude-standard -z") {
+      return nulPaths(untrackedPaths);
+    }
+    if (command === "rev-list --all") {
+      return Buffer.from(`${[...commits.keys()].join("\n")}\n`);
+    }
+    if (args[0] === "ls-tree") {
+      const entry = commits.get(args.at(-1));
+      if (!entry) throw new Error("Unexpected synthetic commit.");
+      return Buffer.from(`100644 blob ${entry.object}\t${entry.path}\0`);
+    }
+    if (command === "cat-file --batch") {
+      const objects = String(input).trim().split(/\r?\n/).filter(Boolean);
+      return Buffer.concat(
+        objects.flatMap((object) => {
+          const value = blobs.get(object);
+          if (!value) throw new Error("Unexpected synthetic blob.");
+          return [
+            Buffer.from(`${object} blob ${value.length}\n`),
+            value,
+            Buffer.from("\n"),
+          ];
+        }),
+      );
+    }
+    throw new Error(`Unexpected synthetic Git command: ${command}`);
+  };
+}
+
+function nulPaths(paths) {
+  return Buffer.from(paths.length === 0 ? "" : `${paths.join("\0")}\0`);
+}
+
+function differentObjectId(object) {
+  const replacement = object[0] === "0" ? "1" : "0";
+  return `${replacement}${object.slice(1)}`;
+}
+
+function gitBlobObjectId(value) {
+  return createHash("sha1")
+    .update(`blob ${value.length}\0`)
+    .update(value)
+    .digest("hex");
+}
+
 function runCli(root) {
   return new Promise((resolve) => {
     execFile(
@@ -1537,6 +1764,16 @@ function assertFinding(result, rule, relativePath) {
       (finding) => finding.rule === rule && finding.path === relativePath,
     ),
     `Expected ${rule} at ${relativePath}`,
+  );
+}
+
+function assertNoFinding(result, rule, relativePath) {
+  assert.equal(
+    result.findings.some(
+      (finding) => finding.rule === rule && finding.path === relativePath,
+    ),
+    false,
+    `Did not expect ${rule} at ${relativePath}`,
   );
 }
 
