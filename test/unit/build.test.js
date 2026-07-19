@@ -85,7 +85,7 @@ function safeManifest() {
 </head>
 <body data-motion-moves="staged-hero-entrance">
   <a class="skip-link" href="#main">Skip to content</a>
-  <header><nav aria-label="Primary"><a href="#offerings">Offerings</a></nav></header>
+  <header><nav aria-label="Primary"><a href="#offerings">Planning Guide</a></nav></header>
   <main id="main">
     <section id="hero" data-section="hero" data-motion-root="staged-hero-entrance">
       <div data-first-beat data-motion-target>
@@ -1456,6 +1456,21 @@ test("deterministic fallback accepts transactional words used only as identity",
 
   assert.equal(result.source, "deterministic-fallback");
   assert.match(result.indexHtml, /Book Order Delivery Pickup/);
+  validateSiteManifest(result);
+});
+
+test("deterministic fallback keeps an inferred transactional category in neutral guidance", async () => {
+  const categoryBrief = inferredOnlyBrief();
+  categoryBrief.business.category = "Same Day Delivery";
+  const result = await buildSite({
+    brief: categoryBrief,
+    structuredRequester: async () => {
+      throw new Error("network unavailable");
+    },
+  });
+
+  assert.equal(result.source, "deterministic-fallback");
+  assert.match(result.indexHtml, /visual guide inspired by same day delivery/i);
   validateSiteManifest(result);
 });
 

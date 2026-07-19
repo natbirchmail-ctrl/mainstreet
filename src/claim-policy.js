@@ -167,8 +167,11 @@ const CLAIM_NOUNS = new Set([
   "tuneup",
 ]);
 
-const NEGATIVE_PATTERN = /\b(?:are not|aren t|cannot|can t|cant|does not|doesn t|do not|don t|is not|isn t|never|no longer|not|unavailable|without|won t|wont)\b/;
-const STRUCTURAL_COPY_PATTERN = /^(?:confirmed details|confirm details|known services|our services|service details|services|offerings|products|menu|planning notes|planning context|useful directions|useful questions|explore ideas|explore services|read guidance|local context)$/;
+const NEGATIVE_PATTERN = /\b(?:are not|aren t|cannot|can t|cant|does not|doesn t|do not|don t|is not|isn t|never|no|no longer|not|unavailable|without|won t|wont)\b/;
+const STRUCTURAL_COPY_PATTERN = /^(?:confirmed details|confirm details|planning notes|planning context|useful directions|useful questions|explore ideas|read guidance|local context)$/;
+const SERVICE_FRAME_PATTERN = /^(?:known services|our services|service details|services|offerings|products|menu|explore services)$/;
+const OFFERING_SECTION_PATTERN = /\b(?:menu|offerings?|products?|services?)\b/;
+const EDITORIAL_HEADING_PATTERN = /\b(?:context|direction|fit|guide|ideas|moment|mood|pattern|priorities|priority|questions|setting|size|story|style)$/;
 
 export function deriveClaimPolicy(brief) {
   const provenance = readTrustedProvenance(brief);
@@ -223,7 +226,8 @@ export function validateBriefClaims(input, brief) {
   const surfaces = typeof input === "string"
     ? extractClaimSurfaces(input)
     : normalizeExternalSurfaces(input);
-  const identityPhrases = identityClaims(brief);
+  const identityPhrases = policy.provenanceStatus === "valid" ? trustedIdentityClaims(brief) : [];
+  const categoryPhrase = normalizeClaimText(brief?.business?.category);
   const trustedClauses = policy.confirmedUserClauses.map(toClauseRecord);
   const offeringHints = [...policy.confirmedOfferings, ...policy.inferredOfferingHints];
   const confirmedOfferingPhrases = policy.confirmedOfferings
@@ -239,12 +243,13 @@ export function validateBriefClaims(input, brief) {
       const normalized = normalizeClaimText(text);
       if (!normalized || isExactSafeIdentity(normalized, identityPhrases)) continue;
       if (isIdentityUtilityLabel(normalized, identityPhrases) || isIdentityCarrierCopy(normalized, identityPhrases)) continue;
+      if (isCategoryGuidanceCarrier(normalized, categoryPhrase)) continue;
       if (confirmedOfferingPhrases.includes(normalized)) continue;
       if (hasMixedScriptAfterCanonicalization(text)) {
         throw new Error("Unauditable mixed script text is not allowed on a human facing surface.");
       }
 
-      const claim = analyzeClaim({ ...surface, text, normalized }, brief, offeringHints);
+      const claim = analyzeClaim({ ...surface, text, normalized }, brief, offeringHints, policy.mode);
       if (!claim) continue;
       if (!isSupportedByOneClause(claim, trustedClauses, brief?.business?.name)) {
         throw new Error(`Unsupported claim is not proven by one user confirmed clause: ${claim.reason}: "${claim.text.slice(0, 180)}".`);
@@ -332,9 +337,14 @@ function containsWholePhrase(value, phrase) {
     value.includes(` ${phrase} `);
 }
 
-function analyzeClaim(surface, brief, offeringHints) {
+function analyzeClaim(surface, brief, offeringHints, policyMode) {
   const { normalized } = surface;
   if (STRUCTURAL_COPY_PATTERN.test(normalized)) return null;
+  if (SERVICE_FRAME_PATTERN.test(normalized)) {
+    return policyMode === "guidance-only"
+      ? claimRecord(surface.text, normalized, "unconfirmed service framing")
+      : null;
+  }
 
   const intent = detectIntent(normalized, surface.action);
   if (intent) return claimRecord(surface.text, normalized, `transactional intent ${intent}`);
@@ -345,11 +355,6 @@ function analyzeClaim(surface, brief, offeringHints) {
   }
   if (isHoursClaim(normalized)) return claimRecord(surface.text, normalized, "business hours");
   if (isPriceClaim(normalized)) return claimRecord(surface.text, normalized, "price");
-  if (isHonestImageDescription(surface, normalized)) return null;
-  if (isAvailabilityOrScopeClaim(normalized)) {
-    return claimRecord(surface.text, normalized, "availability or scope");
-  }
-  if (isInformationalCopy(normalized)) return null;
 
   for (const offering of offeringHints) {
     for (const value of [offering.name, offering.description]) {
@@ -359,6 +364,15 @@ function analyzeClaim(surface, brief, offeringHints) {
       }
     }
   }
+
+  if (isHonestImageDescription(surface, normalized)) return null;
+  if (isAvailabilityOrScopeClaim(normalized)) {
+    return claimRecord(surface.text, normalized, "availability or scope");
+  }
+  if (isClaimingGuidance(normalized)) {
+    return claimRecord(surface.text, normalized, "business attributed service guidance");
+  }
+  if (isInformationalCopy(normalized)) return null;
 
   if (isAttributedOperation(normalized, brief?.business?.name)) {
     return claimRecord(surface.text, normalized, "business operation");
@@ -402,7 +416,8 @@ function detectIntent(value, actionSurface) {
   }
   if (/^appointment(?:\b| )/.test(normalized)) return "reservation";
   if (/^quote(?:\b| )/.test(normalized)) return "quote";
-  if (/^(?:(?:get|request) )?(?:same day )?(?:delivery|shipping|pickup|pick up)(?:\b| )/.test(normalized)) {
+  if (/^(?:(?:get|request) )?(?:pickup|pick up)(?:\b| )/.test(normalized)) return "pickup";
+  if (/^(?:(?:get|request) )?(?:same day )?(?:delivery|shipping)(?:\b| )/.test(normalized)) {
     return "fulfillment";
   }
   return null;
@@ -423,7 +438,7 @@ function isPriceClaim(value) {
 
 function isAttributedOperation(value, businessName) {
   const tokens = tokensFor(value);
-  if (["our", "we"].includes(tokens[0])) return true;
+  if (tokens[0] === "we" || tokens.includes("our")) return true;
   if (["the", "this"].includes(tokens[0]) && tokens[1] === "business") return true;
 
   const nameTokens = tokensFor(businessName);
@@ -447,6 +462,9 @@ function isContactClaim(raw, normalized) {
   });
   return (
     /\b[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}\b/i.test(source) ||
+    /(?:^|[\s:,(])@[a-z0-9][a-z0-9._]{1,29}\b/i.test(source) ||
+    /\b(?:facebook|instagram|linkedin|threads|tiktok|twitter|youtube)\s*:\s*[a-z0-9._]{2,}\b/i.test(source) ||
+    /\b(?:p o|po|post office) box [a-z0-9]+\b/.test(normalized) ||
     hasPhone ||
     /\b(?:1 )?[2-9][0-9]{2} [0-9]{3} [0-9]{4}\b/.test(normalized) ||
     /\b[2-9][0-9]{9}\b/.test(normalized) ||
@@ -469,14 +487,24 @@ function isHonestImageDescription(surface, value) {
   if (surface.kind !== "attribute:alt") return false;
   if (/\b(?:available|daily|every day|free|nationwide|same day|today|unavailable)\b/.test(value)) return false;
   if (/^(?:our|we)\b/.test(value)) return false;
+  if (tokensFor(value).some((token) => OPERATION_TOKENS.has(token))) return false;
   return /\b(?:arranged|beside|close detail|contemporary|displayed|exterior|image|in natural|interior|materials|photograph|portrait|scene|shaping|shelf|still life|view|work surface)\b/.test(value) ||
     (tokensFor(value).length >= 4 && /\b(?:a|an|and|at|beside|in|near|on|with)\b/.test(value));
 }
 
 function isInformationalCopy(value) {
-  if (/^(?:compare|consider|explore|gather|learn|note|plan|read|think)\b/.test(value)) return true;
-  return /^use\b/.test(value) &&
-    /\b(?:checklist|guide|ideas|information|management|notes|questions|reference|tips|worksheet)\b/.test(value);
+  const informationalHead = /^(?:compare|consider|explore|gather|learn|note|plan|read|think|use)\b/.test(value);
+  if (!informationalHead) return false;
+  if (/^plan your\b/.test(value)) return false;
+  if (!/\bour\b/.test(value)) return true;
+  return /\b(?:checklist|guide|information|management|notes|questions|reference|tips|worksheet)\b/.test(value);
+}
+
+function isClaimingGuidance(value) {
+  if (/^plan your\b/.test(value)) return true;
+  if (!/^(?:compare|consider|explore|gather|learn|note|plan|read|think|use)\b/.test(value)) return false;
+  if (!/\bour\b/.test(value)) return false;
+  return !/\b(?:checklist|guide|information|management|notes|questions|reference|tips|worksheet)\b/.test(value);
 }
 
 function isAvailabilityOrScopeClaim(value) {
@@ -490,7 +518,7 @@ function isAvailabilityOrScopeClaim(value) {
 function isCommercialNounPhrase(surface, value) {
   if (/\bin order to\b/.test(value)) return false;
   if (/^h[3-6]$/.test(surface.tagName ?? "")) {
-    return !/\b(?:context|direction|fit|guide|ideas|moment|mood|pattern|priorities|priority|questions|setting|size|style)$/.test(value);
+    return OFFERING_SECTION_PATTERN.test(surface.section ?? "") && !EDITORIAL_HEADING_PATTERN.test(value);
   }
   if (surface.kind === "attribute:alt") return true;
   const words = new Set(tokensFor(value));
@@ -528,6 +556,7 @@ function supportsTransactionalIntent(claim, evidenceTokens) {
   const requiredOperation = {
     fulfillment: "deliver",
     order: "order",
+    pickup: "pickup",
     purchase: "buy",
     quote: "quote",
     reservation: "reserve",
@@ -544,6 +573,7 @@ function supportsTransactionalIntent(claim, evidenceTokens) {
     "currently",
     "day",
     "free",
+    "for",
     "is",
     "local",
     "nationwide",
@@ -551,11 +581,40 @@ function supportsTransactionalIntent(claim, evidenceTokens) {
     "online",
     "same",
   ]);
-  if (evidenceTokens.some((token) => !permittedEvidence.has(token))) return false;
+  const evidenceObject = evidenceTokens.filter((token) => !permittedEvidence.has(token));
+  const claimObject = transactionalObjectTokens(claim.normalized, family);
+  if (!sameSequence(claimObject, evidenceObject)) return false;
 
   const claimQualifiers = tokensFor(claim.normalized)
     .filter((token) => ["day", "free", "local", "nationwide", "online", "same"].includes(token));
   return claimQualifiers.every((token) => evidence.has(token));
+}
+
+function transactionalObjectTokens(value, family) {
+  const operationTokens = new Set({
+    fulfillment: ["deliver"],
+    order: ["order"],
+    pickup: ["pickup"],
+    purchase: ["buy"],
+    quote: ["quote"],
+    reservation: ["reserve"],
+  }[family] ?? []);
+  const carriers = new Set([
+    "a",
+    "an",
+    "cart",
+    "day",
+    "free",
+    "get",
+    "local",
+    "nationwide",
+    "now",
+    "online",
+    "request",
+    "same",
+    "to",
+  ]);
+  return tokensFor(value).filter((token) => !operationTokens.has(token) && !carriers.has(token));
 }
 
 function detectModality(value) {
@@ -601,6 +660,7 @@ function extractClaimSurfaces(html) {
     directText: "",
     hasBlockChild: false,
     parts: [],
+    section: null,
     tagName: "#document",
   }];
   for (const token of tokenizeHtml(source)) {
@@ -632,6 +692,19 @@ function extractClaimSurfaces(html) {
 
     const attributes = parseAttributes(token.attributeSource);
     const role = normalizeClaimText(attributes.role);
+    const inheritedSection = [...stack].reverse().find((frame) => frame.section)?.section ?? null;
+    const localSection = [
+      attributes["data-section"],
+      attributes.id,
+      attributes.class,
+      attributes["aria-label"],
+    ]
+      .map((value) => normalizeClaimText(value))
+      .filter(Boolean)
+      .join(" ");
+    const section = OFFERING_SECTION_PATTERN.test(localSection)
+      ? localSection
+      : inheritedSection || localSection || null;
     const action = INTERACTIVE_TAGS.has(tagName) || ["button", "link", "menuitem"].includes(role) ||
       (tagName === "input" && /^(?:button|reset|submit)$/.test(normalizeClaimText(attributes.type)));
     for (const frame of stack) {
@@ -640,7 +713,7 @@ function extractClaimSurfaces(html) {
         frame.hasBlockChild = true;
       }
     }
-    collectAttributeSurfaces(surfaces, tagName, attributes, action);
+    collectAttributeSurfaces(surfaces, tagName, attributes, action, section);
 
     const frame = {
       action,
@@ -648,6 +721,7 @@ function extractClaimSurfaces(html) {
       directText: "",
       hasBlockChild: false,
       parts: [],
+      section,
       tagName,
     };
     stack.push(frame);
@@ -736,25 +810,26 @@ function finalizeFrame(frame, surfaces) {
   surfaces.push({
     action: frame.action,
     kind: "text",
+    section: frame.section,
     tagName: frame.tagName,
     text: auditedText,
   });
 }
 
-function collectAttributeSurfaces(surfaces, tagName, attributes, action) {
+function collectAttributeSurfaces(surfaces, tagName, attributes, action, section) {
   for (const [name, value] of Object.entries(attributes)) {
     if (!value) continue;
     if (HUMAN_ATTRIBUTE_NAMES.has(name)) {
-      surfaces.push({ action, kind: `attribute:${name}`, tagName, text: value });
+      surfaces.push({ action, kind: `attribute:${name}`, section, tagName, text: value });
     }
     if (name === "value" && tagName === "input" && normalizeClaimText(attributes.type) !== "hidden") {
-      surfaces.push({ action, kind: "attribute:value", tagName, text: value });
+      surfaces.push({ action, kind: "attribute:value", section, tagName, text: value });
     }
   }
 
   if (tagName === "meta" && attributes.content && !normalizeClaimText(attributes["http-equiv"])) {
     const metadataName = normalizeClaimText(attributes.name || attributes.property);
-    surfaces.push({ action: false, kind: `metadata:${metadataName || "unnamed"}`, tagName, text: attributes.content });
+    surfaces.push({ action: false, kind: `metadata:${metadataName || "unnamed"}`, section, tagName, text: attributes.content });
   }
 }
 
@@ -779,6 +854,7 @@ function normalizeExternalSurfaces(value) {
     return [{
       action: surface.action === true,
       kind: boundedString(surface.kind, 80) ?? "rendered",
+      section: boundedString(surface.section, 80)?.toLowerCase() ?? null,
       tagName: boundedString(surface.tagName, 24)?.toLowerCase() ?? null,
       text: surface.text,
     }];
@@ -788,17 +864,33 @@ function normalizeExternalSurfaces(value) {
 function deduplicateSurfaces(surfaces) {
   const seen = new Set();
   return surfaces.filter((surface) => {
-    const key = `${surface.kind}|${surface.action}|${surface.tagName}|${surface.text}`;
+    const key = `${surface.kind}|${surface.action}|${surface.section}|${surface.tagName}|${surface.text}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
   });
 }
 
-function identityClaims(brief) {
-  return [brief?.business?.name, brief?.business?.category, brief?.business?.city]
-    .map(normalizeClaimText)
-    .filter(Boolean);
+function trustedIdentityClaims(brief) {
+  if (!Array.isArray(brief?.facts?.confirmed)) return [];
+  const identity = normalizeClaimText(brief?.business?.name);
+  const city = normalizeClaimText(brief?.business?.city);
+  return brief.facts.confirmed
+    .filter((fact) => isPlainObject(fact) && fact.source === "user")
+    .flatMap((fact) => {
+      const label = normalizeClaimText(fact.label);
+      const value = normalizeClaimText(fact.value);
+      if (label === "business name" && value && value === identity) return [value];
+      if (label === "city" && value && value === city) return [value];
+      return [];
+    });
+}
+
+function isCategoryGuidanceCarrier(value, category) {
+  if (!category) return false;
+  return value === `a visual guide inspired by ${category}` ||
+    value === `a visual planning guide inspired by ${category}` ||
+    value === `contemporary still life inspired by ${category}`;
 }
 
 function isExactSafeIdentity(value, identities) {
@@ -828,19 +920,23 @@ function isIdentityCarrierCopy(value, identities) {
 }
 
 function splitTrustedClauses(value) {
-  return collapseHumanText(value)
+  return normalizeClauseAbbreviations(value)
     .split(/[.!?;]+|\r?\n+|\s+(?:but|however)\s+/i)
     .map(collapseHumanText)
     .filter(Boolean);
 }
 
 function splitRenderableClauses(value) {
-  const text = collapseHumanText(value);
+  const text = normalizeClauseAbbreviations(value);
   if (!text) return [];
   return text
     .split(/[.!?;]+|\r?\n+/)
     .map(collapseHumanText)
     .filter(Boolean);
+}
+
+function normalizeClauseAbbreviations(value) {
+  return collapseHumanText(value).replace(/\bp\.?\s*o\.?\s+box\b/gi, "PO Box");
 }
 
 function toClauseRecord(text) {

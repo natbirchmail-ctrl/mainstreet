@@ -431,7 +431,7 @@ test("scanner audits all rendered values labels trailing text and embedded actio
 test("unsupported offering contact reputation and history claims are audited", async (t) => {
   const { validateBriefClaims } = await claimPolicyModule();
   const claims = [
-    ["offering heading", "<h3>Wedding bouquets</h3>"],
+    ["offering heading", '<section data-section="offerings"><h3>Wedding bouquets</h3></section>'],
     ["offering alt", '<img src="assets/example.png" alt="Wedding bouquets">'],
     ["phone", "<p>Call 928 774 1234</p>"],
     ["address", "<p>Visit 123 Main Street</p>"],
@@ -478,7 +478,7 @@ test("exact identity and ambiguous informational prose avoid intent false positi
     brief.facts.confirmed[0].value = name;
     assert.doesNotThrow(() =>
       validateBriefClaims(
-        `<main><h1>${name}</h1><p>${category}</p><p>Read the guide in order to compare ideas.</p><p>Monday planning can help.</p><p>Planning for an event begins with the setting.</p></main>`,
+        `<main><h1>${name}</h1><p>Read the guide in order to compare ideas.</p><p>Monday planning can help.</p><p>Planning for an event begins with the setting.</p></main>`,
         brief,
       ),
     );
@@ -506,8 +506,8 @@ test("one trusted clause must contain every essential claim token with matching 
 test("claim classification is structural across local business categories", async (t) => {
   const { validateBriefClaims } = await claimPolicyModule();
   for (const [name, authored] of [
-    ["photography heading", "<h3>Wedding Photography</h3>"],
-    ["plumbing heading", "<h3>Emergency Plumbing</h3>"],
+    ["photography heading", '<section data-section="offerings"><h3>Wedding Photography</h3></section>'],
+    ["plumbing heading", '<section data-section="services"><h3>Emergency Plumbing</h3></section>'],
     ["possessive offering", "<p>Our wedding bouquets</p>"],
     ["first person offering", "<p>We have wedding bouquets</p>"],
     ["first person scope", "<p>We are available nationwide</p>"],
@@ -590,4 +590,174 @@ test("informational command heads remain useful without authorizing claims", asy
       authored,
     );
   }
+});
+
+test("standalone no is negative evidence and cannot confirm a positive offering", async () => {
+  const { deriveClaimPolicy, validateBriefClaims } = await claimPolicyModule();
+  const brief = repairBrief("No neighborhood bicycle repair for commuters.");
+
+  assert.equal(deriveClaimPolicy(brief).mode, "guidance-only");
+  assert.throws(
+    () => validateBriefClaims("<main><p>Neighborhood bicycle repair for commuters.</p></main>", brief),
+    /unsupported/i,
+  );
+  assert.doesNotThrow(() =>
+    validateBriefClaims("<main><p>No neighborhood bicycle repair for commuters.</p></main>", brief),
+  );
+});
+
+test("guidance-only mode rejects service framing while preserving neutral guidance", async (t) => {
+  const { validateBriefClaims } = await claimPolicyModule();
+  for (const framing of [
+    "Our Services",
+    "Services",
+    "Offerings",
+    "Products",
+    "Menu",
+    "Explore Services",
+  ]) {
+    await t.test(framing, () => {
+      assert.throws(
+        () => validateBriefClaims(`<main><h2>${framing}</h2></main>`, inferredBrief()),
+        /unsupported/i,
+      );
+    });
+  }
+
+  for (const copy of [
+    "Explore our wedding bouquets",
+    "Learn about our flower delivery",
+    "Plan your wedding photography",
+  ]) {
+    await t.test(copy, () => {
+      assert.throws(
+        () => validateBriefClaims(`<main><a href="#ideas">${copy}</a></main>`, inferredBrief()),
+        /unsupported/i,
+      );
+    });
+  }
+
+  assert.throws(
+    () => validateBriefClaims(
+      '<main><img src="assets/example.png" alt="Wedding bouquets prepared for delivery on a work surface"></main>',
+      inferredBrief(),
+    ),
+    /unsupported/i,
+  );
+
+  for (const copy of ["Explore color ideas", "Learn about delivery drivers", "Plan for an event"]) {
+    assert.doesNotThrow(() =>
+      validateBriefClaims(`<main><a href="#ideas">${copy}</a></main>`, inferredBrief()),
+      copy,
+    );
+  }
+});
+
+test("model inferred category is not identity evidence", async () => {
+  const { validateBriefClaims } = await claimPolicyModule();
+  const brief = inferredBrief();
+  brief.business.category = "Same Day Delivery";
+
+  assert.throws(
+    () => validateBriefClaims("<main><button>Same Day Delivery</button></main>", brief),
+    /unsupported/i,
+  );
+  assert.doesNotThrow(() =>
+    validateBriefClaims(
+      "<main><p>A visual planning guide inspired by Same Day Delivery.</p></main>",
+      brief,
+    ),
+  );
+});
+
+test("transactional intent retains its claimed object", async () => {
+  const { validateBriefClaims } = await claimPolicyModule();
+  const generic = inferredBrief();
+  generic.facts.confirmed.push({
+    label: "Owner details",
+    value: "Online ordering is available.",
+    source: "user",
+  });
+  assert.doesNotThrow(() =>
+    validateBriefClaims('<main><a href="#details">Order Online</a></main>', generic),
+  );
+  assert.throws(
+    () => validateBriefClaims('<main><a href="#details">Order Wedding Bouquets</a></main>', generic),
+    /unsupported/i,
+  );
+
+  const explicit = inferredBrief();
+  explicit.facts.confirmed.push({
+    label: "Owner details",
+    value: "Online ordering for wedding bouquets is available.",
+    source: "user",
+  });
+  assert.doesNotThrow(() =>
+    validateBriefClaims('<main><a href="#details">Order Wedding Bouquets</a></main>', explicit),
+  );
+});
+
+test("pickup intent requires pickup evidence and never borrows delivery support", async () => {
+  const { validateBriefClaims } = await claimPolicyModule();
+  const brief = inferredBrief();
+  brief.facts.confirmed.push({
+    label: "Owner details",
+    value: "Pickup is available.",
+    source: "user",
+  });
+  assert.doesNotThrow(() =>
+    validateBriefClaims('<main><a href="#details">Pickup</a></main>', brief),
+  );
+  assert.throws(
+    () => validateBriefClaims('<main><a href="#details">Delivery</a></main>', brief),
+    /unsupported/i,
+  );
+});
+
+test("social handles and post office boxes require exact user evidence", async (t) => {
+  const { validateBriefClaims } = await claimPolicyModule();
+  for (const copy of ["Instagram: @canyoncycles", "Follow @canyoncycles", "P.O. Box 123", "PO Box 42"]) {
+    await t.test(copy, () => {
+      assert.throws(
+        () => validateBriefClaims(`<main><p>${copy}</p></main>`, inferredBrief()),
+        /unsupported/i,
+      );
+    });
+  }
+  for (const copy of ["Plan social media ideas", "A box of materials on a work surface"]) {
+    assert.doesNotThrow(() =>
+      validateBriefClaims(`<main><p>${copy}</p></main>`, inferredBrief()),
+      copy,
+    );
+  }
+
+  const confirmed = inferredBrief();
+  confirmed.facts.confirmed.push({
+    label: "Owner details",
+    value: "Instagram: @canyoncycles. P.O. Box 123.",
+    source: "user",
+  });
+  assert.doesNotThrow(() =>
+    validateBriefClaims(
+      "<main><p>Instagram: @canyoncycles.</p><p>P.O. Box 123.</p></main>",
+      confirmed,
+    ),
+  );
+});
+
+test("editorial headings are neutral outside explicit offering framing", async () => {
+  const { validateBriefClaims } = await claimPolicyModule();
+  assert.doesNotThrow(() =>
+    validateBriefClaims(
+      '<main><section class="offerings-section"><div class="editorial-grid"><h3>Color Story</h3></div></section></main>',
+      inferredBrief(),
+    ),
+  );
+  assert.throws(
+    () => validateBriefClaims(
+      '<main><section class="services-section"><div class="card-grid"><h3>Emergency Plumbing</h3></div></section></main>',
+      inferredBrief(),
+    ),
+    /unsupported/i,
+  );
 });
