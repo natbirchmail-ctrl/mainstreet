@@ -291,6 +291,19 @@ html { scroll-behavior: smooth !important; }
   });
 });
 
+test("the JavaScript-disabled first beat probe does not depend on timeout sleeps", async () => {
+  const source = await readFile(
+    new URL("../../src/critic-evidence.js", import.meta.url),
+    "utf8",
+  );
+  const match = source.match(
+    /async function probeFirstBeatsWithoutFrames[\s\S]*?\n}\n\nasync function probeTouchTargets/,
+  );
+
+  assert.ok(match, "probeFirstBeatsWithoutFrames source was not found");
+  assert.doesNotMatch(match[0], /(?:waitForTimeout|setTimeout)\s*\(/);
+});
+
 test("every motion move has a failing normal and reduced motion fixture", async (t) => {
   for (const move of MOTION_MOVES) {
     await t.test(move, async () => {

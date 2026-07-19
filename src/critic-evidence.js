@@ -1106,7 +1106,6 @@ async function probeFirstBeatsWithoutFrames(page) {
       const top = element.getBoundingClientRect().top + window.scrollY;
       window.scrollTo({ top, left: 0, behavior: "auto" });
     });
-    await page.waitForTimeout(34);
     results.push(
       await beats.nth(0).evaluate((beat, index) => {
         const rect = beat.getBoundingClientRect();
