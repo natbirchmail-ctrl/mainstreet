@@ -1,6 +1,6 @@
 # Mainstreet demo plan
 
-Target length: 2 minutes 50 seconds. Hard limit: 3 minutes.
+Target length: 2 minutes 55 seconds. Hard limit: 3 minutes.
 
 ## Regeneration fields
 
@@ -104,15 +104,15 @@ Narration:
 
 > The pipeline owns bounded retries. A critic or revision failure preserves completed evidence. A deterministic image fallback preserves a usable preview but fails the asset gate. Missing credentials, an unavailable commit, or a Cloudflare error keeps the result local and leaves the public alias unchanged.
 
-### 2:38 to 2:46: Built with Codex
+### 2:38 to 2:50: Built with Codex
 
 Visual: Show a short sequence of timestamped commit subjects without author fields, then the README's Built with Codex section. Label the commit shot `Build milestones, not agent authorship`.
 
 Narration:
 
-> A Codex agent team built Mainstreet under root integration. The commits use the repository owner's configured Git identity, so they prove timestamped build milestones, not which agent wrote a change. The documented Codex process records bounded agent contributions, with the root Codex agent responsible for integration, verification, and final decisions.
+> The Codex agent process records implementation provenance under root integration and final decisions. Commits use the owner's Git identity and prove milestones, not agent authorship.
 
-### 2:46 to 2:50: End card
+### 2:50 to 2:55: End card
 
 Visual: Return to the verified public site. Keep `LIVE_URL` visible and hold through the final frame.
 
