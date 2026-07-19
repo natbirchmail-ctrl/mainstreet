@@ -7,78 +7,60 @@ import test from "node:test";
 import {
   captureCycle,
   critiqueCycle,
-  normalizeCritique,
   runCriticCycle,
 } from "../../src/critic.js";
+import { captureRenderedEvidence } from "../../src/critic-evidence.js";
+import {
+  QUALITY_LAWS,
+  VISUAL_LAWS,
+  normalizeModelCritique,
+} from "../../src/critic-policy.js";
 
-function rawCritique(overrides = {}) {
+const COMPLETE_VIEWPORTS = ["desktop", "tablet", "phone"];
+
+function rawCritique({ issues = [], laws = {} } = {}) {
   return {
     rubricVersion: "1.0",
-    score: 99,
-    verdict: "ship",
     summary: "The page is distinctive but needs one more mobile pass.",
     dimensions: {
-      layout: { score: 14, evidence: "Clear section rhythm", fix: "Tighten the long middle gap" },
-      hierarchy: { score: 12, evidence: "Strong hero scale", fix: "Clarify the final action" },
-      color: { score: 9, evidence: "Coherent earth palette", fix: "Increase muted text contrast" },
-      typography: { score: 12, evidence: "Editorial pairing", fix: "Open small labels" },
-      mobile: { score: 11, evidence: "Single column holds", fix: "Give the header more room" },
-      specificity: { score: 8, evidence: "Bakery details feel grounded", fix: "Remove one generic phrase" },
-      accessibility: { score: 8, evidence: "Visible focus and landmarks", fix: "Increase small text size" },
-      polish: { score: 3, evidence: "Consistent rules", fix: "Resolve two tight alignments" },
+      layout: dimension(17),
+      hierarchy: dimension(14),
+      color: dimension(11),
+      typography: dimension(14),
+      mobile: dimension(14),
+      specificity: dimension(9),
+      accessibility: dimension(9),
+      polish: dimension(4),
     },
     strengths: ["A memorable illustrated hero", "Honest treatment of missing facts"],
-    issues: [
-      {
-        priority: 1,
-        severity: "major",
-        dimension: "mobile",
-        evidence: "The wordmark wraps into two cramped lines on the narrow view.",
-        impact: "The first brand impression looks accidental.",
-        fix: "Keep the wordmark on one line and reduce the navigation label spacing.",
-      },
-    ],
+    issues,
+    laws: Object.fromEntries(
+      QUALITY_LAWS.map((name) => [name, laws[name] || law("pass")]),
+    ),
     revisionBrief: {
-      mustFix: ["Keep the mobile wordmark on one line"],
+      mustFix: [],
       preserve: ["Preserve the oven illustration and earth palette"],
     },
-    ...overrides,
   };
 }
 
-test("normalizeCritique computes the weighted score and prevents a false ship verdict", () => {
-  const critique = normalizeCritique(rawCritique());
-  assert.equal(critique.score, 77);
-  assert.equal(critique.verdict, "revise");
+test("captureCycle delegates to the rendered evidence implementation", () => {
+  assert.equal(captureCycle, captureRenderedEvidence);
 });
 
-test("normalizeCritique allows ship only at the threshold with no major finding", () => {
-  const candidate = rawCritique({
-    issues: [],
-    dimensions: {
-      layout: { score: 17, evidence: "Strong", fix: "None" },
-      hierarchy: { score: 14, evidence: "Strong", fix: "None" },
-      color: { score: 11, evidence: "Strong", fix: "None" },
-      typography: { score: 14, evidence: "Strong", fix: "None" },
-      mobile: { score: 14, evidence: "Strong", fix: "None" },
-      specificity: { score: 9, evidence: "Strong", fix: "None" },
-      accessibility: { score: 9, evidence: "Strong", fix: "None" },
-      polish: { score: 4, evidence: "Strong", fix: "None" },
-    },
-  });
-  const critique = normalizeCritique(candidate);
-  assert.equal(critique.score, 92);
-  assert.equal(critique.verdict, "ship");
-});
-
-test("critiqueCycle sends only the fresh evidence packet with two images", async () => {
+test("critiqueCycle sends text desktop tablet and phone in exact order", async () => {
   const cycleDir = path.join(process.cwd(), "tmp", randomUUID(), "cycle-01");
   const screenshotsDir = path.join(cycleDir, "screenshots");
   await mkdir(screenshotsDir, { recursive: true });
-  const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=", "base64");
+  const screenshots = {
+    desktop: Buffer.from("desktop"),
+    tablet: Buffer.from("tablet"),
+    phone: Buffer.from("phone"),
+  };
   await Promise.all([
-    writeFile(path.join(screenshotsDir, "desktop-home.png"), png),
-    writeFile(path.join(screenshotsDir, "mobile-home.png"), png),
+    writeFile(path.join(screenshotsDir, "desktop-home.png"), screenshots.desktop),
+    writeFile(path.join(screenshotsDir, "tablet-home.png"), screenshots.tablet),
+    writeFile(path.join(screenshotsDir, "mobile-home.png"), screenshots.phone),
     writeFile(path.join(cycleDir, "visible-text.txt"), "Fresh from the oven", "utf8"),
   ]);
 
@@ -92,53 +74,33 @@ test("critiqueCycle sends only the fresh evidence packet with two images", async
     },
   });
 
-  assert.equal(result.score, 77);
+  assert.equal(result.score, 92);
   assert.equal(request.schemaName, "mainstreet_critique");
   assert.deepEqual(request.inputContent.map((item) => item.type), [
     "input_text",
     "input_image",
     "input_image",
+    "input_image",
   ]);
-  assert.equal(request.inputContent[1].detail, "high");
-  assert.match(request.inputContent[1].image_url, /^data:image\/png;base64,/);
+  assert.deepEqual(
+    request.inputContent.slice(1).map((item) =>
+      Buffer.from(item.image_url.split(",")[1], "base64").toString("utf8"),
+    ),
+    ["desktop", "tablet", "phone"],
+  );
+  assert.deepEqual(
+    request.inputContent.slice(1).map((item) => item.detail),
+    ["high", "high", "high"],
+  );
   const packet = JSON.parse(request.inputContent[0].text);
   assert.equal(packet.visibleText, "Fresh from the oven");
   assert.equal(packet.brief.business.name, "Juniper Oven");
+  assert.deepEqual(Object.keys(packet.viewports), ["desktop", "tablet", "phone"]);
   assert.equal("priorCritique" in packet, false);
   assert.equal("sourceCode" in packet, false);
 });
 
-test("captureCycle creates deterministic desktop and mobile evidence", async () => {
-  const root = path.join(process.cwd(), "tmp", randomUUID());
-  const siteDir = path.join(root, "site");
-  const cycleDir = path.join(root, "cycle-01");
-  await mkdir(siteDir, { recursive: true });
-  await writeFile(
-    path.join(siteDir, "index.html"),
-    `<!doctype html><html lang="en"><head><meta name="viewport" content="width=device-width, initial-scale=1"><title>Proof</title><link rel="stylesheet" href="styles.css"></head><body><main><h1>Proof page</h1><a href="#details">Read details</a><section id="details"><h2>Details</h2><p>Visible evidence.</p></section></main></body></html>`,
-    "utf8",
-  );
-  await writeFile(
-    path.join(siteDir, "styles.css"),
-    "body { margin: 0; font-family: Georgia, serif; } main { padding: 2rem; } a { display: inline-block; padding: 1rem; }",
-    "utf8",
-  );
-
-  const evidence = await captureCycle({ siteDir, cycleDir, port: 4600 });
-  assert.equal(evidence.mechanical.metrics.desktop.viewportWidth, 1440);
-  assert.equal(evidence.mechanical.metrics.mobile.viewportWidth, 390);
-  assert.equal(evidence.mechanical.metrics.narrow.viewportWidth, 320);
-  assert.equal(evidence.mechanical.metrics.desktop.horizontalOverflow, false);
-  assert.equal(evidence.mechanical.metrics.mobile.horizontalOverflow, false);
-  assert.equal(evidence.mechanical.passed, true);
-  assert.match(await readFile(path.join(cycleDir, "visible-text.txt"), "utf8"), /Proof page/);
-  assert.deepEqual(
-    [...(await readFile(path.join(cycleDir, "screenshots", "desktop-home.png"))).subarray(0, 8)],
-    [137, 80, 78, 71, 13, 10, 26, 10],
-  );
-});
-
-test("runCriticCycle preserves a scored vision verdict in the cycle", async () => {
+test("runCriticCycle derives an uncapped vision outcome from explicit gates", async () => {
   const runDir = path.join(process.cwd(), "tmp", randomUUID(), "run");
   const cycleDir = path.join(runDir, "cycle-01");
   await mkdir(path.join(cycleDir, "site"), { recursive: true });
@@ -147,13 +109,20 @@ test("runCriticCycle preserves a scored vision verdict in the cycle", async () =
   const result = await runCriticCycle({
     runDir,
     cycle: 1,
-    captureCycleFn: async () => ({ mechanical: { passed: true, failures: [] } }),
-    critiqueCycleFn: async () => normalizeCritique(rawCritique()),
+    captureCycleFn: async () => ({
+      mechanical: { passed: true, assetsResolved: false, failures: [] },
+      assetsResolved: true,
+    }),
+    critiqueCycleFn: async () => normalizeModelCritique(rawCritique()),
     now: () => new Date("2026-07-17T14:00:00.000Z"),
   });
 
   assert.equal(result.mode, "vision");
-  assert.equal(result.score, 77);
+  assert.equal(result.score, 92);
+  assert.equal(result.assetsResolved, true);
+  assert.equal(result.shipEligible, true);
+  assert.equal(result.verdict, "ship");
+  assert.equal("visionScore" in result, false);
   const saved = JSON.parse(await readFile(path.join(cycleDir, "critique.json"), "utf8"));
   assert.equal(saved.createdAt, "2026-07-17T14:00:00.000Z");
   assert.equal(saved.mechanicalPassed, true);
@@ -173,11 +142,38 @@ test("runCriticCycle uses source review when screenshot capture fails", async ()
     captureCycleFn: async () => {
       throw new Error("browser unavailable at C:\\example\\site");
     },
-    critiqueSourceFn: async () => normalizeCritique(rawCritique()),
+    critiqueSourceFn: async () => normalizeModelCritique(rawCritique()),
   });
 
   assert.equal(result.mode, "source-fallback");
+  assert.equal(result.score, 92);
+  assert.equal(result.mechanicalPassed, null);
+  assert.equal(result.assetsResolved, null);
+  assert.equal(result.shipEligible, false);
+  assert.equal(result.verdict, "revise");
+  for (const name of VISUAL_LAWS) {
+    assert.equal(result.laws[name].status, "unverified");
+  }
   const failure = JSON.parse(await readFile(path.join(cycleDir, "capture-error.json"), "utf8"));
   assert.equal(failure.message, "Playwright capture failed. Source review was used.");
   assert.doesNotMatch(JSON.stringify(failure), /private/i);
 });
+
+function dimension(score) {
+  return {
+    score,
+    evidence: "The rendered evidence supports this score.",
+    fix: "Preserve the working choice and refine only if a gate requires it.",
+  };
+}
+
+function law(status) {
+  return {
+    status,
+    evidence: COMPLETE_VIEWPORTS.map((viewport) => ({
+      viewport,
+      observation: `${viewport} provides concrete evidence for this law.`,
+    })),
+    fix: "Make the smallest concrete revision needed to satisfy this law.",
+  };
+}
