@@ -1,0 +1,60 @@
+{
+  "schemaVersion": "1.0",
+  "allResolved": true,
+  "requestCount": 3,
+  "successCount": 3,
+  "fallbackCount": 0,
+  "files": [
+    {
+      "filename": "workbench-hero.png",
+      "path": "assets/workbench-hero.png",
+      "role": "hero",
+      "alt": "Contemporary still life inspired by floral design studio",
+      "focalPoint": {
+        "x": 0.56,
+        "y": 0.44
+      },
+      "promptHash": "4e1d539362c9bb74d84206a09789f70ba5f9811e28376839ed2164ce9a0a3f8b",
+      "mediaType": "image/png",
+      "bytes": 2150426,
+      "sha256": "22be82ac12646f1ed95b69a8f72ac2c21dc2eb9a4703f97ec99bec35d667bc3f",
+      "source": "openai",
+      "resolved": true,
+      "errorCode": null
+    },
+    {
+      "filename": "offerings-detail.png",
+      "path": "assets/offerings-detail.png",
+      "role": "offerings",
+      "alt": "Materials and colors arranged as a planning reference",
+      "focalPoint": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "promptHash": "6cf391210b878e404b9a4bc25e569fb82900e7abd531e08bd936d7682cea4e1b",
+      "mediaType": "image/png",
+      "bytes": 2319317,
+      "sha256": "6a9298c660604535a9cdc356f1509305226389aabdb82253b2560d71bedcaef8",
+      "source": "openai",
+      "resolved": true,
+      "errorCode": null
+    },
+    {
+      "filename": "studio-detail.png",
+      "path": "assets/studio-detail.png",
+      "role": "guidance",
+      "alt": "Flowers and a ceramic vessel arranged in warm natural light",
+      "focalPoint": {
+        "x": 0.48,
+        "y": 0.46
+      },
+      "promptHash": "c50814d145334cc6ad9486ff4248d18f271ff9ab45cecef5c1b40621c1e11888",
+      "mediaType": "image/png",
+      "bytes": 2131636,
+      "sha256": "2ef8edb248e0d69c59234b64de01c548bd5dd1e1aef1f91bd1a15898fadd7efa",
+      "source": "openai",
+      "resolved": true,
+      "errorCode": null
+    }
+  ]
+}

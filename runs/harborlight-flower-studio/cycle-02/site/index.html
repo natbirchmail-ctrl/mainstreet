@@ -3,155 +3,89 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Harborlight Flower Studio creates thoughtful seasonal arrangements and floral designs for gifts, gatherings, and meaningful moments.">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'none'; font-src 'none'; script-src 'none'; connect-src 'none'; media-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta name="description" content="A visual planning guide for Harborlight Flower Studio with practical ideas to consider before confirming details.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'">
   <title>Harborlight Flower Studio</title>
   <link rel="stylesheet" href="styles.css">
 </head>
-<body>
-  <a class="skip" href="#main">Skip to main content</a>
-
-  <header class="siteHeader">
-    <a class="wordmark" href="#top" aria-label="Harborlight Flower Studio home">
-      <span>Harborlight</span>
-      <small>Flower Studio</small>
-    </a>
-    <nav aria-label="Primary navigation">
-      <a href="#flowers">Flowers</a>
-      <a href="#studio">Studio</a>
-      <a href="#planning">Planning</a>
+<body data-motion-moves="staged-hero-entrance">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <a class="wordmark" href="#top" aria-label="Harborlight Flower Studio home">Harborlight Flower Studio</a>
+    <nav aria-label="Primary">
+      <a href="#ideas">Ideas</a>
+      <a href="#guidance">Guidance</a>
+      <a href="#details">Details</a>
     </nav>
   </header>
 
   <main id="main">
-    <section class="hero" id="top" aria-labelledby="heroTitle">
-      <div class="heroCopy">
-        <p class="eyebrow">Thoughtful flowers for meaningful moments</p>
-        <h1 id="heroTitle">Flowers shaped with a quiet sense of occasion.</h1>
-        <p class="intro">Seasonal arrangements and floral design for gifts, gatherings, and the spaces you care about.</p>
-        <div class="heroActions">
-          <a class="primaryAction" href="#planning">Plan your flowers</a>
-          <a class="textAction" href="#flowers">Explore the studio focus</a>
-        </div>
-        <p class="heroNote">You can begin by gathering the occasion, timing, setting, and feeling you have in mind.</p>
+    <section class="hero" id="top" data-section="hero" data-motion-root="staged-hero-entrance">
+      <div class="hero-copy" data-first-beat>
+        <p class="eyebrow">Planning guide</p>
+        <h1>Harborlight Flower Studio</h1>
+        <p class="hero-intro">Use this visual guide to consider placement, proportion, and palette before confirming details with the business.</p>
+        <a class="primary-action" href="#ideas" data-primary-action>Explore Ideas</a>
       </div>
-
-      <div class="bloomField" aria-hidden="true">
-        <div class="sunDisc"></div>
-        <div class="botanical botanicalOne">
-          <span class="stem"></span>
-          <span class="leaf leafOne"></span>
-          <span class="leaf leafTwo"></span>
-          <span class="leaf leafThree"></span>
-          <span class="flower">
-            <i></i><i></i><i></i><i></i><i></i>
-          </span>
-        </div>
-        <div class="botanical botanicalTwo">
-          <span class="stem"></span>
-          <span class="leaf leafOne"></span>
-          <span class="leaf leafTwo"></span>
-          <span class="flower">
-            <i></i><i></i><i></i><i></i><i></i>
-          </span>
-        </div>
-        <div class="botanical botanicalThree">
-          <span class="stem"></span>
-          <span class="leaf leafOne"></span>
-          <span class="leaf leafTwo"></span>
-          <span class="leaf leafThree"></span>
-          <span class="bud"></span>
-        </div>
-        <p class="artCaption">Season led<br>Setting considered<br>Feeling remembered</p>
+      <div class="hero-art" data-motion-target>
+        <img src="assets/workbench-hero.png" alt="Contemporary still life inspired by floral design studio">
+        <span></span>
+        <span></span>
+        <span></span>
       </div>
     </section>
 
-    <section class="offerings" id="flowers" aria-labelledby="flowersTitle">
-      <header class="sectionHeading">
-        <p class="sectionNumber">01</p>
-        <div>
-          <p class="eyebrow">Flowers with purpose</p>
-          <h2 id="flowersTitle">For the everyday and the significant.</h2>
+    <section class="ideas-section" id="ideas" data-section="ideas">
+      <div class="section-heading" data-first-beat>
+        <div class="heading-copy">
+          <p class="eyebrow">Planning notes</p>
+          <h2>Useful Directions</h2>
+          <p>Begin with the setting and the practical choices that can shape a clearer floral conversation.</p>
         </div>
-      </header>
-
-      <div class="offeringList">
-        <article>
-          <p class="itemNumber">One</p>
-          <div>
-            <h3>Seasonal arrangements</h3>
-            <p>Thoughtful floral pieces designed around the character and availability of each season.</p>
-          </div>
-        </article>
-        <article>
-          <p class="itemNumber">Two</p>
-          <div>
-            <h3>Event flowers</h3>
-            <p>Floral design for intimate gatherings, celebrations, ceremonies, and receptions.</p>
-          </div>
-        </article>
-        <article>
-          <p class="itemNumber">Three</p>
-          <div>
-            <h3>Custom floral work</h3>
-            <p>Made to order flowers shaped around an occasion, setting, or personal request.</p>
-          </div>
-        </article>
+        <img src="assets/offerings-detail.png" alt="Materials and colors arranged as a planning reference">
       </div>
-      <p class="availabilityNote">These services reflect the studio focus. Availability and final details are confirmed for each request.</p>
-    </section>
 
-    <section class="studio" id="studio" aria-labelledby="studioTitle">
-      <div class="studioMark" aria-hidden="true">
-        <span class="vase"></span>
-        <span class="vaseStem stemA"></span>
-        <span class="vaseStem stemB"></span>
-        <span class="vaseStem stemC"></span>
-        <span class="vaseStem stemD"></span>
-        <span class="smallBloom bloomA"></span>
-        <span class="smallBloom bloomB"></span>
-        <span class="smallBloom bloomC"></span>
-        <span class="smallLeaf smallLeafA"></span>
-        <span class="smallLeaf smallLeafB"></span>
-      </div>
-      <div class="studioCopy">
-        <p class="sectionNumber">02</p>
-        <p class="eyebrow">The studio approach</p>
-        <h2 id="studioTitle">Start with what the moment should feel like.</h2>
-        <p class="largeCopy">Harborlight Flower Studio brings a calm, artful approach to flowers. Each piece can begin with the season, the setting, and the feeling you want to share.</p>
-        <p>Natural character, considered composition, and a warm sense of occasion guide the work.</p>
+      <div class="ideas-list">
+        <article class="idea">
+          <p class="idea-number">01</p>
+          <h3>Placement</h3>
+          <p>Note where the flowers will sit, how they will be viewed, and how much room surrounds them.</p>
+        </article>
+        <article class="idea">
+          <p class="idea-number">02</p>
+          <h3>Proportion</h3>
+          <p>Compare the vessel opening, table depth, and nearby objects to find a useful sense of scale.</p>
+        </article>
+        <article class="idea">
+          <p class="idea-number">03</p>
+          <h3>Palette</h3>
+          <p>Bring a small set of color references and decide whether contrast or tonal harmony matters most.</p>
+        </article>
       </div>
     </section>
 
-    <section class="planning" id="planning" aria-labelledby="planningTitle">
-      <div class="planningLead">
-        <p class="sectionNumber">03</p>
-        <p class="eyebrow">Prepare your request</p>
-        <h2 id="planningTitle">Begin with the details that shape the flowers.</h2>
+    <section class="guidance" id="guidance" data-section="guidance">
+      <img class="guidance-image" src="assets/studio-detail.png" alt="Flowers and a ceramic vessel arranged in warm natural light">
+      <div class="guidance-copy" data-first-beat>
+        <p class="eyebrow">Practical guidance</p>
+        <h2>Floral Choices</h2>
+        <p>Consider the vessel, final placement, travel needs, and the colors already present in the setting. A few clear references can be more useful than a large collection of unrelated images.</p>
       </div>
-      <div class="planningDetails">
-        <p class="largeCopy">Gather the occasion, timing, and what you have in mind. These notes will help the studio understand the moment and consider suitable options.</p>
-        <div class="prepare" aria-labelledby="prepareTitle">
-          <h3 id="prepareTitle">Helpful details to prepare</h3>
-          <ul>
-            <li>The occasion or setting</li>
-            <li>Your preferred timing</li>
-            <li>Delivery or pickup needs</li>
-            <li>Any colors, flowers, or feeling you have in mind</li>
-          </ul>
-        </div>
-        <p class="statusNote"><strong>Inquiry contact and local service details are not yet published.</strong> The service area, delivery, pickup, and timing information remain unconfirmed.</p>
+    </section>
+
+    <section class="details" id="details" data-section="details">
+      <div data-first-beat>
+        <p class="eyebrow">Before planning</p>
+        <h2>Confirm Details</h2>
+        <p>Service and availability details are not confirmed. Verify services, timing, location, and the preferred contact route directly with the business.</p>
       </div>
     </section>
   </main>
 
   <footer>
-    <a class="wordmark footerMark" href="#top" aria-label="Return to Harborlight Flower Studio home">
-      <span>Harborlight</span>
-      <small>Flower Studio</small>
-    </a>
-    <p>Thoughtful flowers for meaningful moments.</p>
-    <a class="backTop" href="#top">Return to top</a>
+    <p>Harborlight Flower Studio</p>
+    <p>Planning guide</p>
   </footer>
+  <script src="script.js" defer></script>
 </body>
 </html>

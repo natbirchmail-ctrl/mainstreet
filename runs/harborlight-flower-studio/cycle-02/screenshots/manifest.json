@@ -1,23 +1,28 @@
 {
-  "schemaVersion": "1.0",
+  "schemaVersion": "2.0",
   "cycle": 2,
-  "capturedAt": "2026-07-17T23:50:17.008Z",
-  "previewUrl": "http://127.0.0.1:4601/",
+  "capturedAt": "2026-07-19T19:50:19.298Z",
   "viewports": {
     "desktop": {
       "width": 1440,
       "height": 900,
       "path": "screenshots/desktop-home.png"
     },
-    "mobile": {
+    "tablet": {
+      "width": 1024,
+      "height": 768,
+      "path": "screenshots/tablet-home.png"
+    },
+    "phone": {
       "width": 390,
       "height": 844,
       "path": "screenshots/mobile-home.png"
     }
   },
   "network": {
-    "externalRequests": 0,
-    "consoleErrors": 0,
-    "pageErrors": 0
+    "externalRequestCount": 0,
+    "requestFailureCount": 0,
+    "consoleErrorCount": 0,
+    "pageErrorCount": 0
   }
 }

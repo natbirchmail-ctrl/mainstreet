@@ -5,64 +5,64 @@
     "name": "Harborlight Flower Studio",
     "city": null,
     "category": "Floral design studio",
-    "summary": "A floral design studio with a calm coastal character, focused on thoughtful arrangements for gifts, gatherings, and meaningful moments."
+    "summary": "A planning guide inspired by floral design studio. Service and availability details are not confirmed."
   },
   "audience": {
-    "primary": "People seeking artful flowers for personal gifts, homes, celebrations, and events.",
+    "primary": "People seeking distinctive flowers for gifts, personal moments, and events",
     "needs": [
-      "Clear information about available floral services",
-      "A simple way to discuss an order or event",
-      "Confidence in the studio style and approach",
-      "Details about location, delivery, pickup, and timing"
+      "A simple way to request flowers",
+      "Clear examples of the studio style",
+      "Guidance on custom arrangements and event florals",
+      "Reliable contact and ordering details"
     ]
   },
   "offerings": [
     {
-      "name": "Seasonal arrangements",
-      "description": "Thoughtful floral pieces designed around the character and availability of each season.",
+      "name": "Custom arrangements",
+      "description": "Seasonal floral designs created for gifts, celebrations, and personal spaces.",
       "confidence": "inferred"
     },
     {
-      "name": "Event flowers",
-      "description": "Floral design for intimate gatherings, celebrations, ceremonies, and receptions.",
+      "name": "Event florals",
+      "description": "Flowers for intimate gatherings, ceremonies, dinners, and other special occasions.",
       "confidence": "inferred"
     },
     {
-      "name": "Custom floral work",
-      "description": "Made to order flowers shaped around an occasion, setting, or personal request.",
+      "name": "Everyday bouquets",
+      "description": "Fresh bouquets designed for simple gestures and everyday beauty.",
       "confidence": "inferred"
     }
   ],
   "brand": {
     "personality": [
-      "Calm",
-      "Artful",
       "Warm",
-      "Natural"
+      "Artful",
+      "Calm",
+      "Thoughtful"
     ],
-    "voice": "Clear, thoughtful, and welcoming, with simple language and gentle confidence.",
-    "aesthetic": "An editorial botanical style inspired by natural light, coastal stillness, and the texture of fresh stems. Use generous space, expressive floral photography, refined type, and restrained decoration.",
+    "voice": "Gentle, clear, and personal, with vivid but restrained language.",
+    "aesthetic": "A quiet coastal still life style with natural textures, generous space, deep ink type, and close floral photography.",
     "signatureMove": {
-      "name": "Harborlight bloom",
-      "description": "A botanical silhouette slowly comes into focus as visitors move through the opening section, echoing flowers emerging in soft morning light.",
-      "touchFallback": "On touch devices, the complete botanical image remains visible while the page scrolls normally. No content depends on interaction.",
-      "reducedMotion": "When reduced motion is enabled, the complete botanical image appears as a still composition with no transition."
+      "name": "Flowers follow the light",
+      "description": "A single botanical stem shifts subtly toward the pointer as visitors move through the opening section. All text and actions remain fixed and fully readable.",
+      "touchFallback": "The stem appears as a static composition while every section and action remains available.",
+      "reducedMotion": "The stem remains still with no animated transitions."
     },
     "palette": {
-      "background": "#F4F0E8",
-      "surface": "#FCFAF5",
-      "text": "#26332E",
-      "accent": "#A85D4A"
+      "background": "#F5F0E7",
+      "surface": "#E7DDCF",
+      "text": "#20302D",
+      "accent": "#B85C4A"
     }
   },
   "content": {
-    "eyebrow": "Thoughtful flowers for meaningful moments",
-    "headline": "Flowers shaped with a quiet sense of occasion.",
-    "subheadline": "Seasonal arrangements and floral design for gifts, gatherings, and the spaces you care about.",
-    "about": "Harborlight Flower Studio brings a calm, artful approach to flowers. Each piece can begin with the season, the setting, and the feeling you want to share.",
-    "primaryAction": "Discuss your flowers",
-    "secondaryAction": "Explore the studio",
-    "contactPrompt": "Share your occasion, timing, and what you have in mind. The studio can then confirm options and next steps."
+    "eyebrow": "Local inspiration",
+    "headline": "Explore Ideas",
+    "subheadline": "A practical starting point for considering floral design studio before confirming details with the business.",
+    "about": "Use these notes to clarify priorities, setting, and personal preferences before confirming details.",
+    "primaryAction": "Explore Ideas",
+    "secondaryAction": "Read Guidance",
+    "contactPrompt": "Confirm Details"
   },
   "contact": {
     "phone": null,
@@ -85,18 +85,18 @@
         "confidence": "high"
       },
       {
-        "label": "Core audience",
-        "value": "People ordering flowers for gifts, homes, celebrations, and events",
-        "confidence": "medium"
-      },
-      {
         "label": "Offering mix",
-        "value": "Seasonal arrangements, event flowers, and custom floral work",
+        "value": "Custom arrangements, everyday bouquets, and event florals",
         "confidence": "medium"
       },
       {
         "label": "Brand direction",
-        "value": "Calm coastal botanical style with an editorial feel",
+        "value": "Warm, artful, calm, and influenced by coastal light",
+        "confidence": "medium"
+      },
+      {
+        "label": "Primary audience",
+        "value": "People seeking distinctive flowers for gifts and events",
         "confidence": "medium"
       }
     ],
@@ -104,14 +104,13 @@
       "City and service area",
       "Phone number",
       "Email address",
-      "Street address or pickup location",
+      "Street address if customers may visit",
       "Opening hours",
-      "Confirmed services",
+      "Confirmed products and services",
+      "Ordering process",
       "Delivery and pickup details",
-      "Order lead times",
-      "Event inquiry process",
-      "Portfolio images",
-      "Social media links"
+      "Event inquiry requirements",
+      "Owner story and studio background"
     ]
   }
 }

@@ -1,11 +1,53 @@
 {
   "cycle": 1,
-  "createdAt": "2026-07-17T23:47:48.109Z",
-  "source": "openai",
-  "fallbackReason": null,
+  "createdAt": "2026-07-19T19:46:28.161Z",
+  "source": "deterministic-fallback",
+  "fallbackReason": "Every section must declare a nonempty data-section hook.",
   "designNotes": {
-    "aesthetic": "A quiet coastal editorial composition using warm paper tones, deep botanical green, terracotta accents, generous space, and expressive serif typography. Fine rules and hand drawn CSS florals evoke a working flower studio without relying on photography.",
-    "signatureMove": "The opening is split between oversized editorial copy and a CSS drawn botanical silhouette. On precise pointer devices with supported scroll timelines, the stems move from a soft blur into full focus as the opening passes through the viewport. Touch devices and reduced motion settings receive the complete still composition.",
-    "rationale": "The asymmetrical layout gives the studio a distinctive art direction while keeping every service and inquiry detail easy to scan. The contact section is intentionally candid about missing channels, location, delivery, pickup, and timing rather than presenting invented information."
+    "aesthetic": "A quiet coastal still life style with natural textures, generous space, deep ink type, and close floral photography.",
+    "signatureMove": "A single botanical stem shifts subtly toward the pointer as visitors move through the opening section. All text and actions remain fixed and fully readable.",
+    "rationale": "A deterministic editorial baseline preserves the brief and accessibility when model generation is unavailable.",
+    "shootDirection": "Natural morning light tactile materials calm framing and one consistent lens feel",
+    "motionMoves": [
+      "staged hero entrance"
+    ]
+  },
+  "imagePlan": [
+    {
+      "filename": "workbench-hero.png",
+      "role": "hero",
+      "alt": "Contemporary still life inspired by floral design studio",
+      "prompt": "Contemporary editorial still life inspired by Floral design studio with natural materials calm light no logos no signage and no business specific details",
+      "focalPoint": {
+        "x": 0.56,
+        "y": 0.44
+      }
+    },
+    {
+      "filename": "offerings-detail.png",
+      "role": "offerings",
+      "alt": "Materials and colors arranged as a planning reference",
+      "prompt": "Close editorial detail of materials and colors inspired by Floral design studio with no logos no signage and no claimed business activity",
+      "focalPoint": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    {
+      "filename": "story-detail.png",
+      "role": "story",
+      "alt": "A quiet neighborhood scene in natural morning light",
+      "prompt": "Quiet contemporary neighborhood context in natural morning light with no logos no signage and no identifiable people",
+      "focalPoint": {
+        "x": 0.42,
+        "y": 0.52
+      }
+    }
+  ],
+  "assetSummary": {
+    "allResolved": true,
+    "requestCount": 3,
+    "successCount": 3,
+    "fallbackCount": 0
   }
 }

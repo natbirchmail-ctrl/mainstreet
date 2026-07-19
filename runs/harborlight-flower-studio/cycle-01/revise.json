@@ -2,29 +2,29 @@
   "schemaVersion": "1.0",
   "fromCycle": 1,
   "toCycle": 2,
-  "createdAt": "2026-07-17T23:50:15.555Z",
+  "createdAt": "2026-07-19T19:48:57.765Z",
   "targetScore": 85,
   "mustKeep": [
     "Confirmed business facts and explicit unknowns",
     "Single page semantic structure",
-    "No JavaScript or external assets",
+    "Owned local assets and owned motion with visible source without JavaScript",
     "No emoji or visible dash characters",
     "Every current accessibility safeguard"
   ],
   "mustFix": [
-    "Provide a real, usable inquiry method and remove all staging language about unavailable contact details.",
-    "Increase functional and body text sizes, particularly on mobile and in service descriptions.",
-    "Simplify the mobile header and enlarge interactive targets.",
-    "Remove overlapping annotation text from the mobile botanical artwork.",
-    "Add confirmed service-area, delivery or pickup, and timing information.",
-    "Show at least one credible image of actual floral work."
+    "Remove unsupported neighborhood and local-scope claims, especially “Built for the neighborhood.”",
+    "Replace the suburban streetscape with a floral or studio-detail image coherent with the warm still-life photography.",
+    "Increase phone body, planning, context, navigation, and footer text sizes; loosen the context paragraph leading.",
+    "Recompose the phone header so navigation does not occupy a cramped vertical strip beside the brand.",
+    "Reduce excess vertical padding in the desktop and tablet confirmation section."
   ],
   "preserve": [
-    "The restrained cream, deep green, and rust palette.",
-    "The large editorial serif headlines.",
-    "The numbered section structure and light–dark–light pacing.",
-    "The custom botanical line-art motif.",
-    "The concise three-service presentation and occasion-preparation checklist."
+    "The split-screen hero composition and deliberate floral crop.",
+    "The exact business-name headline and restrained two-word section headings.",
+    "The warm cream, deep ink green, and muted floral palette.",
+    "The editorial serif and compact uppercase section labels.",
+    "The complete three-item numbered planning list.",
+    "The single nonessential motion treatment with reduced-motion and no-JavaScript fallbacks."
   ],
   "mechanicalFailures": []
 }

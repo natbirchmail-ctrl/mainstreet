@@ -1,35 +1,697 @@
 {
-  "schemaVersion": "1.0",
+  "schemaVersion": "2.0",
   "cycle": 2,
   "passed": true,
-  "failures": [],
-  "metrics": {
+  "assetsResolved": true,
+  "assetManifestPresent": true,
+  "motionMoveSlugs": [
+    "staged-hero-entrance"
+  ],
+  "contexts": {
     "desktop": {
-      "viewportWidth": 1440,
-      "viewportHeight": 900,
-      "scrollWidth": 1440,
-      "horizontalOverflow": false,
-      "h1Count": 1,
-      "mainCount": 1,
-      "missingAltCount": 0,
-      "brokenAnchors": [],
-      "smallTargets": [],
-      "visibleTextLength": 1847
+      "normal": {
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "mode": "normal",
+        "base": {
+          "viewportWidth": 1440,
+          "viewportHeight": 900,
+          "scrollWidth": 1440,
+          "horizontalOverflow": false,
+          "h1Count": 1,
+          "mainCount": 1,
+          "internalAnchorCount": 6,
+          "brokenAnchorCount": 0,
+          "imageCount": 3,
+          "missingAltCount": 0,
+          "brokenImageCount": 0,
+          "visibleTextLength": 1145
+        },
+        "firstBeats": {
+          "sectionCount": 4,
+          "exactFirstBeatCount": 4,
+          "visibleFirstBeatCount": 4
+        },
+        "touchTargets": {
+          "checkedCount": 0,
+          "passingCount": 0
+        },
+        "controls": {
+          "controlCount": 0,
+          "ariaLinkedCount": 0,
+          "roots": [],
+          "enterPassed": true,
+          "spacePassed": true,
+          "tapChecked": false,
+          "tapPassed": true
+        },
+        "motion": {
+          "declaredRootCount": 1,
+          "foundRootCount": 1,
+          "activeRootCount": 1,
+          "progressChangedCount": 0,
+          "selectionChangedCount": 0,
+          "targetCount": 1,
+          "visibleTargetCount": 1,
+          "contractPassed": true
+        },
+        "network": {
+          "consoleErrorCount": 0,
+          "pageErrorCount": 0,
+          "externalRequestCount": 0,
+          "requestFailureCount": 0
+        },
+        "passed": true,
+        "failures": [],
+        "totals": {
+          "contextCount": 1,
+          "externalRequestCount": 0,
+          "requestFailureCount": 0,
+          "consoleErrorCount": 0,
+          "pageErrorCount": 0,
+          "brokenImageCount": 0
+        }
+      },
+      "reducedMotion": {
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "mode": "reducedMotion",
+        "base": {
+          "viewportWidth": 1440,
+          "viewportHeight": 900,
+          "scrollWidth": 1440,
+          "horizontalOverflow": false,
+          "h1Count": 1,
+          "mainCount": 1,
+          "internalAnchorCount": 6,
+          "brokenAnchorCount": 0,
+          "imageCount": 3,
+          "missingAltCount": 0,
+          "brokenImageCount": 0,
+          "visibleTextLength": 1145
+        },
+        "firstBeats": {
+          "sectionCount": 4,
+          "exactFirstBeatCount": 4,
+          "visibleFirstBeatCount": 4
+        },
+        "touchTargets": {
+          "checkedCount": 0,
+          "passingCount": 0
+        },
+        "controls": {
+          "controlCount": 0,
+          "ariaLinkedCount": 0,
+          "roots": [],
+          "enterPassed": true,
+          "spacePassed": true,
+          "tapChecked": false,
+          "tapPassed": true
+        },
+        "motion": {
+          "declaredRootCount": 1,
+          "foundRootCount": 1,
+          "disabledRootCount": 1,
+          "targetCount": 1,
+          "visibleTargetCount": 1,
+          "panelCount": 0,
+          "visiblePanelCount": 0,
+          "maxDurationMs": 0.01,
+          "reducedFallbackPassed": true,
+          "contractPassed": true
+        },
+        "network": {
+          "consoleErrorCount": 0,
+          "pageErrorCount": 0,
+          "externalRequestCount": 0,
+          "requestFailureCount": 0
+        },
+        "passed": true,
+        "failures": [],
+        "totals": {
+          "contextCount": 1,
+          "externalRequestCount": 0,
+          "requestFailureCount": 0,
+          "consoleErrorCount": 0,
+          "pageErrorCount": 0,
+          "brokenImageCount": 0
+        }
+      },
+      "javascriptDisabled": {
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "mode": "javascriptDisabled",
+        "base": {
+          "viewportWidth": 1440,
+          "viewportHeight": 900,
+          "scrollWidth": 1440,
+          "horizontalOverflow": false,
+          "h1Count": 1,
+          "mainCount": 1,
+          "internalAnchorCount": 6,
+          "brokenAnchorCount": 0,
+          "imageCount": 3,
+          "missingAltCount": 0,
+          "brokenImageCount": 0,
+          "visibleTextLength": 1145
+        },
+        "firstBeats": {
+          "sectionCount": 4,
+          "exactFirstBeatCount": 4,
+          "visibleFirstBeatCount": 4
+        },
+        "touchTargets": {
+          "checkedCount": 0,
+          "passingCount": 0
+        },
+        "controls": {
+          "controlCount": 0,
+          "ariaLinkedCount": 0,
+          "roots": [],
+          "enterPassed": true,
+          "spacePassed": true,
+          "tapChecked": false,
+          "tapPassed": true
+        },
+        "motion": {
+          "declaredRootCount": 1,
+          "foundRootCount": 1,
+          "firstBeatCount": 4,
+          "visibleFirstBeatCount": 4,
+          "targetCount": 1,
+          "visibleTargetCount": 1,
+          "panelCount": 0,
+          "visiblePanelCount": 0,
+          "noJavaScriptFallbackPassed": true,
+          "contractPassed": true
+        },
+        "network": {
+          "consoleErrorCount": 0,
+          "pageErrorCount": 0,
+          "externalRequestCount": 0,
+          "requestFailureCount": 0
+        },
+        "passed": true,
+        "failures": [],
+        "totals": {
+          "contextCount": 1,
+          "externalRequestCount": 0,
+          "requestFailureCount": 0,
+          "consoleErrorCount": 0,
+          "pageErrorCount": 0,
+          "brokenImageCount": 0
+        }
+      }
     },
-    "mobile": {
-      "viewportWidth": 390,
-      "viewportHeight": 844,
-      "scrollWidth": 390,
-      "horizontalOverflow": false,
-      "h1Count": 1,
-      "mainCount": 1,
-      "missingAltCount": 0,
-      "brokenAnchors": [],
-      "smallTargets": [],
-      "visibleTextLength": 1797
+    "tablet": {
+      "normal": {
+        "viewport": {
+          "width": 1024,
+          "height": 768
+        },
+        "mode": "normal",
+        "base": {
+          "viewportWidth": 1024,
+          "viewportHeight": 768,
+          "scrollWidth": 1024,
+          "horizontalOverflow": false,
+          "h1Count": 1,
+          "mainCount": 1,
+          "internalAnchorCount": 6,
+          "brokenAnchorCount": 0,
+          "imageCount": 3,
+          "missingAltCount": 0,
+          "brokenImageCount": 0,
+          "visibleTextLength": 1145
+        },
+        "firstBeats": {
+          "sectionCount": 4,
+          "exactFirstBeatCount": 4,
+          "visibleFirstBeatCount": 4
+        },
+        "touchTargets": {
+          "checkedCount": 1,
+          "passingCount": 1
+        },
+        "controls": {
+          "controlCount": 0,
+          "ariaLinkedCount": 0,
+          "roots": [],
+          "enterPassed": true,
+          "spacePassed": true,
+          "tapChecked": false,
+          "tapPassed": true
+        },
+        "motion": {
+          "declaredRootCount": 1,
+          "foundRootCount": 1,
+          "activeRootCount": 1,
+          "progressChangedCount": 0,
+          "selectionChangedCount": 0,
+          "targetCount": 1,
+          "visibleTargetCount": 1,
+          "contractPassed": true
+        },
+        "network": {
+          "consoleErrorCount": 0,
+          "pageErrorCount": 0,
+          "externalRequestCount": 0,
+          "requestFailureCount": 0
+        },
+        "passed": true,
+        "failures": [],
+        "totals": {
+          "contextCount": 1,
+          "externalRequestCount": 0,
+          "requestFailureCount": 0,
+          "consoleErrorCount": 0,
+          "pageErrorCount": 0,
+          "brokenImageCount": 0
+        }
+      },
+      "reducedMotion": {
+        "viewport": {
+          "width": 1024,
+          "height": 768
+        },
+        "mode": "reducedMotion",
+        "base": {
+          "viewportWidth": 1024,
+          "viewportHeight": 768,
+          "scrollWidth": 1024,
+          "horizontalOverflow": false,
+          "h1Count": 1,
+          "mainCount": 1,
+          "internalAnchorCount": 6,
+          "brokenAnchorCount": 0,
+          "imageCount": 3,
+          "missingAltCount": 0,
+          "brokenImageCount": 0,
+          "visibleTextLength": 1145
+        },
+        "firstBeats": {
+          "sectionCount": 4,
+          "exactFirstBeatCount": 4,
+          "visibleFirstBeatCount": 4
+        },
+        "touchTargets": {
+          "checkedCount": 0,
+          "passingCount": 0
+        },
+        "controls": {
+          "controlCount": 0,
+          "ariaLinkedCount": 0,
+          "roots": [],
+          "enterPassed": true,
+          "spacePassed": true,
+          "tapChecked": false,
+          "tapPassed": true
+        },
+        "motion": {
+          "declaredRootCount": 1,
+          "foundRootCount": 1,
+          "disabledRootCount": 1,
+          "targetCount": 1,
+          "visibleTargetCount": 1,
+          "panelCount": 0,
+          "visiblePanelCount": 0,
+          "maxDurationMs": 0.01,
+          "reducedFallbackPassed": true,
+          "contractPassed": true
+        },
+        "network": {
+          "consoleErrorCount": 0,
+          "pageErrorCount": 0,
+          "externalRequestCount": 0,
+          "requestFailureCount": 0
+        },
+        "passed": true,
+        "failures": [],
+        "totals": {
+          "contextCount": 1,
+          "externalRequestCount": 0,
+          "requestFailureCount": 0,
+          "consoleErrorCount": 0,
+          "pageErrorCount": 0,
+          "brokenImageCount": 0
+        }
+      },
+      "javascriptDisabled": {
+        "viewport": {
+          "width": 1024,
+          "height": 768
+        },
+        "mode": "javascriptDisabled",
+        "base": {
+          "viewportWidth": 1024,
+          "viewportHeight": 768,
+          "scrollWidth": 1024,
+          "horizontalOverflow": false,
+          "h1Count": 1,
+          "mainCount": 1,
+          "internalAnchorCount": 6,
+          "brokenAnchorCount": 0,
+          "imageCount": 3,
+          "missingAltCount": 0,
+          "brokenImageCount": 0,
+          "visibleTextLength": 1145
+        },
+        "firstBeats": {
+          "sectionCount": 4,
+          "exactFirstBeatCount": 4,
+          "visibleFirstBeatCount": 4
+        },
+        "touchTargets": {
+          "checkedCount": 0,
+          "passingCount": 0
+        },
+        "controls": {
+          "controlCount": 0,
+          "ariaLinkedCount": 0,
+          "roots": [],
+          "enterPassed": true,
+          "spacePassed": true,
+          "tapChecked": false,
+          "tapPassed": true
+        },
+        "motion": {
+          "declaredRootCount": 1,
+          "foundRootCount": 1,
+          "firstBeatCount": 4,
+          "visibleFirstBeatCount": 4,
+          "targetCount": 1,
+          "visibleTargetCount": 1,
+          "panelCount": 0,
+          "visiblePanelCount": 0,
+          "noJavaScriptFallbackPassed": true,
+          "contractPassed": true
+        },
+        "network": {
+          "consoleErrorCount": 0,
+          "pageErrorCount": 0,
+          "externalRequestCount": 0,
+          "requestFailureCount": 0
+        },
+        "passed": true,
+        "failures": [],
+        "totals": {
+          "contextCount": 1,
+          "externalRequestCount": 0,
+          "requestFailureCount": 0,
+          "consoleErrorCount": 0,
+          "pageErrorCount": 0,
+          "brokenImageCount": 0
+        }
+      }
     },
-    "consoleErrors": [],
-    "pageErrors": [],
-    "externalRequests": []
+    "phone": {
+      "normal": {
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "mode": "normal",
+        "base": {
+          "viewportWidth": 390,
+          "viewportHeight": 844,
+          "scrollWidth": 390,
+          "horizontalOverflow": false,
+          "h1Count": 1,
+          "mainCount": 1,
+          "internalAnchorCount": 6,
+          "brokenAnchorCount": 0,
+          "imageCount": 3,
+          "missingAltCount": 0,
+          "brokenImageCount": 0,
+          "visibleTextLength": 1145
+        },
+        "firstBeats": {
+          "sectionCount": 4,
+          "exactFirstBeatCount": 4,
+          "visibleFirstBeatCount": 4
+        },
+        "touchTargets": {
+          "checkedCount": 1,
+          "passingCount": 1
+        },
+        "controls": {
+          "controlCount": 0,
+          "ariaLinkedCount": 0,
+          "roots": [],
+          "enterPassed": true,
+          "spacePassed": true,
+          "tapChecked": false,
+          "tapPassed": true
+        },
+        "motion": {
+          "declaredRootCount": 1,
+          "foundRootCount": 1,
+          "activeRootCount": 1,
+          "progressChangedCount": 0,
+          "selectionChangedCount": 0,
+          "targetCount": 1,
+          "visibleTargetCount": 1,
+          "contractPassed": true
+        },
+        "network": {
+          "consoleErrorCount": 0,
+          "pageErrorCount": 0,
+          "externalRequestCount": 0,
+          "requestFailureCount": 0
+        },
+        "passed": true,
+        "failures": [],
+        "totals": {
+          "contextCount": 1,
+          "externalRequestCount": 0,
+          "requestFailureCount": 0,
+          "consoleErrorCount": 0,
+          "pageErrorCount": 0,
+          "brokenImageCount": 0
+        }
+      },
+      "reducedMotion": {
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "mode": "reducedMotion",
+        "base": {
+          "viewportWidth": 390,
+          "viewportHeight": 844,
+          "scrollWidth": 390,
+          "horizontalOverflow": false,
+          "h1Count": 1,
+          "mainCount": 1,
+          "internalAnchorCount": 6,
+          "brokenAnchorCount": 0,
+          "imageCount": 3,
+          "missingAltCount": 0,
+          "brokenImageCount": 0,
+          "visibleTextLength": 1145
+        },
+        "firstBeats": {
+          "sectionCount": 4,
+          "exactFirstBeatCount": 4,
+          "visibleFirstBeatCount": 4
+        },
+        "touchTargets": {
+          "checkedCount": 0,
+          "passingCount": 0
+        },
+        "controls": {
+          "controlCount": 0,
+          "ariaLinkedCount": 0,
+          "roots": [],
+          "enterPassed": true,
+          "spacePassed": true,
+          "tapChecked": false,
+          "tapPassed": true
+        },
+        "motion": {
+          "declaredRootCount": 1,
+          "foundRootCount": 1,
+          "disabledRootCount": 1,
+          "targetCount": 1,
+          "visibleTargetCount": 1,
+          "panelCount": 0,
+          "visiblePanelCount": 0,
+          "maxDurationMs": 0.01,
+          "reducedFallbackPassed": true,
+          "contractPassed": true
+        },
+        "network": {
+          "consoleErrorCount": 0,
+          "pageErrorCount": 0,
+          "externalRequestCount": 0,
+          "requestFailureCount": 0
+        },
+        "passed": true,
+        "failures": [],
+        "totals": {
+          "contextCount": 1,
+          "externalRequestCount": 0,
+          "requestFailureCount": 0,
+          "consoleErrorCount": 0,
+          "pageErrorCount": 0,
+          "brokenImageCount": 0
+        }
+      },
+      "javascriptDisabled": {
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "mode": "javascriptDisabled",
+        "base": {
+          "viewportWidth": 390,
+          "viewportHeight": 844,
+          "scrollWidth": 390,
+          "horizontalOverflow": false,
+          "h1Count": 1,
+          "mainCount": 1,
+          "internalAnchorCount": 6,
+          "brokenAnchorCount": 0,
+          "imageCount": 3,
+          "missingAltCount": 0,
+          "brokenImageCount": 0,
+          "visibleTextLength": 1145
+        },
+        "firstBeats": {
+          "sectionCount": 4,
+          "exactFirstBeatCount": 4,
+          "visibleFirstBeatCount": 4
+        },
+        "touchTargets": {
+          "checkedCount": 0,
+          "passingCount": 0
+        },
+        "controls": {
+          "controlCount": 0,
+          "ariaLinkedCount": 0,
+          "roots": [],
+          "enterPassed": true,
+          "spacePassed": true,
+          "tapChecked": false,
+          "tapPassed": true
+        },
+        "motion": {
+          "declaredRootCount": 1,
+          "foundRootCount": 1,
+          "firstBeatCount": 4,
+          "visibleFirstBeatCount": 4,
+          "targetCount": 1,
+          "visibleTargetCount": 1,
+          "panelCount": 0,
+          "visiblePanelCount": 0,
+          "noJavaScriptFallbackPassed": true,
+          "contractPassed": true
+        },
+        "network": {
+          "consoleErrorCount": 0,
+          "pageErrorCount": 0,
+          "externalRequestCount": 0,
+          "requestFailureCount": 0
+        },
+        "passed": true,
+        "failures": [],
+        "totals": {
+          "contextCount": 1,
+          "externalRequestCount": 0,
+          "requestFailureCount": 0,
+          "consoleErrorCount": 0,
+          "pageErrorCount": 0,
+          "brokenImageCount": 0
+        }
+      }
+    },
+    "narrow": {
+      "normal": {
+        "viewport": {
+          "width": 320,
+          "height": 800
+        },
+        "mode": "normal",
+        "base": {
+          "viewportWidth": 320,
+          "viewportHeight": 800,
+          "scrollWidth": 320,
+          "horizontalOverflow": false,
+          "h1Count": 1,
+          "mainCount": 1,
+          "internalAnchorCount": 6,
+          "brokenAnchorCount": 0,
+          "imageCount": 3,
+          "missingAltCount": 0,
+          "brokenImageCount": 0,
+          "visibleTextLength": 1145
+        },
+        "firstBeats": {
+          "sectionCount": 0,
+          "exactFirstBeatCount": 0,
+          "visibleFirstBeatCount": 0
+        },
+        "touchTargets": {
+          "checkedCount": 0,
+          "passingCount": 0
+        },
+        "controls": {
+          "controlCount": 0,
+          "ariaLinkedCount": 0,
+          "roots": [],
+          "enterPassed": true,
+          "spacePassed": true,
+          "tapChecked": false,
+          "tapPassed": true
+        },
+        "motion": {
+          "declaredRootCount": 1,
+          "foundRootCount": 0,
+          "activeRootCount": 0,
+          "disabledRootCount": 0,
+          "targetCount": 0,
+          "visibleTargetCount": 0,
+          "panelCount": 0,
+          "visiblePanelCount": 0,
+          "maxDurationMs": 0,
+          "progressChangedCount": 0,
+          "selectionChangedCount": 0,
+          "contractPassed": false,
+          "reducedFallbackPassed": false,
+          "noJavaScriptFallbackPassed": false
+        },
+        "network": {
+          "consoleErrorCount": 0,
+          "pageErrorCount": 0,
+          "externalRequestCount": 0,
+          "requestFailureCount": 0
+        },
+        "passed": true,
+        "failures": [],
+        "totals": {
+          "contextCount": 1,
+          "externalRequestCount": 0,
+          "requestFailureCount": 0,
+          "consoleErrorCount": 0,
+          "pageErrorCount": 0,
+          "brokenImageCount": 0
+        }
+      }
+    }
+  },
+  "failures": [],
+  "totals": {
+    "contextCount": 10,
+    "externalRequestCount": 0,
+    "requestFailureCount": 0,
+    "consoleErrorCount": 0,
+    "pageErrorCount": 0,
+    "brokenImageCount": 0
   }
 }

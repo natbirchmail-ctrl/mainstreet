@@ -1,13 +1,57 @@
 {
-  "schemaVersion": "1.0",
-  "slug": "harborlight-flower-studio",
-  "selectedCycle": 3,
-  "createdAt": "2026-07-17T23:54:09.594Z",
+  "schemaVersion": "2.0",
   "mode": "cloudflare",
-  "projectName": "mainstreet-hackathon",
+  "slug": "harborlight-flower-studio",
+  "selectedCycle": 2,
+  "commit": "fe6fb5c4d65fcb5ddadc83caebdbd80a07fb0fd1",
   "url": "https://mainstreet-hackathon.pages.dev/",
-  "deploymentUrl": "https://76095739.mainstreet-hackathon.pages.dev/",
-  "verified": true,
+  "immutableUrl": "https://a4eb8385.mainstreet-hackathon.pages.dev/",
+  "createdAt": "2026-07-19T19:51:39.509Z",
   "status": 200,
-  "reason": null
+  "verified": true,
+  "aggregateSha256": "a1241109055834ae36aac9f642b78c774bd6212fa41e96c94ad8b7600e22a4df",
+  "files": [
+    {
+      "path": "assets/offerings-detail.png",
+      "bytes": 2319317,
+      "sha256": "6a9298c660604535a9cdc356f1509305226389aabdb82253b2560d71bedcaef8",
+      "status": 200,
+      "verified": true
+    },
+    {
+      "path": "assets/studio-detail.png",
+      "bytes": 2131636,
+      "sha256": "2ef8edb248e0d69c59234b64de01c548bd5dd1e1aef1f91bd1a15898fadd7efa",
+      "status": 200,
+      "verified": true
+    },
+    {
+      "path": "assets/workbench-hero.png",
+      "bytes": 2150426,
+      "sha256": "22be82ac12646f1ed95b69a8f72ac2c21dc2eb9a4703f97ec99bec35d667bc3f",
+      "status": 200,
+      "verified": true
+    },
+    {
+      "path": "index.html",
+      "bytes": 4026,
+      "sha256": "611971adfb88d5b7a631318cb29778775f14981cea3afc53a6648531aff5207f",
+      "status": 200,
+      "verified": true
+    },
+    {
+      "path": "script.js",
+      "bytes": 931,
+      "sha256": "8338c7eca7f263025e8db69bc5b8892d974ddca5d1915ca652de1ded12989de6",
+      "status": 200,
+      "verified": true
+    },
+    {
+      "path": "styles.css",
+      "bytes": 8244,
+      "sha256": "3923a74b667eaf15fdf5f2911b4fe03ad31749ee6d49b0817b4319db3f096b6d",
+      "status": 200,
+      "verified": true
+    }
+  ]
 }

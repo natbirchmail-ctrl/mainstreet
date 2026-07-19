@@ -2,49 +2,601 @@
   "schemaVersion": "1.0",
   "slug": "harborlight-flower-studio",
   "businessName": "Harborlight Flower Studio",
-  "startedAt": "2026-07-17T23:45:41.511Z",
-  "completedAt": "2026-07-17T23:54:09.595Z",
+  "startedAt": "2026-07-19T19:41:39.803Z",
+  "completedAt": "2026-07-19T19:51:39.510Z",
   "status": "completed",
-  "stopReason": "max_cycles_reached",
-  "selectedCycle": 3,
+  "stopReason": "threshold_reached",
+  "selectedCycle": 2,
   "scoresImproved": true,
   "cycles": [
     {
       "cycle": 1,
-      "score": 72,
+      "score": 75,
       "visionScore": null,
       "verdict": "revise",
       "mode": "vision",
-      "mechanicalPassed": true
+      "evidencePacketSha256": "a11dd2896fe474e646c18f687486b09cc2d4380973312eb49384109409085251",
+      "mechanicalPassed": true,
+      "assetsResolved": true,
+      "lawGatePassed": false,
+      "lawGateFailures": [
+        "law:imageryCoherence:fail",
+        "law:factualRestraint:fail"
+      ],
+      "shipEligible": false,
+      "hardGateFailures": [
+        "score:below-threshold",
+        "issues:major",
+        "law:imageryCoherence:fail",
+        "law:factualRestraint:fail"
+      ],
+      "laws": {
+        "headlineDiscipline": {
+          "status": "pass",
+          "evidence": [
+            {
+              "viewport": "desktop",
+              "observation": "The hero uses the exact business name, while primary section headings are “Useful Directions,” “Local Context,” and “Confirm Details,” each limited to two meaningful words."
+            },
+            {
+              "viewport": "tablet",
+              "observation": "The same disciplined heading system remains intact without explanatory sentences being promoted to headings."
+            },
+            {
+              "viewport": "phone",
+              "observation": "Headings remain concise; body copy explains and “Explore Ideas” directs."
+            }
+          ],
+          "fix": "No change required."
+        },
+        "foldComposition": {
+          "status": "pass",
+          "evidence": [
+            {
+              "viewport": "desktop",
+              "observation": "The initial viewport composes label, business-name heading, explanation, action, and floral image as one complete split-screen thought."
+            },
+            {
+              "viewport": "tablet",
+              "observation": "The initial split hero remains complete, with the action visible and the floral subject deliberately cropped."
+            },
+            {
+              "viewport": "phone",
+              "observation": "The initial viewport presents the full textual opening and action before revealing the opening portion of the floral image; lower sections show their labels, headings, and first content units together in the full-page rendering."
+            }
+          ],
+          "fix": "Preserve the hero’s composed text-and-image relationship."
+        },
+        "completeLayouts": {
+          "status": "pass",
+          "evidence": [
+            {
+              "viewport": "desktop",
+              "observation": "All three numbered planning rows are populated, and no empty grid slot or phantom column is visible."
+            },
+            {
+              "viewport": "tablet",
+              "observation": "The three-row list and two-part context layout remain complete."
+            },
+            {
+              "viewport": "phone",
+              "observation": "The repeated planning content converts to three complete stacked rows without orphan cards or broken count states."
+            }
+          ],
+          "fix": "No structural change required."
+        },
+        "firstBeatVisibility": {
+          "status": "pass",
+          "evidence": [
+            {
+              "viewport": "desktop",
+              "observation": "Mechanics report 4 of 4 exact first beats visible under normal motion, reduced motion, and JavaScript-disabled rendering."
+            },
+            {
+              "viewport": "tablet",
+              "observation": "Mechanics report 4 of 4 exact first beats visible in all three rendering states."
+            },
+            {
+              "viewport": "phone",
+              "observation": "Mechanics report 4 of 4 exact first beats visible in all three rendering states, and the screenshots show no unrevealed lower content."
+            }
+          ],
+          "fix": "Preserve the non-dependent rendering of section content."
+        },
+        "imageContrast": {
+          "status": "pass",
+          "evidence": [
+            {
+              "viewport": "desktop",
+              "observation": "Hero text sits on a solid cream panel rather than over the photograph; context text sits on solid deep green beside its image."
+            },
+            {
+              "viewport": "tablet",
+              "observation": "The split surfaces keep all text away from variable photographic areas, with clear dark-on-light and light-on-dark contrast."
+            },
+            {
+              "viewport": "phone",
+              "observation": "Images remain separate from textual blocks; the decorative cream rings do not cover text."
+            }
+          ],
+          "fix": "No contrast change required; enlarge the smallest copy for readability."
+        },
+        "motionRestraint": {
+          "status": "pass",
+          "evidence": [
+            {
+              "viewport": "desktop",
+              "observation": "The normal rendering declares one visible motion target with no measured progress or selection change; reduced motion disables it at 0.01ms, and the no-JavaScript fallback remains visible."
+            },
+            {
+              "viewport": "tablet",
+              "observation": "One visible target is reported in normal mode, with a passing disabled reduced-motion fallback and a passing visible no-JavaScript fallback."
+            },
+            {
+              "viewport": "phone",
+              "observation": "The same single-target treatment remains visible but nonessential; reduced-motion and no-JavaScript states both pass without hidden panels or missing first beats."
+            }
+          ],
+          "fix": "Keep motion limited to the single decorative botanical treatment."
+        },
+        "imageryCoherence": {
+          "status": "fail",
+          "evidence": [
+            {
+              "viewport": "desktop",
+              "observation": "The hero and planning images share warm studio light and floral still-life styling, but the context section introduces a generic suburban streetscape from a different visual world."
+            },
+            {
+              "viewport": "tablet",
+              "observation": "The streetscape’s architectural subject and broad exterior framing conflict with the intimate floral crops and tabletop palette."
+            },
+            {
+              "viewport": "phone",
+              "observation": "The mismatch becomes more pronounced in the stacked sequence, where the housing image immediately follows the floral planning content."
+            }
+          ],
+          "fix": "Replace the streetscape with a contemporary floral or studio-detail image matching the warm light, close focal distance, and restrained styling of the other photographs."
+        },
+        "factualRestraint": {
+          "status": "fail",
+          "evidence": [
+            {
+              "viewport": "source",
+              "observation": "The claim policy contains no confirmed user clauses and confirms neither city nor service area; guidance-only mode does not authorize business-attributed locality claims."
+            },
+            {
+              "viewport": "desktop",
+              "observation": "The page visibly states “Local Context” and “Built for the neighborhood,” associating Harborlight Flower Studio with an unconfirmed neighborhood identity."
+            },
+            {
+              "viewport": "tablet",
+              "observation": "The same unsupported locality framing appears in the context section and footer."
+            },
+            {
+              "viewport": "phone",
+              "observation": "“LOCAL GUIDE,” “Local Context,” and “Built for the neighborhood” remain visible despite the absence of confirmed local scope."
+            }
+          ],
+          "fix": "Remove “Built for the neighborhood” and recast locality language as neutral category guidance without attributing a location or service area to the business."
+        }
+      },
+      "lawCoverage": {
+        "headlineDiscipline": {
+          "requiredViewports": [],
+          "observedViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "missingViewports": [],
+          "complete": true
+        },
+        "foldComposition": {
+          "requiredViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "observedViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "missingViewports": [],
+          "complete": true
+        },
+        "completeLayouts": {
+          "requiredViewports": [],
+          "observedViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "missingViewports": [],
+          "complete": true
+        },
+        "firstBeatVisibility": {
+          "requiredViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "observedViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "missingViewports": [],
+          "complete": true
+        },
+        "imageContrast": {
+          "requiredViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "observedViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "missingViewports": [],
+          "complete": true
+        },
+        "motionRestraint": {
+          "requiredViewports": [],
+          "observedViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "missingViewports": [],
+          "complete": true
+        },
+        "imageryCoherence": {
+          "requiredViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "observedViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "missingViewports": [],
+          "complete": true
+        },
+        "factualRestraint": {
+          "requiredViewports": [],
+          "observedViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "missingViewports": [],
+          "complete": true
+        }
+      }
     },
     {
       "cycle": 2,
-      "score": 77,
+      "score": 88,
       "visionScore": null,
-      "verdict": "revise",
+      "verdict": "ship",
       "mode": "vision",
-      "mechanicalPassed": true
-    },
-    {
-      "cycle": 3,
-      "score": 79,
-      "visionScore": null,
-      "verdict": "revise",
-      "mode": "vision",
-      "mechanicalPassed": true
+      "evidencePacketSha256": "d19714edfd85f7c7795ea397948957dd045003e7cc28e2942e306183a65b7007",
+      "mechanicalPassed": true,
+      "assetsResolved": true,
+      "lawGatePassed": true,
+      "lawGateFailures": [],
+      "shipEligible": true,
+      "hardGateFailures": [],
+      "laws": {
+        "headlineDiscipline": {
+          "status": "pass",
+          "evidence": [
+            {
+              "viewport": "desktop",
+              "observation": "Primary editorial headings are “Useful Directions,” “Floral Choices,” and “Confirm Details,” each limited to two meaningful words; the longer hero heading is the exact business name."
+            },
+            {
+              "viewport": "tablet",
+              "observation": "The same concise heading system is preserved without added explanatory language in headings."
+            },
+            {
+              "viewport": "phone",
+              "observation": "Headings wrap cleanly but retain the same two-word discipline, while body copy supplies explanation and “Explore Ideas” directs the action."
+            }
+          ],
+          "fix": "No change required."
+        },
+        "foldComposition": {
+          "status": "pass",
+          "evidence": [
+            {
+              "viewport": "desktop",
+              "observation": "The initial viewport composes eyebrow, exact business name, explanatory sentence, action, and adjacent still life as one complete hero thought."
+            },
+            {
+              "viewport": "tablet",
+              "observation": "The hero copy and full-height image remain balanced and complete above the section boundary."
+            },
+            {
+              "viewport": "phone",
+              "observation": "The full hero heading, explanation, and action appear before the image begins, so the opening thought is complete despite the stacked layout."
+            }
+          ],
+          "fix": "Preserve the current section openings; only modestly tighten phone spacing."
+        },
+        "completeLayouts": {
+          "status": "pass",
+          "evidence": [
+            {
+              "viewport": "desktop",
+              "observation": "All three numbered planning rows are populated and aligned, and lower split sections contain both text and imagery."
+            },
+            {
+              "viewport": "tablet",
+              "observation": "The three-row list and two-column guidance section remain complete with no empty column or orphan element."
+            },
+            {
+              "viewport": "phone",
+              "observation": "All rows stack into complete number-title-description units, and both lower sections render without missing content."
+            }
+          ],
+          "fix": "No change required."
+        },
+        "firstBeatVisibility": {
+          "status": "pass",
+          "evidence": [
+            {
+              "viewport": "desktop",
+              "observation": "Mechanical observations report 4 of 4 exact first beats visible under normal, reduced-motion, and no-JavaScript rendering."
+            },
+            {
+              "viewport": "tablet",
+              "observation": "Mechanical observations report 4 of 4 exact first beats visible in all three rendering modes."
+            },
+            {
+              "viewport": "phone",
+              "observation": "Mechanical observations report 4 of 4 exact first beats visible in all three rendering modes; the full-page capture shows every section heading and first content block."
+            }
+          ],
+          "fix": "No change required."
+        },
+        "imageContrast": {
+          "status": "pass",
+          "evidence": [
+            {
+              "viewport": "desktop",
+              "observation": "Hero text sits on a plain cream field beside, not over, the photograph; the dark guidance section uses white text on a uniform deep-green field."
+            },
+            {
+              "viewport": "tablet",
+              "observation": "Text and images remain separated into stable columns with no difficult image-backed copy."
+            },
+            {
+              "viewport": "phone",
+              "observation": "Stacked images do not sit behind text, and both dark and light section copy retains strong contrast."
+            }
+          ],
+          "fix": "Preserve the current separation of text from photography."
+        },
+        "motionRestraint": {
+          "status": "pass",
+          "evidence": [
+            {
+              "viewport": "desktop",
+              "observation": "Normal rendering declares one staged hero move with one visible target; reduced motion disables it at 0.01ms maximum duration, and the no-JavaScript target remains visible."
+            },
+            {
+              "viewport": "tablet",
+              "observation": "The same single motion root passes its normal contract, reduced-motion fallback, and no-JavaScript fallback without delaying first beats."
+            },
+            {
+              "viewport": "phone",
+              "observation": "One visible motion target is reported, while reduced-motion and no-JavaScript modes preserve the static composition and all 4 first beats."
+            }
+          ],
+          "fix": "Keep motion limited to this single decorative treatment and avoid adding simultaneous section entrances."
+        },
+        "imageryCoherence": {
+          "status": "pass",
+          "evidence": [
+            {
+              "viewport": "desktop",
+              "observation": "All photographs share warm directional light, cream ceramics, coral flowers, deep green foliage, and quiet tabletop settings."
+            },
+            {
+              "viewport": "tablet",
+              "observation": "Crops retain the same contemporary still-life lighting and material palette across hero and lower sections."
+            },
+            {
+              "viewport": "phone",
+              "observation": "Stacked crops continue the unified warm studio look without introducing mismatched eras, lighting styles, or false historical treatment."
+            }
+          ],
+          "fix": "Preserve the photographic set; refine only the scale and placement of the overlaid rings."
+        },
+        "factualRestraint": {
+          "status": "pass",
+          "evidence": [
+            {
+              "viewport": "desktop",
+              "observation": "Visible copy presents placement, proportion, palette, and vessel considerations as planning guidance rather than business-attributed services."
+            },
+            {
+              "viewport": "tablet",
+              "observation": "The confirmation section explicitly states that service and availability details are not confirmed and instructs visitors to verify them."
+            },
+            {
+              "viewport": "phone",
+              "observation": "No buy, order, reserve, booking, delivery, pricing, hours, location, testimonial, award, or service-availability claim is shown."
+            },
+            {
+              "viewport": "source",
+              "observation": "The only business-specific fact asserted is the confirmed name “Harborlight Flower Studio”; all other public copy remains category guidance consistent with guidance-only mode."
+            }
+          ],
+          "fix": "Continue avoiding transactional actions or attributed service claims until a single confirmed user clause supports each full predicate."
+        }
+      },
+      "lawCoverage": {
+        "headlineDiscipline": {
+          "requiredViewports": [],
+          "observedViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "missingViewports": [],
+          "complete": true
+        },
+        "foldComposition": {
+          "requiredViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "observedViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "missingViewports": [],
+          "complete": true
+        },
+        "completeLayouts": {
+          "requiredViewports": [],
+          "observedViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "missingViewports": [],
+          "complete": true
+        },
+        "firstBeatVisibility": {
+          "requiredViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "observedViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "missingViewports": [],
+          "complete": true
+        },
+        "imageContrast": {
+          "requiredViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "observedViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "missingViewports": [],
+          "complete": true
+        },
+        "motionRestraint": {
+          "requiredViewports": [],
+          "observedViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "missingViewports": [],
+          "complete": true
+        },
+        "imageryCoherence": {
+          "requiredViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "observedViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "missingViewports": [],
+          "complete": true
+        },
+        "factualRestraint": {
+          "requiredViewports": [],
+          "observedViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "missingViewports": [],
+          "complete": true
+        }
+      }
     }
   ],
   "delivery": {
-    "schemaVersion": "1.0",
-    "slug": "harborlight-flower-studio",
-    "selectedCycle": 3,
-    "createdAt": "2026-07-17T23:54:09.594Z",
+    "schemaVersion": "2.0",
     "mode": "cloudflare",
-    "projectName": "mainstreet-hackathon",
+    "slug": "harborlight-flower-studio",
+    "selectedCycle": 2,
+    "commit": "fe6fb5c4d65fcb5ddadc83caebdbd80a07fb0fd1",
     "url": "https://mainstreet-hackathon.pages.dev/",
-    "deploymentUrl": "https://76095739.mainstreet-hackathon.pages.dev/",
-    "verified": true,
+    "immutableUrl": "https://a4eb8385.mainstreet-hackathon.pages.dev/",
+    "createdAt": "2026-07-19T19:51:39.509Z",
     "status": 200,
-    "reason": null
+    "verified": true,
+    "aggregateSha256": "a1241109055834ae36aac9f642b78c774bd6212fa41e96c94ad8b7600e22a4df",
+    "files": [
+      {
+        "path": "assets/offerings-detail.png",
+        "bytes": 2319317,
+        "sha256": "6a9298c660604535a9cdc356f1509305226389aabdb82253b2560d71bedcaef8",
+        "status": 200,
+        "verified": true
+      },
+      {
+        "path": "assets/studio-detail.png",
+        "bytes": 2131636,
+        "sha256": "2ef8edb248e0d69c59234b64de01c548bd5dd1e1aef1f91bd1a15898fadd7efa",
+        "status": 200,
+        "verified": true
+      },
+      {
+        "path": "assets/workbench-hero.png",
+        "bytes": 2150426,
+        "sha256": "22be82ac12646f1ed95b69a8f72ac2c21dc2eb9a4703f97ec99bec35d667bc3f",
+        "status": 200,
+        "verified": true
+      },
+      {
+        "path": "index.html",
+        "bytes": 4026,
+        "sha256": "611971adfb88d5b7a631318cb29778775f14981cea3afc53a6648531aff5207f",
+        "status": 200,
+        "verified": true
+      },
+      {
+        "path": "script.js",
+        "bytes": 931,
+        "sha256": "8338c7eca7f263025e8db69bc5b8892d974ddca5d1915ca652de1ded12989de6",
+        "status": 200,
+        "verified": true
+      },
+      {
+        "path": "styles.css",
+        "bytes": 8244,
+        "sha256": "3923a74b667eaf15fdf5f2911b4fe03ad31749ee6d49b0817b4319db3f096b6d",
+        "status": 200,
+        "verified": true
+      }
+    ]
   }
 }

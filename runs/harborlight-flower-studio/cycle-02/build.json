@@ -1,12 +1,54 @@
 {
   "cycle": 2,
   "fromCycle": 1,
-  "createdAt": "2026-07-17T23:50:15.557Z",
+  "createdAt": "2026-07-19T19:50:12.339Z",
   "source": "openai-revision",
   "fallbackReason": null,
   "designNotes": {
-    "aesthetic": "The revision preserves the warm cream, botanical green, and deeper rust palette while improving contrast and legibility. Large editorial serif headings remain the visual anchor, supported by clearer body typography, stronger rules, and a more deliberate light, dark, light sequence.",
-    "signatureMove": "The Harborlight bloom remains the defining visual gesture. Its line drawn flowers now occupy a shorter, cleaner mobile panel with all annotation text removed at that size. On larger precise pointer screens, the complete botanical composition gently resolves from soft focus as it enters view. Touch and reduced motion experiences show a complete still composition.",
-    "rationale": "The mobile header now uses a spacious two row layout rather than an inoperative menu control, so every destination remains available without JavaScript and every link has a comfortable target. Body and functional text are at least sixteen pixels, the dark section has brighter secondary copy, and the studio heading has a more controlled mobile measure. Because no verified contact channel, location, service terms, portfolio asset, or timing facts were supplied, the revision does not invent them. The former false inquiry action is replaced with a useful planning path, and missing operational facts are disclosed once in a concise honest note."
+    "aesthetic": "A quiet coastal still life composition with warm cream fields, deep ink surfaces, muted coral accents, tactile materials, and generous editorial spacing.",
+    "signatureMove": "The floral still life enters as one restrained stage while all text and actions remain fixed and readable. The image remains fully visible without motion.",
+    "rationale": "The revision preserves the strong split hero and numbered planning structure while removing unsupported locality language. Neutral floral guidance now gives visitors practical preparation ideas without presenting inferred services. The final panel is shorter, mobile navigation is placed beneath the brand, and all small screen informational text meets the required size.",
+    "shootDirection": "Use one contemporary commissioned still life language throughout. Favor warm natural morning light, close focal distance, soft directional shadows, ceramic and botanical textures, restrained cream and deep green surfaces, and no identifiable people or documentary business details.",
+    "motionMoves": [
+      "staged hero entrance"
+    ]
+  },
+  "imagePlan": [
+    {
+      "filename": "workbench-hero.png",
+      "role": "hero",
+      "alt": "Contemporary still life inspired by floral design studio",
+      "prompt": "Contemporary editorial still life inspired by Floral design studio with natural materials calm light no logos no signage and no business specific details",
+      "focalPoint": {
+        "x": 0.56,
+        "y": 0.44
+      }
+    },
+    {
+      "filename": "offerings-detail.png",
+      "role": "offerings",
+      "alt": "Materials and colors arranged as a planning reference",
+      "prompt": "Close editorial detail of materials and colors inspired by Floral design studio with no logos no signage and no claimed business activity",
+      "focalPoint": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    {
+      "filename": "studio-detail.png",
+      "role": "guidance",
+      "alt": "Flowers and a ceramic vessel arranged in warm natural light",
+      "prompt": "Contemporary editorial close view of flowers beside a simple ceramic vessel on a softly textured tabletop in warm natural morning light, restrained cream deep green and muted coral palette, intimate lens distance, calm coastal still life styling, no people, no logos, no signage, no business specific details",
+      "focalPoint": {
+        "x": 0.48,
+        "y": 0.46
+      }
+    }
+  ],
+  "assetSummary": {
+    "allResolved": true,
+    "requestCount": 3,
+    "successCount": 3,
+    "fallbackCount": 0
   }
 }

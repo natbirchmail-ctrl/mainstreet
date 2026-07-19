@@ -1,126 +1,389 @@
 {
   "rubricVersion": "1.0",
-  "score": 72,
-  "verdict": "revise",
-  "summary": "The page has a distinctive, calm editorial identity and a strong floral-specific visual system, but it is not ready for public presentation. The largest failure is practical: the primary action leads toward a conversation while the page explicitly says no contact details are available. Very small utility text, service descriptions, navigation, and botanical annotations also compromise readability, especially on mobile.",
+  "summary": "A visually confident floral guide with strong art direction, a restrained coastal palette, and an unusually polished hero. The composition loses quality below the fold: guidance is generic, the neighborhood image breaks the floral still-life world, small type becomes difficult on phone, and the final section contains excessive empty space. The unsupported locality language also conflicts with the guidance-only claim policy. Visual score: 75/100.",
   "dimensions": {
     "layout": {
-      "score": 15,
-      "evidence": "The desktop composition uses a confident split hero, generous section spacing, aligned service rows, and a strong light–dark–light sequence. Mobile sections stack logically, but the opening illustration becomes an oversized separate panel, the header is cramped, and some sections carry more vertical space than their content needs.",
-      "fix": "Reduce the mobile illustration panel height and tighten the gap after the service disclaimer while retaining the current section sequence."
+      "score": 14,
+      "evidence": "Desktop and tablet use a disciplined split hero and aligned content rails. The three planning rows form a complete, balanced list at every viewport. However, the desktop and tablet “Confirm Details” section is substantially taller than its small amount of content requires, while the phone’s dark “Local Context” section compresses its text and image into a comparatively tight block.",
+      "fix": "Reduce the desktop/tablet confirmation section’s vertical padding by roughly one third and add 12–16px more separation between the phone context description and image."
     },
     "hierarchy": {
       "score": 13,
-      "evidence": "Large serif headlines, numbered sections, accent eyebrows, and the dark studio block establish a clear reading path. The primary CTA is visually distinct, but important operational information is relegated to tiny text and the mobile hero separates the image from the headline enough to weaken their relationship.",
-      "fix": "Move confirmed ordering details directly beneath the primary CTA in normal body-size text."
+      "evidence": "The hero business name, section labels, serif headings, and numbered planning rows create a clear reading order on desktop, tablet, and phone. On phone, the oversized “H” medallion appears before “Planning Context” and temporarily competes with the actual section heading.",
+      "fix": "On phone, place the “Planning Context” label and “Local Context” heading before the H medallion, or reduce the medallion diameter by about 25%."
     },
     "color": {
-      "score": 10,
-      "evidence": "The cream, deep green, rust, and white palette feels cohesive, natural, and appropriate to the coastal botanical direction. Rust microtext and hairline rules are faint against cream, while some white secondary copy on the dark green panel is too small and subdued to provide comfortable contrast.",
-      "fix": "Darken the rust used for small labels and brighten the secondary text in the dark studio section."
+      "score": 11,
+      "evidence": "Warm cream, deep ink green, and muted photographic tones are coherent and distinctive. The dark-green context section provides a strong transition with readable light text, although its very small copy reduces the practical benefit of the contrast.",
+      "fix": "Keep the palette and increase the context body copy size rather than changing its colors."
     },
     "typography": {
-      "score": 10,
-      "evidence": "The display serif gives the site a refined editorial voice and the hero headline wraps attractively on desktop. However, navigation, eyebrows, service descriptions, disclaimers, footer text, and illustration annotations are visibly tiny; several mobile paragraphs approach caption size, and the studio heading breaks awkwardly into “feel / like.”",
-      "fix": "Set all functional and body copy to at least 16px on mobile and slightly reduce the mobile studio headline so “feel like” can remain together."
+      "score": 11,
+      "evidence": "The display serif gives the desktop and tablet hero a strong editorial identity, and the business name wraps cleanly. The phone context paragraph, planning descriptions, navigation, and footer are visibly undersized; the context paragraph also forms a dense block with tight leading. “Useful Directions” becomes a long single-line heading on tablet and approaches the available width.",
+      "fix": "Set phone body and planning descriptions to at least 14px with approximately 1.45 line-height, and increase the context paragraph similarly; allow the tablet section heading a slightly narrower measure if needed."
     },
     "mobile": {
       "score": 10,
-      "evidence": "The single-column structure is coherent and the service rows adapt without horizontal overflow. The logo and three navigation links are squeezed into a very shallow header, CTA targets are small, service copy is difficult to read, and the botanical artwork contains overlapping annotations that are effectively illegible at 390px.",
-      "fix": "Replace the three-link mobile navigation with one clearly labeled menu control and give the primary CTA a minimum 44px height."
+      "evidence": "The phone hero stacks logically, preserves the floral crop, and shows the action and first portion of the image in the initial viewport. The header is cramped: the three navigation links form a narrow right-hand vertical column beside the business name. Lower down, the context copy is exceptionally small, and the footer stacks into two isolated lines with excess vertical separation.",
+      "fix": "Replace the phone header’s three-link column with one compact horizontal row below the brand, then enlarge the context text and reduce footer row spacing."
     },
     "specificity": {
-      "score": 6,
-      "evidence": "Seasonal arrangements, event flowers, custom work, and the occasion-preparation checklist make the offer relevant to a floral studio. The line-drawn flowers and vase also support the business. Yet no portfolio photography, service area, delivery terms, lead times, pricing cues, or inquiry method is visible, and the public-facing disclaimer foregrounds missing business information.",
-      "fix": "Replace the missing-details disclaimer with one real inquiry method plus confirmed service area, delivery or pickup terms, and typical lead time."
+      "score": 5,
+      "evidence": "The commissioned-looking flower still lifes and names such as “Gift Moment” and “Seasonal Mood” support the category. Most guidance—consider color, scale, timing, setting, texture, and palette—could apply to nearly any florist, while “Local Context,” the generic housing image, and “Built for the neighborhood” do not establish a confirmed or distinctive Harborlight context.",
+      "fix": "Replace the neighborhood section with a two-word heading and category guidance focused on practical floral decisions, using only non-operational wording such as vessel scale, placement, palette references, and transport considerations."
     },
     "accessibility": {
-      "score": 5,
-      "evidence": "A skip link is present in the visible text, the palette avoids harsh glare, and the page has a straightforward reading order. Visible accessibility is weakened by extremely small text, low-contrast rust microcopy, hairline rules, tiny navigation and CTA targets, and unreadable text embedded around the mobile illustration.",
-      "fix": "Raise small text to 16px, enlarge interactive targets to at least 44×44px, and remove nonessential annotation text from the mobile artwork."
+      "score": 7,
+      "evidence": "Dark text on cream and light text on deep green have strong visible contrast, a skip-link label is present in the supplied text, and mechanics report the checked tablet and phone target passing. Nevertheless, phone navigation, context copy, planning descriptions, and footer text are visually too small for comfortable reading, and the underlined text actions have limited visual target area.",
+      "fix": "Raise all phone informational text to at least 14px and give each text action a minimum 44px-high clickable area through vertical padding."
     },
     "polish": {
-      "score": 3,
-      "evidence": "The repeated rules, numbering, restrained line art, and aligned desktop grid create a considered visual system. Polish drops at mobile scale: the header feels compressed, botanical annotations collide with stems, several captions look microscopic, and the explicit “Contact details are not yet available” notice reads like unfinished staging content.",
-      "fix": "Remove the illustration annotations and replace the staging-style contact notice before launch."
+      "score": 4,
+      "evidence": "Fine rules, controlled crops, restrained ornament, and consistent section labels produce a finished editorial surface. The generic suburban image, oversized confirmation-section void, cramped phone context copy, and awkward phone header prevent the lower page from matching the hero’s finish.",
+      "fix": "Retain the hero treatment, but replace the suburban image and normalize the confirmation, context, header, and footer spacing."
     }
   },
   "strengths": [
-    "Distinctive cream, forest, and rust palette with a calm editorial character.",
-    "Strong display typography and confident desktop hero composition.",
-    "Custom botanical line art and vase illustration avoid a generic stock-template appearance.",
-    "Clear numbered progression from services to approach to inquiry.",
-    "The dark studio section creates an effective visual change of pace."
+    "The desktop and tablet split hero has a strong, memorable editorial composition with excellent floral cropping.",
+    "The display serif, deep ink color, and warm cream field create a calm and recognizable visual identity.",
+    "The two floral photographs share lighting, palette, props, and styling convincingly.",
+    "The numbered planning list is complete, easy to scan, and adapts without empty slots.",
+    "Reduced-motion and no-JavaScript mechanics preserve all four section first beats at every viewport."
   ],
   "issues": [
     {
       "priority": 1,
       "severity": "major",
       "dimension": "specificity",
-      "evidence": "The main action is “Discuss your flowers,” but the contact section states that contact details are not yet available and provides no email, phone number, form, or booking link.",
-      "impact": "Visitors cannot complete the page’s primary business task, making the site functionally incomplete.",
-      "fix": "Add one working inquiry form or email link and remove the missing-contact disclaimer."
+      "evidence": "Desktop, tablet, and phone show “Local Context,” a generic suburban housing image, and the footer statement “Built for the neighborhood,” despite the brief confirming neither a city nor a service area.",
+      "impact": "The page attributes an unsupported local identity to the business and fails the binding factual-restraint policy.",
+      "fix": "Remove “Built for the neighborhood” and replace the locality section with neutral planning guidance that does not imply a confirmed location, neighborhood, or service area."
     },
     {
       "priority": 2,
-      "severity": "major",
-      "dimension": "accessibility",
-      "evidence": "Navigation, eyebrows, service descriptions, disclaimers, footer text, and mobile illustration annotations are rendered at visibly tiny sizes; some desktop supporting copy is also difficult to read at the supplied viewport.",
-      "impact": "Visitors with low vision or ordinary mobile viewing conditions may be unable to read essential service and contact information.",
-      "fix": "Use a 16px minimum for body and functional text, reserving smaller type only for nonessential numbering."
+      "severity": "medium",
+      "dimension": "mobile",
+      "evidence": "In the phone dark-green section, the descriptive paragraph is rendered as several very small, tightly led lines immediately above the image.",
+      "impact": "Important guidance becomes difficult to read and visually less polished than the rest of the page.",
+      "fix": "Increase that paragraph to at least 14px/1.45 and add 12–16px beneath it."
     },
     {
       "priority": 3,
       "severity": "medium",
       "dimension": "mobile",
-      "evidence": "The mobile logo and three navigation links are compressed into a shallow 390px-wide header, while the CTA is substantially shorter than a comfortable touch target.",
-      "impact": "The first interaction area feels cramped and links are harder to identify and tap accurately.",
-      "fix": "Use a single menu button on mobile and increase CTA height to at least 44px."
+      "evidence": "The phone header places IDEAS, CONTEXT, and DETAILS in a narrow vertical stack beside the long business name.",
+      "impact": "The opening chrome feels cramped and makes the navigation harder to scan and tap than the spacious page beneath it.",
+      "fix": "Move the three links to a single row below the business name on phone."
     },
     {
       "priority": 4,
       "severity": "medium",
-      "dimension": "polish",
-      "evidence": "Tiny phrases overlap the stems and leaves at the lower-right of the mobile botanical panel.",
-      "impact": "The signature illustration looks technically broken rather than intentionally delicate.",
-      "fix": "Hide the three botanical annotations below the desktop breakpoint."
+      "dimension": "layout",
+      "evidence": "The desktop and tablet “Confirm Details” section contains only a label, heading, and short caveat but occupies a large, mostly empty panel.",
+      "impact": "The page ends with accidental whitespace and a weak final rhythm.",
+      "fix": "Reduce that section’s top and bottom padding by about one third."
     },
     {
       "priority": 5,
       "severity": "medium",
       "dimension": "specificity",
-      "evidence": "There are no visible examples of completed arrangements or events, despite the audience needing confidence in the studio’s style and approach.",
-      "impact": "The abstract illustrations establish mood but do not demonstrate the quality or character of the actual floral work.",
-      "fix": "Add one strong arrangement photograph beside the services or studio approach section."
+      "evidence": "The full-page context section uses a generic modern housing photograph, unlike the two carefully styled floral still lifes.",
+      "impact": "It breaks the impression of one coherent commissioned shoot and shifts attention away from floral planning.",
+      "fix": "Replace it with a close floral, vessel, tabletop, or material-detail photograph using the same warm light and restrained styling."
     },
     {
       "priority": 6,
       "severity": "minor",
-      "dimension": "typography",
-      "evidence": "The mobile studio headline wraps as “Start with what the / moment should feel / like.”, leaving the final word isolated.",
-      "impact": "The most prominent heading in the dark section loses rhythm and looks less refined.",
-      "fix": "Reduce that heading by roughly 2–4px or widen its text measure so “feel like” remains together."
+      "dimension": "accessibility",
+      "evidence": "Phone planning descriptions, navigation labels, context copy, and both footer lines are visibly small; the text-link actions also have little apparent vertical padding.",
+      "impact": "Reading and tapping require more precision than necessary.",
+      "fix": "Use a 14px minimum for informational phone text and pad actionable links to a 44px-high hit area."
     }
   ],
+  "laws": {
+    "headlineDiscipline": {
+      "status": "pass",
+      "evidence": [
+        {
+          "viewport": "desktop",
+          "observation": "The hero uses the exact business name, while primary section headings are “Useful Directions,” “Local Context,” and “Confirm Details,” each limited to two meaningful words."
+        },
+        {
+          "viewport": "tablet",
+          "observation": "The same disciplined heading system remains intact without explanatory sentences being promoted to headings."
+        },
+        {
+          "viewport": "phone",
+          "observation": "Headings remain concise; body copy explains and “Explore Ideas” directs."
+        }
+      ],
+      "fix": "No change required."
+    },
+    "foldComposition": {
+      "status": "pass",
+      "evidence": [
+        {
+          "viewport": "desktop",
+          "observation": "The initial viewport composes label, business-name heading, explanation, action, and floral image as one complete split-screen thought."
+        },
+        {
+          "viewport": "tablet",
+          "observation": "The initial split hero remains complete, with the action visible and the floral subject deliberately cropped."
+        },
+        {
+          "viewport": "phone",
+          "observation": "The initial viewport presents the full textual opening and action before revealing the opening portion of the floral image; lower sections show their labels, headings, and first content units together in the full-page rendering."
+        }
+      ],
+      "fix": "Preserve the hero’s composed text-and-image relationship."
+    },
+    "completeLayouts": {
+      "status": "pass",
+      "evidence": [
+        {
+          "viewport": "desktop",
+          "observation": "All three numbered planning rows are populated, and no empty grid slot or phantom column is visible."
+        },
+        {
+          "viewport": "tablet",
+          "observation": "The three-row list and two-part context layout remain complete."
+        },
+        {
+          "viewport": "phone",
+          "observation": "The repeated planning content converts to three complete stacked rows without orphan cards or broken count states."
+        }
+      ],
+      "fix": "No structural change required."
+    },
+    "firstBeatVisibility": {
+      "status": "pass",
+      "evidence": [
+        {
+          "viewport": "desktop",
+          "observation": "Mechanics report 4 of 4 exact first beats visible under normal motion, reduced motion, and JavaScript-disabled rendering."
+        },
+        {
+          "viewport": "tablet",
+          "observation": "Mechanics report 4 of 4 exact first beats visible in all three rendering states."
+        },
+        {
+          "viewport": "phone",
+          "observation": "Mechanics report 4 of 4 exact first beats visible in all three rendering states, and the screenshots show no unrevealed lower content."
+        }
+      ],
+      "fix": "Preserve the non-dependent rendering of section content."
+    },
+    "imageContrast": {
+      "status": "pass",
+      "evidence": [
+        {
+          "viewport": "desktop",
+          "observation": "Hero text sits on a solid cream panel rather than over the photograph; context text sits on solid deep green beside its image."
+        },
+        {
+          "viewport": "tablet",
+          "observation": "The split surfaces keep all text away from variable photographic areas, with clear dark-on-light and light-on-dark contrast."
+        },
+        {
+          "viewport": "phone",
+          "observation": "Images remain separate from textual blocks; the decorative cream rings do not cover text."
+        }
+      ],
+      "fix": "No contrast change required; enlarge the smallest copy for readability."
+    },
+    "motionRestraint": {
+      "status": "pass",
+      "evidence": [
+        {
+          "viewport": "desktop",
+          "observation": "The normal rendering declares one visible motion target with no measured progress or selection change; reduced motion disables it at 0.01ms, and the no-JavaScript fallback remains visible."
+        },
+        {
+          "viewport": "tablet",
+          "observation": "One visible target is reported in normal mode, with a passing disabled reduced-motion fallback and a passing visible no-JavaScript fallback."
+        },
+        {
+          "viewport": "phone",
+          "observation": "The same single-target treatment remains visible but nonessential; reduced-motion and no-JavaScript states both pass without hidden panels or missing first beats."
+        }
+      ],
+      "fix": "Keep motion limited to the single decorative botanical treatment."
+    },
+    "imageryCoherence": {
+      "status": "fail",
+      "evidence": [
+        {
+          "viewport": "desktop",
+          "observation": "The hero and planning images share warm studio light and floral still-life styling, but the context section introduces a generic suburban streetscape from a different visual world."
+        },
+        {
+          "viewport": "tablet",
+          "observation": "The streetscape’s architectural subject and broad exterior framing conflict with the intimate floral crops and tabletop palette."
+        },
+        {
+          "viewport": "phone",
+          "observation": "The mismatch becomes more pronounced in the stacked sequence, where the housing image immediately follows the floral planning content."
+        }
+      ],
+      "fix": "Replace the streetscape with a contemporary floral or studio-detail image matching the warm light, close focal distance, and restrained styling of the other photographs."
+    },
+    "factualRestraint": {
+      "status": "fail",
+      "evidence": [
+        {
+          "viewport": "source",
+          "observation": "The claim policy contains no confirmed user clauses and confirms neither city nor service area; guidance-only mode does not authorize business-attributed locality claims."
+        },
+        {
+          "viewport": "desktop",
+          "observation": "The page visibly states “Local Context” and “Built for the neighborhood,” associating Harborlight Flower Studio with an unconfirmed neighborhood identity."
+        },
+        {
+          "viewport": "tablet",
+          "observation": "The same unsupported locality framing appears in the context section and footer."
+        },
+        {
+          "viewport": "phone",
+          "observation": "“LOCAL GUIDE,” “Local Context,” and “Built for the neighborhood” remain visible despite the absence of confirmed local scope."
+        }
+      ],
+      "fix": "Remove “Built for the neighborhood” and recast locality language as neutral category guidance without attributing a location or service area to the business."
+    }
+  },
   "revisionBrief": {
     "mustFix": [
-      "Provide a real, usable inquiry method and remove all staging language about unavailable contact details.",
-      "Increase functional and body text sizes, particularly on mobile and in service descriptions.",
-      "Simplify the mobile header and enlarge interactive targets.",
-      "Remove overlapping annotation text from the mobile botanical artwork.",
-      "Add confirmed service-area, delivery or pickup, and timing information.",
-      "Show at least one credible image of actual floral work."
+      "Remove unsupported neighborhood and local-scope claims, especially “Built for the neighborhood.”",
+      "Replace the suburban streetscape with a floral or studio-detail image coherent with the warm still-life photography.",
+      "Increase phone body, planning, context, navigation, and footer text sizes; loosen the context paragraph leading.",
+      "Recompose the phone header so navigation does not occupy a cramped vertical strip beside the brand.",
+      "Reduce excess vertical padding in the desktop and tablet confirmation section."
     ],
     "preserve": [
-      "The restrained cream, deep green, and rust palette.",
-      "The large editorial serif headlines.",
-      "The numbered section structure and light–dark–light pacing.",
-      "The custom botanical line-art motif.",
-      "The concise three-service presentation and occasion-preparation checklist."
+      "The split-screen hero composition and deliberate floral crop.",
+      "The exact business-name headline and restrained two-word section headings.",
+      "The warm cream, deep ink green, and muted floral palette.",
+      "The editorial serif and compact uppercase section labels.",
+      "The complete three-item numbered planning list.",
+      "The single nonessential motion treatment with reduced-motion and no-JavaScript fallbacks."
     ]
   },
-  "cycle": 1,
+  "score": 75,
+  "lawCoverage": {
+    "headlineDiscipline": {
+      "requiredViewports": [],
+      "observedViewports": [
+        "desktop",
+        "tablet",
+        "phone"
+      ],
+      "missingViewports": [],
+      "complete": true
+    },
+    "foldComposition": {
+      "requiredViewports": [
+        "desktop",
+        "tablet",
+        "phone"
+      ],
+      "observedViewports": [
+        "desktop",
+        "tablet",
+        "phone"
+      ],
+      "missingViewports": [],
+      "complete": true
+    },
+    "completeLayouts": {
+      "requiredViewports": [],
+      "observedViewports": [
+        "desktop",
+        "tablet",
+        "phone"
+      ],
+      "missingViewports": [],
+      "complete": true
+    },
+    "firstBeatVisibility": {
+      "requiredViewports": [
+        "desktop",
+        "tablet",
+        "phone"
+      ],
+      "observedViewports": [
+        "desktop",
+        "tablet",
+        "phone"
+      ],
+      "missingViewports": [],
+      "complete": true
+    },
+    "imageContrast": {
+      "requiredViewports": [
+        "desktop",
+        "tablet",
+        "phone"
+      ],
+      "observedViewports": [
+        "desktop",
+        "tablet",
+        "phone"
+      ],
+      "missingViewports": [],
+      "complete": true
+    },
+    "motionRestraint": {
+      "requiredViewports": [],
+      "observedViewports": [
+        "desktop",
+        "tablet",
+        "phone"
+      ],
+      "missingViewports": [],
+      "complete": true
+    },
+    "imageryCoherence": {
+      "requiredViewports": [
+        "desktop",
+        "tablet",
+        "phone"
+      ],
+      "observedViewports": [
+        "desktop",
+        "tablet",
+        "phone"
+      ],
+      "missingViewports": [],
+      "complete": true
+    },
+    "factualRestraint": {
+      "requiredViewports": [],
+      "observedViewports": [
+        "desktop",
+        "tablet",
+        "phone"
+      ],
+      "missingViewports": [],
+      "complete": true
+    }
+  },
+  "lawGatePassed": false,
+  "lawGateFailures": [
+    "law:imageryCoherence:fail",
+    "law:factualRestraint:fail"
+  ],
+  "mechanicalPassed": true,
+  "assetsResolved": true,
   "mode": "vision",
-  "createdAt": "2026-07-17T23:48:43.483Z",
-  "mechanicalPassed": true
+  "hasMajorIssue": true,
+  "hardGateFailures": [
+    "score:below-threshold",
+    "issues:major",
+    "law:imageryCoherence:fail",
+    "law:factualRestraint:fail"
+  ],
+  "shipEligible": false,
+  "verdict": "revise",
+  "evidencePacketSha256": "a11dd2896fe474e646c18f687486b09cc2d4380973312eb49384109409085251",
+  "cycle": 1,
+  "createdAt": "2026-07-19T19:47:41.079Z"
 }

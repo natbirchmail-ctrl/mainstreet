@@ -2,12 +2,11 @@
 
 Status: completed
 
-Stop reason: max_cycles_reached
+Stop reason: threshold_reached
 
-Selected cycle: 3
+Selected cycle: 2
 
-| Cycle | Score | Mechanical pass | Verdict |
-| ---: | ---: | :---: | :--- |
-| 1 | 72 | true | revise |
-| 2 | 77 | true | revise |
-| 3 | 79 | true | revise |
+| Cycle | Score | Mechanical pass | Assets resolved | Laws pass | Ship eligible | Verdict |
+| ---: | ---: | :---: | :---: | :---: | :---: | :--- |
+| 1 | 75 | true | true | false | false | revise |
+| 2 | 88 | true | true | true | true | ship |
