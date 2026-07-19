@@ -125,6 +125,9 @@ test("source critic never claims visual proof or recommends shipping", async () 
       /first beat visibility/i,
       /image contrast/i,
       /imagery coherence/i,
+      /do not require[^.]*forms/i,
+      /contact channels?[^.]*absent from the brief/i,
+      /available on page content/i,
     ],
     "source critic",
   );

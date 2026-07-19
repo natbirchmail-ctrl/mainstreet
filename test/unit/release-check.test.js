@@ -13,6 +13,7 @@ import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
+import { deflateSync } from "node:zlib";
 
 import {
   checkRelease,
@@ -525,6 +526,70 @@ test("missing and invalid cycle evidence report artifact rules", async (t) => {
       expectedSlugs: fixture.expectedSlugs,
     });
     assertFinding(result, "ARTIFACT_INVALID", manifestPath);
+  });
+
+  await t.test("canonical screenshot IHDR dimensions must match its manifest", async () => {
+    const fixture = await makeFixture();
+    const screenshotPath = "runs/example-run/cycle-01/screenshots/desktop-home.png";
+    await writeOwnedFile(fixture.root, screenshotPath, solidPng(1439, 900, 31));
+    await rewriteJson(
+      fixture.root,
+      "runs/example-run/cycle-01/screenshots/manifest.json",
+      (manifest) => {
+        manifest.viewports.desktop.width = 1439;
+      },
+    );
+    const criticManifestPath =
+      "runs/example-run/cycle-01/screenshots/critic/manifest.json";
+    const binding = await canonicalCaptureDigest(
+      fixture.root,
+      "runs/example-run/cycle-01",
+    );
+    await rewriteJson(fixture.root, criticManifestPath, (manifest) => {
+      manifest.canonicalCaptureSha256 = binding;
+    });
+
+    const result = await checkRelease({
+      repoRoot: fixture.root,
+      expectedSlugs: fixture.expectedSlugs,
+    });
+    assertFinding(result, "ARTIFACT_INVALID", screenshotPath);
+  });
+
+  await t.test("critic screenshot IHDR dimensions cannot hide behind valid bytes and digest", async () => {
+    const fixture = await makeFixture();
+    const screenshotPath =
+      "runs/example-run/cycle-01/screenshots/critic/desktop-full-page.png";
+    const manifestPath =
+      "runs/example-run/cycle-01/screenshots/critic/manifest.json";
+    const bytes = solidPng(1440, 3599, 32);
+    await writeOwnedFile(fixture.root, screenshotPath, bytes);
+    await rewriteJson(fixture.root, manifestPath, (manifest) => {
+      manifest.viewports.desktop.bytes = bytes.length;
+      manifest.viewports.desktop.sha256 = digest(bytes);
+    });
+
+    const result = await checkRelease({
+      repoRoot: fixture.root,
+      expectedSlugs: fixture.expectedSlugs,
+    });
+    assertFinding(result, "ARTIFACT_INVALID", screenshotPath);
+  });
+
+  await t.test("critic evidence remains bound to the canonical capture", async () => {
+    const fixture = await makeFixture();
+    const screenshotPath = "runs/example-run/cycle-01/screenshots/desktop-home.png";
+    await writeOwnedFile(fixture.root, screenshotPath, solidPng(1440, 900, 33));
+
+    const result = await checkRelease({
+      repoRoot: fixture.root,
+      expectedSlugs: fixture.expectedSlugs,
+    });
+    assertFinding(
+      result,
+      "ARTIFACT_INVALID",
+      "runs/example-run/cycle-01/screenshots/critic/manifest.json",
+    );
   });
 });
 
@@ -1437,8 +1502,18 @@ async function writeCompleteRun(
     tablet: "screenshots/tablet-home.png",
     phone: "screenshots/mobile-home.png",
   };
-  for (const [index, relative] of Object.values(screenshotPaths).entries()) {
-    await writeOwnedFile(root, `${cycleRoot}/${relative}`, png(index + 10));
+  const screenshotDimensions = {
+    desktop: { width: 1440, height: 900 },
+    tablet: { width: 1024, height: 768 },
+    phone: { width: 390, height: 844 },
+  };
+  for (const [index, [viewport, relative]] of Object.entries(screenshotPaths).entries()) {
+    const dimensions = screenshotDimensions[viewport];
+    await writeOwnedFile(
+      root,
+      `${cycleRoot}/${relative}`,
+      solidPng(dimensions.width, dimensions.height, index + 10),
+    );
   }
   await writeJson(root, `${cycleRoot}/screenshots/manifest.json`, {
     schemaVersion: "2.0",
@@ -1463,12 +1538,14 @@ async function writeCompleteRun(
   };
   const criticViewports = {};
   for (const [index, [viewport, relative]] of Object.entries(criticScreenshotPaths).entries()) {
-    const bytes = png(index + 20);
+    const width = { desktop: 1440, tablet: 1024, phone: 390 }[viewport];
+    const height = { desktop: 3600, tablet: 3072, phone: 3376 }[viewport];
+    const bytes = solidPng(width, height, index + 20);
     await writeOwnedFile(root, `${cycleRoot}/${relative}`, bytes);
     criticViewports[viewport] = {
-      width: { desktop: 1440, tablet: 1024, phone: 390 }[viewport],
-      renderedWidth: { desktop: 1440, tablet: 1024, phone: 390 }[viewport],
-      height: { desktop: 3600, tablet: 3072, phone: 3376 }[viewport],
+      width,
+      renderedWidth: width,
+      height,
       path: relative,
       bytes: bytes.length,
       sha256: digest(bytes),
@@ -1480,6 +1557,7 @@ async function writeCompleteRun(
     capturedAt: "2026-07-18T00:00:00.000Z",
     capture: "full-page",
     motionMode: "reducedMotion",
+    canonicalCaptureSha256: await canonicalCaptureDigest(root, cycleRoot),
     viewports: criticViewports,
   });
   await writeJson(root, `${cycleRoot}/mechanical.json`, {
@@ -1598,11 +1676,13 @@ async function addSecondCycle(root, slug, { includeRevise = true } = {}) {
       manifest.cycle = 2;
     },
   );
+  const secondCanonicalCaptureSha256 = await canonicalCaptureDigest(root, secondCycle);
   await rewriteJson(
     root,
     `${secondCycle}/screenshots/critic/manifest.json`,
     (manifest) => {
       manifest.cycle = 2;
+      manifest.canonicalCaptureSha256 = secondCanonicalCaptureSha256;
     },
   );
   await rewriteJson(root, `${secondCycle}/mechanical.json`, (mechanical) => {
@@ -1838,6 +1918,79 @@ function imageModelKey() {
 
 function png(marker) {
   return Buffer.concat([pngSignature, Buffer.from([marker, 1, 2, 3, 4])]);
+}
+
+const solidPngCache = new Map();
+
+function solidPng(width, height, marker = 0) {
+  const key = `${width}x${height}:${marker}`;
+  const cached = solidPngCache.get(key);
+  if (cached) return cached;
+
+  const rowLength = width + 1;
+  const pixels = Buffer.alloc(rowLength * height);
+  for (let row = 0; row < height; row += 1) {
+    const offset = row * rowLength;
+    pixels[offset] = 0;
+    pixels.fill(marker, offset + 1, offset + rowLength);
+  }
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(width, 0);
+  ihdr.writeUInt32BE(height, 4);
+  ihdr[8] = 8;
+  ihdr[9] = 0;
+  ihdr[10] = 0;
+  ihdr[11] = 0;
+  ihdr[12] = 0;
+  const value = Buffer.concat([
+    pngSignature,
+    pngChunk("IHDR", ihdr),
+    pngChunk("IDAT", deflateSync(pixels)),
+    pngChunk("IEND", Buffer.alloc(0)),
+  ]);
+  solidPngCache.set(key, value);
+  return value;
+}
+
+function pngChunk(type, data) {
+  const name = Buffer.from(type, "ascii");
+  const length = Buffer.alloc(4);
+  length.writeUInt32BE(data.length, 0);
+  const checksum = Buffer.alloc(4);
+  checksum.writeUInt32BE(crc32(Buffer.concat([name, data])), 0);
+  return Buffer.concat([length, name, data, checksum]);
+}
+
+function crc32(value) {
+  let crc = 0xffffffff;
+  for (const byte of value) {
+    crc ^= byte;
+    for (let bit = 0; bit < 8; bit += 1) {
+      crc = (crc >>> 1) ^ (0xedb88320 & -(crc & 1));
+    }
+  }
+  return (crc ^ 0xffffffff) >>> 0;
+}
+
+async function canonicalCaptureDigest(root, cycleRoot) {
+  const paths = [
+    "screenshots/manifest.json",
+    "screenshots/desktop-home.png",
+    "screenshots/tablet-home.png",
+    "screenshots/mobile-home.png",
+  ];
+  const entries = [];
+  for (const relativePath of paths) {
+    const value = await readFile(
+      path.join(root, ...`${cycleRoot}/${relativePath}`.split("/")),
+    );
+    entries.push({
+      path: relativePath,
+      bytes: value.length,
+      sha256: digest(value),
+    });
+  }
+  return digest(Buffer.from(JSON.stringify(entries), "utf8"));
 }
 
 function digest(value) {

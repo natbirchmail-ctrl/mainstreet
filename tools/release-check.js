@@ -799,20 +799,25 @@ function validateScreenshots({
   let invalid = manifest.cycle !== cycle || !isPlainObject(manifest.viewports);
   for (const [viewport, expectedPath] of Object.entries(SCREENSHOTS)) {
     const entry = manifest.viewports?.[viewport];
+    const expectedDimensions = VIEWPORT_DIMENSIONS[viewport];
     if (
       !isPlainObject(entry) ||
       entry.path !== expectedPath ||
-      !Number.isInteger(entry.width) ||
-      entry.width <= 0 ||
-      !Number.isInteger(entry.height) ||
-      entry.height <= 0
+      entry.width !== expectedDimensions.width ||
+      entry.height !== expectedDimensions.height
     ) {
       invalid = true;
     }
     const relativePath = `${cycleRoot}/${expectedPath}`;
+    const value = currentBuffers.get(relativePath);
+    const pngDimensions = readPngDimensions(value);
     if (!currentPaths.has(relativePath)) {
       findings.add("ARTIFACT_MISSING", relativePath);
-    } else if (!hasPngSignature(currentBuffers.get(relativePath))) {
+    } else if (
+      !pngDimensions ||
+      pngDimensions.width !== expectedDimensions.width ||
+      pngDimensions.height !== expectedDimensions.height
+    ) {
       findings.add("ARTIFACT_INVALID", relativePath);
     }
   }
@@ -832,7 +837,15 @@ function validateCriticScreenshots({
   let invalid =
     !sameStringArray(
       Object.keys(manifest).sort(),
-      ["schemaVersion", "cycle", "capturedAt", "capture", "motionMode", "viewports"].sort(),
+      [
+        "schemaVersion",
+        "cycle",
+        "capturedAt",
+        "capture",
+        "motionMode",
+        "canonicalCaptureSha256",
+        "viewports",
+      ].sort(),
     ) ||
     manifest.schemaVersion !== "1.0" ||
     manifest.cycle !== cycle ||
@@ -840,6 +853,9 @@ function validateCriticScreenshots({
     !Number.isFinite(Date.parse(manifest.capturedAt)) ||
     manifest.capture !== "full-page" ||
     manifest.motionMode !== "reducedMotion" ||
+    !/^[a-f0-9]{64}$/.test(manifest.canonicalCaptureSha256 || "") ||
+    manifest.canonicalCaptureSha256 !==
+      canonicalCaptureSha256(currentBuffers, cycleRoot) ||
     !isPlainObject(manifest.viewports) ||
     !sameStringArray(Object.keys(manifest.viewports || {}).sort(), [...EVIDENCE_VIEWPORTS].sort());
 
@@ -866,11 +882,14 @@ function validateCriticScreenshots({
     }
     const relativePath = `${cycleRoot}/${expectedPath}`;
     const value = currentBuffers.get(relativePath);
+    const pngDimensions = readPngDimensions(value);
     if (!currentPaths.has(relativePath)) {
       findings.add("ARTIFACT_MISSING", relativePath);
     } else if (
       !value ||
-      !hasPngSignature(value) ||
+      !pngDimensions ||
+      pngDimensions.width !== record?.renderedWidth ||
+      pngDimensions.height !== record?.height ||
       value.length !== record?.bytes ||
       sha256(value) !== record?.sha256
     ) {
@@ -1790,6 +1809,48 @@ function hasPngSignature(value) {
     value.length > PNG_SIGNATURE.length &&
     value.subarray(0, PNG_SIGNATURE.length).equals(PNG_SIGNATURE)
   );
+}
+
+function readPngDimensions(value) {
+  if (
+    !hasPngSignature(value) ||
+    value.length < 45 ||
+    value.readUInt32BE(8) !== 13 ||
+    value.subarray(12, 16).toString("ascii") !== "IHDR"
+  ) {
+    return null;
+  }
+  const width = value.readUInt32BE(16);
+  const height = value.readUInt32BE(20);
+  const end = value.length - 12;
+  if (
+    width <= 0 ||
+    height <= 0 ||
+    end <= 24 ||
+    value.readUInt32BE(end) !== 0 ||
+    value.subarray(end + 4, end + 8).toString("ascii") !== "IEND"
+  ) {
+    return null;
+  }
+  return { width, height };
+}
+
+function canonicalCaptureSha256(currentBuffers, cycleRoot) {
+  const relativePaths = [
+    "screenshots/manifest.json",
+    ...Object.values(SCREENSHOTS),
+  ];
+  const entries = [];
+  for (const relativePath of relativePaths) {
+    const value = currentBuffers.get(`${cycleRoot}/${relativePath}`);
+    if (!Buffer.isBuffer(value) || value.length === 0) return null;
+    entries.push({
+      path: relativePath,
+      bytes: value.length,
+      sha256: sha256(value),
+    });
+  }
+  return sha256(Buffer.from(JSON.stringify(entries), "utf8"));
 }
 
 function sha256(value) {

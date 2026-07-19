@@ -158,6 +158,7 @@ test("every motion move proves normal activation, reduced fallback, and no JavaS
       assert.equal(evidence.criticManifest.cycle, 1);
       assert.equal(evidence.criticManifest.capture, "full-page");
       assert.equal(evidence.criticManifest.motionMode, "reducedMotion");
+      assert.match(evidence.criticManifest.canonicalCaptureSha256, /^[a-f0-9]{64}$/);
       assert.equal(evidence.criticManifest.capturedAt, "2026-07-17T20:00:00.000Z");
       for (const viewportName of ["desktop", "tablet", "phone"]) {
         const record = evidence.criticManifest.viewports[viewportName];
@@ -522,6 +523,60 @@ test("completed packets reject tampered full page bytes and critic manifest dige
       );
     });
   }
+});
+
+test("completed critic packets cannot be transplanted onto another canonical capture", async () => {
+  const source = await writeFixture({
+    move: "staged hero entrance",
+    extraStyles: "body { background: #efe4cf; }",
+  });
+  const target = await writeFixture({
+    move: "staged hero entrance",
+    extraStyles: "body { background: #173f45; }",
+  });
+  const sourceEvidence = await captureRenderedEvidence({
+    siteDir: source.siteDir,
+    cycleDir: source.cycleDir,
+    port: 4601,
+  });
+  const targetEvidence = await captureRenderedEvidence({
+    siteDir: target.siteDir,
+    cycleDir: target.cycleDir,
+    port: 4601,
+  });
+  const sourceManifestPath = path.join(
+    source.cycleDir,
+    "screenshots",
+    "critic",
+    "manifest.json",
+  );
+  const targetManifestPath = path.join(
+    target.cycleDir,
+    "screenshots",
+    "critic",
+    "manifest.json",
+  );
+  await Promise.all([
+    writeFile(targetManifestPath, await readFile(sourceManifestPath)),
+    ...["desktop", "tablet", "phone"].map(async (viewport) =>
+      writeFile(
+        targetEvidence.fullPagePaths[viewport],
+        await readFile(sourceEvidence.fullPagePaths[viewport]),
+      ),
+    ),
+  ]);
+
+  await assert.rejects(
+    captureRenderedEvidence({
+      siteDir: target.siteDir,
+      cycleDir: target.cycleDir,
+      port: 4601,
+      startServer: async () => {
+        throw new Error("a transplanted evidence packet must not be recaptured");
+      },
+    }),
+    (error) => error?.code === "EVIDENCE_PACKET_INVALID",
+  );
 });
 
 test("completed packets reject forged mechanics contexts totals failures and keys", async (t) => {

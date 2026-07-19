@@ -461,10 +461,15 @@ export async function captureRenderedEvidence({
         pageErrorCount: mechanical.totals.pageErrorCount,
       },
     };
+    const canonicalCaptureSha256 = createCanonicalCaptureSha256({
+      manifestBytes: Buffer.from(serializeJson(screenshotManifest), "utf8"),
+      buffers: screenshotBuffers,
+    });
     const criticManifest = createCriticManifest({
       cycle,
       capturedAt,
       buffers: fullPageBuffers,
+      canonicalCaptureSha256,
     });
 
     await Promise.all([
@@ -563,7 +568,12 @@ export async function readCriticVisualEvidence({ cycleDir, mechanical }) {
         isReusableScreenshot(initial[viewportName], EVIDENCE_VIEWPORTS[viewportName]),
       ) ||
       !isReusableScreenshotManifest(screenshotManifest, { cycle, mechanical }) ||
-      !isReusableCriticManifest(criticManifest, { cycle, buffers: fullPage })
+      !isReusableCriticManifest(criticManifest, {
+        cycle,
+        buffers: fullPage,
+        canonicalManifestBytes: Buffer.from(screenshotManifestText, "utf8"),
+        canonicalBuffers: initial,
+      })
     ) {
       throw invalidEvidencePacket();
     }
@@ -2096,6 +2106,7 @@ async function readReusableEvidencePacket({
       tablet: fullPageTablet,
       phone: fullPagePhone,
     };
+    const canonicalBuffers = { desktop, tablet, phone };
     if (
       !isReusableScreenshot(desktop, EVIDENCE_VIEWPORTS.desktop) ||
       !isReusableScreenshot(tablet, EVIDENCE_VIEWPORTS.tablet) ||
@@ -2103,7 +2114,12 @@ async function readReusableEvidencePacket({
       !visibleText.trim() ||
       !isReusableMechanical(mechanical, { cycle, assetGate, buildGate }) ||
       !isReusableScreenshotManifest(screenshotManifest, { cycle, mechanical }) ||
-      !isReusableCriticManifest(criticManifest, { cycle, buffers: fullPageBuffers })
+      !isReusableCriticManifest(criticManifest, {
+        cycle,
+        buffers: fullPageBuffers,
+        canonicalManifestBytes: Buffer.from(manifestText, "utf8"),
+        canonicalBuffers,
+      })
     ) {
       throw invalidEvidencePacket();
     }
@@ -2742,13 +2758,17 @@ function recordsEqual(left, right, fields) {
   return fields.every((field) => JSON.stringify(left[field]) === JSON.stringify(right[field]));
 }
 
-function createCriticManifest({ cycle, capturedAt, buffers }) {
+function createCriticManifest({ cycle, capturedAt, buffers, canonicalCaptureSha256 }) {
+  if (!SHA256_HEX.test(canonicalCaptureSha256 || "")) {
+    throw new Error("Canonical screenshot evidence binding is invalid.");
+  }
   const manifest = {
     schemaVersion: "1.0",
     cycle,
     capturedAt,
     capture: "full-page",
     motionMode: "reducedMotion",
+    canonicalCaptureSha256,
     viewports: Object.fromEntries(
       VISUAL_VIEWPORTS.map((viewportName) => {
         const buffer = buffers[viewportName];
@@ -2773,16 +2793,33 @@ function createCriticManifest({ cycle, capturedAt, buffers }) {
   return manifest;
 }
 
-function isReusableCriticManifest(candidate, { cycle, buffers }) {
+function isReusableCriticManifest(
+  candidate,
+  { cycle, buffers, canonicalManifestBytes, canonicalBuffers },
+) {
+  const expectedCanonicalCaptureSha256 = createCanonicalCaptureSha256({
+    manifestBytes: canonicalManifestBytes,
+    buffers: canonicalBuffers,
+  });
   if (
     !isPlainObject(candidate) ||
-    !hasExactKeys(candidate, ["schemaVersion", "cycle", "capturedAt", "capture", "motionMode", "viewports"]) ||
+    !hasExactKeys(candidate, [
+      "schemaVersion",
+      "cycle",
+      "capturedAt",
+      "capture",
+      "motionMode",
+      "canonicalCaptureSha256",
+      "viewports",
+    ]) ||
     candidate.schemaVersion !== "1.0" ||
     candidate.cycle !== cycle ||
     typeof candidate.capturedAt !== "string" ||
     !Number.isFinite(Date.parse(candidate.capturedAt)) ||
     candidate.capture !== "full-page" ||
     candidate.motionMode !== "reducedMotion" ||
+    !SHA256_HEX.test(candidate.canonicalCaptureSha256 || "") ||
+    candidate.canonicalCaptureSha256 !== expectedCanonicalCaptureSha256 ||
     !isPlainObject(candidate.viewports) ||
     !hasExactKeys(candidate.viewports, VISUAL_VIEWPORTS)
   ) {
@@ -2811,6 +2848,29 @@ function isReusableCriticManifest(candidate, { cycle, buffers }) {
       sha256Hex(buffer) === record.sha256
     );
   });
+}
+
+function createCanonicalCaptureSha256({ manifestBytes, buffers }) {
+  if (!Buffer.isBuffer(manifestBytes) || !isPlainObject(buffers)) {
+    throw new TypeError("Canonical screenshot evidence bytes are invalid.");
+  }
+  const entries = [
+    { path: "screenshots/manifest.json", value: manifestBytes },
+    ...VISUAL_VIEWPORTS.map((viewportName) => ({
+      path: `screenshots/${EVIDENCE_VIEWPORTS[viewportName].filename}`,
+      value: buffers[viewportName],
+    })),
+  ].map(({ path: relativePath, value }) => {
+    if (!Buffer.isBuffer(value) || value.length === 0) {
+      throw new TypeError("Canonical screenshot evidence bytes are invalid.");
+    }
+    return {
+      path: relativePath,
+      bytes: value.length,
+      sha256: sha256Hex(value),
+    };
+  });
+  return sha256Hex(Buffer.from(JSON.stringify(entries), "utf8"));
 }
 
 function isReusableScreenshotManifest(candidate, { cycle, mechanical }) {
@@ -2993,10 +3053,14 @@ async function writeTextNew(target, value, runRoot) {
 async function writeJsonNew(target, value, runRoot) {
   await writeExclusiveNew(
     target,
-    `${JSON.stringify(value, null, 2)}\n`,
+    serializeJson(value),
     runRoot,
     "utf8",
   );
+}
+
+function serializeJson(value) {
+  return `${JSON.stringify(value, null, 2)}\n`;
 }
 
 async function writeExclusiveNew(target, value, runRoot, encoding) {
