@@ -140,7 +140,9 @@ test("runCriticCycle uses source review when screenshot capture fails", async ()
     runDir,
     cycle: 1,
     captureCycleFn: async () => {
-      throw new Error("browser unavailable at C:\\example\\site");
+      throw Object.assign(new Error("browser unavailable at C:\\example\\site"), {
+        code: "CAPTURE_UNAVAILABLE",
+      });
     },
     critiqueSourceFn: async () => normalizeModelCritique(rawCritique()),
   });
@@ -157,6 +159,83 @@ test("runCriticCycle uses source review when screenshot capture fails", async ()
   const failure = JSON.parse(await readFile(path.join(cycleDir, "capture-error.json"), "utf8"));
   assert.equal(failure.message, "Playwright capture failed. Source review was used.");
   assert.doesNotMatch(JSON.stringify(failure), /private/i);
+});
+
+test("runCriticCycle propagates integrity filesystem and programming faults", async (t) => {
+  for (const [name, captureError] of [
+    ["integrity", Object.assign(new Error("Completed evidence packet is invalid."), { code: "EVIDENCE_PACKET_INVALID" })],
+    ["filesystem", Object.assign(new Error("Evidence file already exists."), { code: "EEXIST" })],
+    ["programming", new TypeError("Cannot read properties of undefined")],
+  ]) {
+    await t.test(name, async () => {
+      const runDir = path.join(process.cwd(), "tmp", randomUUID(), "run");
+      const cycleDir = path.join(runDir, "cycle-01");
+      await mkdir(path.join(cycleDir, "site"), { recursive: true });
+      await writeFile(
+        path.join(runDir, "brief.json"),
+        JSON.stringify({ business: { name: "Juniper Oven" } }),
+        "utf8",
+      );
+      let sourceCalls = 0;
+
+      await assert.rejects(
+        runCriticCycle({
+          runDir,
+          cycle: 1,
+          captureCycleFn: async () => {
+            throw captureError;
+          },
+          critiqueSourceFn: async () => {
+            sourceCalls += 1;
+            return normalizeModelCritique(rawCritique());
+          },
+        }),
+        (error) => error === captureError,
+      );
+      assert.equal(sourceCalls, 0);
+      await assert.rejects(
+        readFile(path.join(cycleDir, "capture-error.json"), "utf8"),
+        (error) => error?.code === "ENOENT",
+      );
+    });
+  }
+});
+
+test("a later vision failure propagates without poisoning reusable capture state", async () => {
+  const runDir = path.join(process.cwd(), "tmp", randomUUID(), "run");
+  const cycleDir = path.join(runDir, "cycle-01");
+  await mkdir(path.join(cycleDir, "site"), { recursive: true });
+  await writeFile(
+    path.join(runDir, "brief.json"),
+    JSON.stringify({ business: { name: "Juniper Oven" } }),
+    "utf8",
+  );
+  const visionError = new Error("vision request failed");
+  let sourceCalls = 0;
+
+  await assert.rejects(
+    runCriticCycle({
+      runDir,
+      cycle: 1,
+      captureCycleFn: async () => ({
+        mechanical: { passed: true, failures: [] },
+        assetsResolved: true,
+      }),
+      critiqueCycleFn: async () => {
+        throw visionError;
+      },
+      critiqueSourceFn: async () => {
+        sourceCalls += 1;
+        return normalizeModelCritique(rawCritique());
+      },
+    }),
+    (error) => error === visionError,
+  );
+  assert.equal(sourceCalls, 0);
+  await assert.rejects(
+    readFile(path.join(cycleDir, "capture-error.json"), "utf8"),
+    (error) => error?.code === "ENOENT",
+  );
 });
 
 function dimension(score) {

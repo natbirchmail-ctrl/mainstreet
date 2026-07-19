@@ -1,38 +1,20 @@
-import { access, mkdir, readFile, writeFile } from "node:fs/promises";
+import { lstat, mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import { chromium } from "playwright";
 
+import {
+  MAX_IMAGE_REQUESTS_PER_CYCLE,
+  createDeterministicPng,
+  sha256Hex,
+  validatePngBuffer,
+} from "./assets.js";
 import { MOTION_MOVE_SLUGS } from "./motion.js";
-import { resolveInside, writeJsonNew, writeTextNew } from "./lib/runs.js";
+import { resolveInside } from "./lib/runs.js";
 import { startStaticServer } from "./serve.js";
+import { EVIDENCE_VIEWPORTS } from "./viewports.js";
 
-export const EVIDENCE_VIEWPORTS = Object.freeze({
-  desktop: Object.freeze({
-    width: 1440,
-    height: 900,
-    filename: "desktop-home.png",
-    touch: false,
-  }),
-  tablet: Object.freeze({
-    width: 1024,
-    height: 768,
-    filename: "tablet-home.png",
-    touch: true,
-  }),
-  phone: Object.freeze({
-    width: 390,
-    height: 844,
-    filename: "mobile-home.png",
-    touch: true,
-  }),
-  narrow: Object.freeze({
-    width: 320,
-    height: 800,
-    filename: null,
-    touch: true,
-  }),
-});
+export { EVIDENCE_VIEWPORTS };
 
 const VISUAL_VIEWPORTS = Object.freeze(["desktop", "tablet", "phone"]);
 const VISUAL_MODES = Object.freeze(["normal", "reducedMotion", "javascriptDisabled"]);
@@ -76,6 +58,48 @@ const ASSET_FILE_FIELDS = Object.freeze([
   "resolved",
   "errorCode",
 ]);
+const IMAGE_PLAN_FIELDS = Object.freeze([
+  "filename",
+  "role",
+  "alt",
+  "prompt",
+  "focalPoint",
+]);
+const ASSET_SUMMARY_FIELDS = Object.freeze([
+  "allResolved",
+  "requestCount",
+  "successCount",
+  "fallbackCount",
+]);
+const EVIDENCE_PACKET_ERROR = "EVIDENCE_PACKET_INVALID";
+const UNTRUSTED_PATH_ERROR = "EVIDENCE_PATH_UNTRUSTED";
+const PNG_SIGNATURE = Buffer.from("89504e470d0a1a0a", "hex");
+
+export class CaptureUnavailableError extends Error {
+  constructor(message, { cause } = {}) {
+    super(message);
+    this.name = "CaptureUnavailableError";
+    this.code = "CAPTURE_UNAVAILABLE";
+    if (cause !== undefined) this.cause = cause;
+  }
+}
+
+function classifyCaptureUnavailable(error, stage) {
+  if (error?.code === "CAPTURE_UNAVAILABLE") return error;
+  const serverCodes = new Set(["EADDRINUSE", "EADDRNOTAVAIL", "EACCES"]);
+  const browserCodes = new Set(["ECONNRESET", "EPIPE", "ENOENT"]);
+  const explicitlyUnavailable =
+    (stage === "server" && serverCodes.has(error?.code)) ||
+    (stage === "browser" &&
+      (browserCodes.has(error?.code) || /^browserType\.launch:/i.test(error?.message ?? "")));
+  if (!explicitlyUnavailable) return null;
+  return new CaptureUnavailableError(
+    stage === "server"
+      ? "Preview server is unavailable."
+      : "Browser capture is unavailable.",
+    { cause: error },
+  );
+}
 
 // The argument shape intentionally matches the original critic capture function
 // so this module can be substituted without changing pipeline stage order.
@@ -87,8 +111,14 @@ export async function captureRenderedEvidence({
   now = () => new Date(),
   startServer = startStaticServer,
 }) {
-  const cycle = cycleNumberFromPath(cycleDir);
-  const screenshotsDir = resolveInside(cycleDir, "screenshots");
+  const paths = validateEvidencePaths({ siteDir, cycleDir });
+  const {
+    runRoot,
+    cycleDir: trustedCycleDir,
+    siteDir: trustedSiteDir,
+    screenshotsDir,
+  } = paths;
+  const cycle = cycleNumberFromPath(trustedCycleDir);
   const desktopPath = resolveInside(
     screenshotsDir,
     EVIDENCE_VIEWPORTS.desktop.filename,
@@ -101,30 +131,66 @@ export async function captureRenderedEvidence({
     screenshotsDir,
     EVIDENCE_VIEWPORTS.phone.filename,
   );
-  const visibleTextPath = resolveInside(cycleDir, "visible-text.txt");
-  const mechanicalPath = resolveInside(cycleDir, "mechanical.json");
+  const visibleTextPath = resolveInside(trustedCycleDir, "visible-text.txt");
+  const mechanicalPath = resolveInside(trustedCycleDir, "mechanical.json");
   const screenshotManifestPath = resolveInside(screenshotsDir, "manifest.json");
+  const outputPaths = [
+    desktopPath,
+    tabletPath,
+    mobilePath,
+    visibleTextPath,
+    mechanicalPath,
+    screenshotManifestPath,
+  ];
 
-  await Promise.all(
-    [
-      desktopPath,
-      tabletPath,
-      mobilePath,
-      visibleTextPath,
-      mechanicalPath,
-      screenshotManifestPath,
-    ].map(assertAbsent),
-  );
+  await assertNoLinkedPath(runRoot, trustedCycleDir);
+  await assertNoLinkedPath(runRoot, trustedSiteDir);
+  await assertNoLinkedPath(runRoot, screenshotsDir);
+  const buildGate = await readBuildGate(resolveInside(trustedCycleDir, "build.json"));
+  const assetGate = await readAssetGate({
+    target: resolveInside(trustedCycleDir, "assets.json"),
+    siteDir: trustedSiteDir,
+    runRoot,
+    build: buildGate.build,
+  });
+  const reusable = await readReusableEvidencePacket({
+    cycle,
+    runRoot,
+    outputPaths,
+    desktopPath,
+    tabletPath,
+    mobilePath,
+    visibleTextPath,
+    mechanicalPath,
+    screenshotManifestPath,
+    assetGate,
+    buildGate,
+  });
+  if (reusable) return reusable;
+
+  await Promise.all(outputPaths.map(assertAbsent));
+  await assertNoLinkedPath(runRoot, screenshotsDir);
   await mkdir(screenshotsDir, { recursive: true });
+  await assertNoLinkedPath(runRoot, trustedCycleDir);
+  await assertNoLinkedPath(runRoot, screenshotsDir);
 
-  const [assetGate, buildGate] = await Promise.all([
-    readAssetGate(resolveInside(cycleDir, "assets.json")),
-    readMotionGate(resolveInside(cycleDir, "build.json")),
-  ]);
-  const preview = await startServer({ root: siteDir, port });
+  let preview;
+  try {
+    preview = await startServer({ root: trustedSiteDir, port });
+  } catch (error) {
+    const unavailable = classifyCaptureUnavailable(error, "server");
+    if (unavailable) throw unavailable;
+    throw error;
+  }
   let browser;
   try {
-    browser = await browserType.launch({ headless: true });
+    try {
+      browser = await browserType.launch({ headless: true });
+    } catch (error) {
+      const unavailable = classifyCaptureUnavailable(error, "browser");
+      if (unavailable) throw unavailable;
+      throw error;
+    }
     const contexts = {};
     const screenshotBuffers = {};
     let visibleText = "";
@@ -206,12 +272,12 @@ export async function captureRenderedEvidence({
     };
 
     await Promise.all([
-      writeBinaryNew(desktopPath, screenshotBuffers.desktop),
-      writeBinaryNew(tabletPath, screenshotBuffers.tablet),
-      writeBinaryNew(mobilePath, screenshotBuffers.phone),
-      writeTextNew(visibleTextPath, visibleText),
-      writeJsonNew(mechanicalPath, mechanical),
-      writeJsonNew(screenshotManifestPath, screenshotManifest),
+      writeBinaryNew(desktopPath, screenshotBuffers.desktop, runRoot),
+      writeBinaryNew(tabletPath, screenshotBuffers.tablet, runRoot),
+      writeBinaryNew(mobilePath, screenshotBuffers.phone, runRoot),
+      writeTextNew(visibleTextPath, visibleText, runRoot),
+      writeJsonNew(mechanicalPath, mechanical, runRoot),
+      writeJsonNew(screenshotManifestPath, screenshotManifest, runRoot),
     ]);
 
     return {
@@ -227,7 +293,7 @@ export async function captureRenderedEvidence({
     };
   } finally {
     await browser?.close().catch(() => {});
-    await preview.close().catch(() => {});
+    await preview?.close().catch(() => {});
   }
 }
 
@@ -1362,21 +1428,10 @@ function tagFailures(failures, viewport, mode) {
   return failures.map((failure) => ({ ...failure, viewport, mode }));
 }
 
-async function readAssetGate(target) {
+async function readAssetGate({ target, siteDir, runRoot, build }) {
+  let candidate;
   try {
-    const candidate = JSON.parse(await readFile(target, "utf8"));
-    if (!isCanonicalAssetEvidence(candidate)) {
-      return {
-        manifestPresent: true,
-        assetsResolved: false,
-        failures: [{ code: "assets-manifest-invalid" }],
-      };
-    }
-    return {
-      manifestPresent: true,
-      assetsResolved: candidate.allResolved,
-      failures: [],
-    };
+    candidate = JSON.parse(await readFile(target, "utf8"));
   } catch (error) {
     if (error?.code === "ENOENT") {
       return {
@@ -1391,9 +1446,36 @@ async function readAssetGate(target) {
       failures: [{ code: "assets-manifest-invalid" }],
     };
   }
+
+  try {
+    const integrity = await validateAssetIntegrity(candidate, {
+      build,
+      siteDir,
+      runRoot,
+    });
+    if (!integrity.valid) {
+      return {
+        manifestPresent: true,
+        assetsResolved: false,
+        failures: [{ code: "assets-manifest-invalid" }],
+      };
+    }
+    return {
+      manifestPresent: true,
+      assetsResolved: integrity.assetsResolved,
+      failures: [],
+    };
+  } catch (error) {
+    if (error?.code === UNTRUSTED_PATH_ERROR) throw error;
+    return {
+      manifestPresent: true,
+      assetsResolved: false,
+      failures: [{ code: "assets-manifest-invalid" }],
+    };
+  }
 }
 
-async function readMotionGate(target) {
+async function readBuildGate(target) {
   try {
     const candidate = JSON.parse(await readFile(target, "utf8"));
     const moves = candidate?.designNotes?.motionMoves;
@@ -1405,16 +1487,19 @@ async function readMotionGate(target) {
       moves.some((move) => !Object.hasOwn(MOTION_MOVE_SLUGS, move))
     ) {
       return {
+        build: candidate,
         motionMoveSlugs: [],
         failures: [{ code: "build-motion-manifest-invalid" }],
       };
     }
     return {
+      build: candidate,
       motionMoveSlugs: moves.map((move) => MOTION_MOVE_SLUGS[move]),
       failures: [],
     };
   } catch (error) {
     return {
+      build: null,
       motionMoveSlugs: [],
       failures: [
         {
@@ -1503,7 +1588,7 @@ function recordActionFailure(record, action) {
   if (action === "tap") record.tapPassed = false;
 }
 
-function isCanonicalAssetEvidence(candidate) {
+async function validateAssetIntegrity(candidate, { build, siteDir, runRoot }) {
   if (
     !isPlainObject(candidate) ||
     !hasExactKeys(candidate, ASSET_EVIDENCE_FIELDS) ||
@@ -1511,21 +1596,53 @@ function isCanonicalAssetEvidence(candidate) {
     typeof candidate.allResolved !== "boolean" ||
     !Array.isArray(candidate.files) ||
     candidate.files.length < 3 ||
-    candidate.files.length > 5
+    candidate.files.length > MAX_IMAGE_REQUESTS_PER_CYCLE ||
+    !isPlainObject(build) ||
+    !Array.isArray(build.imagePlan) ||
+    build.imagePlan.length !== candidate.files.length ||
+    !isPlainObject(build.assetSummary) ||
+    !hasExactKeys(build.assetSummary, ASSET_SUMMARY_FIELDS) ||
+    typeof build.designNotes?.shootDirection !== "string" ||
+    !build.designNotes.shootDirection.trim()
   ) {
-    return false;
+    return { valid: false, assetsResolved: false };
   }
   for (const count of [
     candidate.requestCount,
     candidate.successCount,
     candidate.fallbackCount,
   ]) {
-    if (!Number.isInteger(count) || count < 0 || count > 5) return false;
+    if (!Number.isInteger(count) || count < 0 || count > MAX_IMAGE_REQUESTS_PER_CYCLE) {
+      return { valid: false, assetsResolved: false };
+    }
+  }
+
+  const planByFilename = new Map();
+  for (const item of build.imagePlan) {
+    if (
+      !isPlainObject(item) ||
+      !hasExactKeys(item, IMAGE_PLAN_FIELDS) ||
+      !SAFE_ASSET_FILENAME.test(item.filename ?? "") ||
+      planByFilename.has(item.filename) ||
+      typeof item.role !== "string" ||
+      !item.role.trim() ||
+      typeof item.alt !== "string" ||
+      !item.alt.trim() ||
+      typeof item.prompt !== "string" ||
+      !item.prompt.trim() ||
+      !isPlainObject(item.focalPoint) ||
+      !hasExactKeys(item.focalPoint, ["x", "y"]) ||
+      !isFocalPoint(item.focalPoint)
+    ) {
+      return { valid: false, assetsResolved: false };
+    }
+    planByFilename.set(item.filename, item);
   }
 
   const filenames = new Set();
   let openaiCount = 0;
   let fallbackCount = 0;
+  let assetsResolved = true;
   for (const file of candidate.files) {
     if (
       !isPlainObject(file) ||
@@ -1546,28 +1663,254 @@ function isCanonicalAssetEvidence(candidate) {
       file.bytes < 1 ||
       !SHA256_HEX.test(file.sha256 ?? "")
     ) {
-      return false;
+      return { valid: false, assetsResolved: false };
     }
     filenames.add(file.filename);
+    const planned = planByFilename.get(file.filename);
+    if (
+      !planned ||
+      file.role !== planned.role ||
+      file.alt !== planned.alt ||
+      file.focalPoint.x !== planned.focalPoint.x ||
+      file.focalPoint.y !== planned.focalPoint.y ||
+      file.promptHash !== sha256Hex(`${build.designNotes.shootDirection}\n\n${planned.prompt}`)
+    ) {
+      return { valid: false, assetsResolved: false };
+    }
+
+    const assetPath = resolveInside(siteDir, "assets", file.filename);
+    await assertNoLinkedPath(runRoot, assetPath);
+    const bytes = await readFile(assetPath);
+    try {
+      validatePngBuffer(bytes, { expectedWidth: 1536, expectedHeight: 1024 });
+    } catch {
+      return { valid: false, assetsResolved: false };
+    }
+    const actualDigest = sha256Hex(bytes);
+    if (file.bytes !== bytes.length || file.sha256 !== actualDigest) {
+      return { valid: false, assetsResolved: false };
+    }
+    const deterministicDigest = sha256Hex(
+      createDeterministicPng({
+        ...planned,
+        shootDirection: build.designNotes.shootDirection,
+      }),
+    );
+    const deterministicBytes = actualDigest === deterministicDigest;
     const generated =
       (file.source === "openai" || file.source === "carried-forward") &&
       file.resolved === true &&
-      file.errorCode === null;
+      file.errorCode === null &&
+      !deterministicBytes;
     const fallback =
       file.source === "deterministic-fallback" &&
       file.resolved === false &&
-      file.errorCode === "IMAGE_REQUEST_FAILED";
-    if (!generated && !fallback) return false;
+      file.errorCode === "IMAGE_REQUEST_FAILED" &&
+      deterministicBytes;
+    if (!generated && !fallback) return { valid: false, assetsResolved: false };
     if (file.source === "openai") openaiCount += 1;
     if (fallback) fallbackCount += 1;
+    if (!file.resolved) assetsResolved = false;
   }
 
-  return (
+  if (filenames.size !== planByFilename.size) {
+    return { valid: false, assetsResolved: false };
+  }
+  const derivedSummary = {
+    allResolved: assetsResolved,
+    requestCount: openaiCount + fallbackCount,
+    successCount: openaiCount,
+    fallbackCount,
+  };
+  const valid =
     candidate.successCount === openaiCount &&
     candidate.fallbackCount === fallbackCount &&
     candidate.requestCount === openaiCount + fallbackCount &&
-    candidate.allResolved === candidate.files.every((file) => file.resolved)
+    candidate.allResolved === assetsResolved &&
+    ASSET_SUMMARY_FIELDS.every(
+      (field) => build.assetSummary[field] === derivedSummary[field],
+    );
+  return { valid, assetsResolved: valid && assetsResolved };
+}
+
+async function readReusableEvidencePacket({
+  cycle,
+  runRoot,
+  outputPaths,
+  desktopPath,
+  tabletPath,
+  mobilePath,
+  visibleTextPath,
+  mechanicalPath,
+  screenshotManifestPath,
+  assetGate,
+  buildGate,
+}) {
+  const present = await Promise.all(
+    outputPaths.map((target) => evidenceFilePresent(target, runRoot)),
   );
+  if (present.every((value) => !value)) return null;
+  if (!present.every(Boolean)) throw invalidEvidencePacket();
+
+  try {
+    const [desktop, tablet, phone, visibleText, mechanicalText, manifestText] =
+      await Promise.all([
+        readFile(desktopPath),
+        readFile(tabletPath),
+        readFile(mobilePath),
+        readFile(visibleTextPath, "utf8"),
+        readFile(mechanicalPath, "utf8"),
+        readFile(screenshotManifestPath, "utf8"),
+      ]);
+    const mechanical = JSON.parse(mechanicalText);
+    const screenshotManifest = JSON.parse(manifestText);
+    if (
+      !isReusableScreenshot(desktop, EVIDENCE_VIEWPORTS.desktop) ||
+      !isReusableScreenshot(tablet, EVIDENCE_VIEWPORTS.tablet) ||
+      !isReusableScreenshot(phone, EVIDENCE_VIEWPORTS.phone) ||
+      !visibleText.trim() ||
+      !isReusableMechanical(mechanical, { cycle, assetGate, buildGate }) ||
+      !isReusableScreenshotManifest(screenshotManifest, { cycle, mechanical })
+    ) {
+      throw invalidEvidencePacket();
+    }
+    return {
+      cycle,
+      desktopPath,
+      tabletPath,
+      mobilePath,
+      phonePath: mobilePath,
+      visibleTextPath,
+      mechanical,
+      assetsResolved: assetGate.assetsResolved,
+      screenshotManifest,
+    };
+  } catch (error) {
+    if (error?.code === UNTRUSTED_PATH_ERROR || error?.code === EVIDENCE_PACKET_ERROR) {
+      throw error;
+    }
+    throw invalidEvidencePacket(error);
+  }
+}
+
+async function evidenceFilePresent(target, runRoot) {
+  await assertNoLinkedPath(runRoot, target);
+  try {
+    const stats = await lstat(target);
+    if (!stats.isFile()) throw invalidEvidencePacket();
+    return true;
+  } catch (error) {
+    if (error?.code === "ENOENT") return false;
+    throw error;
+  }
+}
+
+function isReusableScreenshot(buffer, viewport) {
+  if (
+    !Buffer.isBuffer(buffer) ||
+    buffer.length < 33 ||
+    !buffer.subarray(0, PNG_SIGNATURE.length).equals(PNG_SIGNATURE) ||
+    buffer.readUInt32BE(8) !== 13 ||
+    buffer.subarray(12, 16).toString("ascii") !== "IHDR" ||
+    buffer.readUInt32BE(16) !== viewport.width ||
+    buffer.readUInt32BE(20) < viewport.height
+  ) {
+    return false;
+  }
+  const end = buffer.length - 12;
+  return (
+    end > 24 &&
+    buffer.readUInt32BE(end) === 0 &&
+    buffer.subarray(end + 4, end + 8).toString("ascii") === "IEND"
+  );
+}
+
+function isReusableMechanical(candidate, { cycle, assetGate, buildGate }) {
+  const fields = [
+    "schemaVersion",
+    "cycle",
+    "passed",
+    "assetsResolved",
+    "assetManifestPresent",
+    "motionMoveSlugs",
+    "contexts",
+    "failures",
+    "totals",
+  ];
+  if (
+    !isPlainObject(candidate) ||
+    !hasExactKeys(candidate, fields) ||
+    candidate.schemaVersion !== "2.0" ||
+    candidate.cycle !== cycle ||
+    typeof candidate.passed !== "boolean" ||
+    candidate.assetsResolved !== assetGate.assetsResolved ||
+    candidate.assetManifestPresent !== assetGate.manifestPresent ||
+    JSON.stringify(candidate.motionMoveSlugs) !== JSON.stringify(buildGate.motionMoveSlugs) ||
+    !isPlainObject(candidate.contexts) ||
+    !Array.isArray(candidate.failures) ||
+    !isPlainObject(candidate.totals) ||
+    candidate.passed !== (candidate.failures.length === 0)
+  ) {
+    return false;
+  }
+  if (
+    ![...assetGate.failures, ...buildGate.failures].every((required) =>
+      candidate.failures.some((failure) => failure?.code === required.code),
+    )
+  ) {
+    return false;
+  }
+  return candidate.failures.every(
+    (failure) => isPlainObject(failure) && typeof failure.code === "string" && failure.code,
+  );
+}
+
+function isReusableScreenshotManifest(candidate, { cycle, mechanical }) {
+  const networkFields = [
+    "externalRequestCount",
+    "requestFailureCount",
+    "consoleErrorCount",
+    "pageErrorCount",
+  ];
+  if (
+    !isPlainObject(candidate) ||
+    !hasExactKeys(candidate, ["schemaVersion", "cycle", "capturedAt", "viewports", "network"]) ||
+    candidate.schemaVersion !== "2.0" ||
+    candidate.cycle !== cycle ||
+    typeof candidate.capturedAt !== "string" ||
+    !Number.isFinite(Date.parse(candidate.capturedAt)) ||
+    !isPlainObject(candidate.viewports) ||
+    !hasExactKeys(candidate.viewports, VISUAL_VIEWPORTS) ||
+    !isPlainObject(candidate.network) ||
+    !hasExactKeys(candidate.network, networkFields)
+  ) {
+    return false;
+  }
+  for (const viewportName of VISUAL_VIEWPORTS) {
+    const viewport = EVIDENCE_VIEWPORTS[viewportName];
+    const record = candidate.viewports[viewportName];
+    if (
+      !isPlainObject(record) ||
+      !hasExactKeys(record, ["width", "height", "path"]) ||
+      record.width !== viewport.width ||
+      record.height !== viewport.height ||
+      record.path !== `screenshots/${viewport.filename}`
+    ) {
+      return false;
+    }
+  }
+  return networkFields.every(
+    (field) => Number.isInteger(candidate.network[field]) &&
+      candidate.network[field] >= 0 &&
+      candidate.network[field] === mechanical.totals[field],
+  );
+}
+
+function invalidEvidencePacket(cause) {
+  const error = new Error("Completed evidence packet is invalid.");
+  error.code = EVIDENCE_PACKET_ERROR;
+  if (cause !== undefined) error.cause = cause;
+  return error;
 }
 
 function isPlainObject(value) {
@@ -1622,9 +1965,59 @@ function cycleNumberFromPath(cycleDir) {
   return match ? Number(match[1]) : 0;
 }
 
+function validateEvidencePaths({ siteDir, cycleDir }) {
+  if (!siteDir || !cycleDir) throw new TypeError("Evidence paths are required.");
+  const normalizedCycleDir = path.resolve(cycleDir);
+  const normalizedSiteDir = path.resolve(siteDir);
+  if (
+    !/^cycle-\d{2}$/.test(path.basename(normalizedCycleDir)) ||
+    normalizedSiteDir !== path.join(normalizedCycleDir, "site")
+  ) {
+    throw new TypeError("Evidence paths must use one cycle directory and its site child.");
+  }
+  return {
+    runRoot: path.dirname(normalizedCycleDir),
+    cycleDir: normalizedCycleDir,
+    siteDir: normalizedSiteDir,
+    screenshotsDir: resolveInside(normalizedCycleDir, "screenshots"),
+  };
+}
+
+async function assertNoLinkedPath(trustedRoot, target) {
+  const root = path.resolve(trustedRoot);
+  const resolvedTarget = path.resolve(target);
+  const relative = path.relative(root, resolvedTarget);
+  if (relative.startsWith("..") || path.isAbsolute(relative)) {
+    throw untrustedPathError();
+  }
+  try {
+    const rootStats = await lstat(root);
+    if (rootStats.isSymbolicLink()) throw untrustedPathError();
+  } catch (error) {
+    if (error?.code === UNTRUSTED_PATH_ERROR) throw error;
+    throw error;
+  }
+  let current = root;
+  for (const segment of relative.split(path.sep).filter(Boolean)) {
+    current = path.join(current, segment);
+    try {
+      if ((await lstat(current)).isSymbolicLink()) throw untrustedPathError();
+    } catch (error) {
+      if (error?.code === "ENOENT") return;
+      throw error;
+    }
+  }
+}
+
+function untrustedPathError() {
+  const error = new Error("Symlink, junction, or linked path ancestors are not allowed.");
+  error.code = UNTRUSTED_PATH_ERROR;
+  return error;
+}
+
 async function assertAbsent(target) {
   try {
-    await access(target);
+    await lstat(target);
     throw new Error(`Evidence file already exists: ${path.basename(target)}`);
   } catch (error) {
     if (error?.code !== "ENOENT") {
@@ -1633,16 +2026,43 @@ async function assertAbsent(target) {
   }
 }
 
-async function writeBinaryNew(target, value) {
+async function writeBinaryNew(target, value, runRoot) {
   if (!Buffer.isBuffer(value) || value.length === 0) {
     throw new Error("Rendered screenshot bytes are missing.");
   }
+  await writeExclusiveNew(target, value, runRoot);
+}
+
+async function writeTextNew(target, value, runRoot) {
+  if (typeof value !== "string") throw new TypeError("Evidence text is invalid.");
+  await writeExclusiveNew(
+    target,
+    value.endsWith("\n") ? value : `${value}\n`,
+    runRoot,
+    "utf8",
+  );
+}
+
+async function writeJsonNew(target, value, runRoot) {
+  await writeExclusiveNew(
+    target,
+    `${JSON.stringify(value, null, 2)}\n`,
+    runRoot,
+    "utf8",
+  );
+}
+
+async function writeExclusiveNew(target, value, runRoot, encoding) {
+  await assertNoLinkedPath(runRoot, target);
   await mkdir(path.dirname(target), { recursive: true });
+  await assertNoLinkedPath(runRoot, target);
   try {
-    await writeFile(target, value, { flag: "wx" });
+    await writeFile(target, value, { flag: "wx", ...(encoding ? { encoding } : {}) });
   } catch (error) {
     if (error?.code === "EEXIST") {
-      throw new Error(`Evidence file already exists: ${path.basename(target)}`);
+      const conflict = new Error(`Evidence file already exists: ${path.basename(target)}`);
+      conflict.code = "EEXIST";
+      throw conflict;
     }
     throw error;
   }

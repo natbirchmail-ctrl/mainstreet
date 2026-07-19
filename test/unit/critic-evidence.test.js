@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
-import { createHash, randomUUID } from "node:crypto";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
+import { mkdir, readdir, readFile, symlink, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import path from "node:path";
 import test from "node:test";
@@ -9,20 +9,43 @@ import {
   EVIDENCE_VIEWPORTS,
   captureRenderedEvidence,
 } from "../../src/critic-evidence.js";
+import { EVIDENCE_VIEWPORTS as CANONICAL_VIEWPORTS } from "../../src/viewports.js";
+import {
+  createDeterministicPng,
+  sha256Hex,
+} from "../../src/assets.js";
 import {
   MOTION_MOVE_SLUGS,
   createOwnedMotionRuntime,
   createOwnedMotionStyles,
 } from "../../src/motion.js";
 
-const PNG = Buffer.from(
+const ONE_PIXEL_PNG = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
   "base64",
 );
+const SHOOT_DIRECTION = "Clear natural light with consistent framing.";
+const RESOLVED_PNG = createDeterministicPng({
+  filename: "independent-source.png",
+  role: "source",
+  alt: "Independent source pixels",
+  prompt: "A source image unrelated to the fixture plan",
+  focalPoint: { x: 0.25, y: 0.75 },
+  shootDirection: "A deliberately unrelated source direction",
+});
+const ALTERNATE_RESOLVED_PNG = createDeterministicPng({
+  filename: "alternate-source.png",
+  role: "source",
+  alt: "Alternate source pixels",
+  prompt: "A second source image unrelated to the fixture plan",
+  focalPoint: { x: 0.75, y: 0.25 },
+  shootDirection: "A second deliberately unrelated source direction",
+});
 
 const MOTION_MOVES = Object.keys(MOTION_MOVE_SLUGS);
 
 test("rendered evidence publishes the fixed viewport contract", () => {
+  assert.equal(EVIDENCE_VIEWPORTS, CANONICAL_VIEWPORTS);
   assert.deepEqual(EVIDENCE_VIEWPORTS, {
     desktop: { width: 1440, height: 900, filename: "desktop-home.png", touch: false },
     tablet: { width: 1024, height: 768, filename: "tablet-home.png", touch: true },
@@ -140,14 +163,17 @@ test("every motion move proves normal activation, reduced fallback, and no JavaS
         /Rendered proof/,
       );
 
-      await assert.rejects(
-        captureRenderedEvidence({
-          siteDir: fixture.siteDir,
-          cycleDir: fixture.cycleDir,
-          port: 4601,
-        }),
-        /already exists/i,
-      );
+      const reused = await captureRenderedEvidence({
+        siteDir: fixture.siteDir,
+        cycleDir: fixture.cycleDir,
+        port: 4601,
+        startServer: async () => {
+          throw new Error("completed evidence must not start another server");
+        },
+      });
+      assert.deepEqual(reused.mechanical, evidence.mechanical);
+      assert.deepEqual(reused.screenshotManifest, evidence.screenshotManifest);
+      assert.equal(reused.assetsResolved, evidence.assetsResolved);
     });
   }
 });
@@ -244,6 +270,208 @@ test("asset gate rejects noncanonical manifest fields", async () => {
     evidence.mechanical.failures.some(
       (failure) => failure.code === "assets-manifest-invalid",
     ),
+  );
+});
+
+test("asset resolution is bound to build facts and the actual PNG bytes", async (t) => {
+  await t.test("rejects deterministic fallback bytes relabeled as OpenAI", async () => {
+    const fixture = await writeFixture({ move: "staged hero entrance" });
+    const build = JSON.parse(await readFile(path.join(fixture.cycleDir, "build.json"), "utf8"));
+    const manifestPath = path.join(fixture.cycleDir, "assets.json");
+    const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+    const planned = build.imagePlan[0];
+    const fallback = createDeterministicPng({
+      ...planned,
+      shootDirection: build.designNotes.shootDirection,
+    });
+    await writeFile(path.join(fixture.siteDir, "assets", planned.filename), fallback);
+    manifest.files[0].bytes = fallback.length;
+    manifest.files[0].sha256 = sha256Hex(fallback);
+    await writeFile(manifestPath, `${JSON.stringify(manifest)}\n`, "utf8");
+
+    assertAssetIntegrityFailure(await captureRenderedEvidence({
+      siteDir: fixture.siteDir,
+      cycleDir: fixture.cycleDir,
+      port: 4601,
+    }));
+  });
+
+  await t.test("rejects a valid PNG whose bytes no longer match its manifest", async () => {
+    const fixture = await writeFixture({ move: "staged hero entrance" });
+    await writeFile(
+      path.join(fixture.siteDir, "assets", "hero.png"),
+      ALTERNATE_RESOLVED_PNG,
+    );
+
+    assertAssetIntegrityFailure(await captureRenderedEvidence({
+      siteDir: fixture.siteDir,
+      cycleDir: fixture.cycleDir,
+      port: 4601,
+    }));
+  });
+
+  await t.test("rejects manifest-matching PNG bytes with wrong dimensions", async () => {
+    const fixture = await writeFixture({ move: "staged hero entrance" });
+    const manifestPath = path.join(fixture.cycleDir, "assets.json");
+    const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+    await writeFile(path.join(fixture.siteDir, "assets", "hero.png"), ONE_PIXEL_PNG);
+    manifest.files[0].bytes = ONE_PIXEL_PNG.length;
+    manifest.files[0].sha256 = sha256Hex(ONE_PIXEL_PNG);
+    await writeFile(manifestPath, `${JSON.stringify(manifest)}\n`, "utf8");
+
+    assertAssetIntegrityFailure(await captureRenderedEvidence({
+      siteDir: fixture.siteDir,
+      cycleDir: fixture.cycleDir,
+      port: 4601,
+    }));
+  });
+
+  await t.test("rejects build plan and asset summary disagreement", async () => {
+    const fixture = await writeFixture({ move: "staged hero entrance" });
+    const buildPath = path.join(fixture.cycleDir, "build.json");
+    const build = JSON.parse(await readFile(buildPath, "utf8"));
+    build.imagePlan[0].prompt = "A different prompt after materialization";
+    build.assetSummary.successCount -= 1;
+    await writeFile(buildPath, `${JSON.stringify(build)}\n`, "utf8");
+
+    assertAssetIntegrityFailure(await captureRenderedEvidence({
+      siteDir: fixture.siteDir,
+      cycleDir: fixture.cycleDir,
+      port: 4601,
+    }));
+  });
+
+  await t.test("distinguishes a missing asset file from a missing manifest", async () => {
+    const fixture = await writeFixture({
+      move: "staged hero entrance",
+      writeImage: false,
+    });
+    const evidence = await captureRenderedEvidence({
+      siteDir: fixture.siteDir,
+      cycleDir: fixture.cycleDir,
+      port: 4601,
+    });
+
+    assert.equal(evidence.mechanical.assetManifestPresent, true);
+    assert.ok(
+      evidence.mechanical.failures.some(
+        (failure) => failure.code === "assets-manifest-invalid",
+      ),
+    );
+    assert.equal(
+      evidence.mechanical.failures.some(
+        (failure) => failure.code === "assets-manifest-missing",
+      ),
+      false,
+    );
+  });
+});
+
+test("linked evidence ancestry cannot receive a single output byte", async (t) => {
+  await t.test("rejects a precreated cycle link", async () => {
+    const fixture = await writeFixture({ move: "staged hero entrance" });
+    const attackRun = path.join(process.cwd(), "tmp", randomUUID(), "run");
+    const linkedCycle = path.join(attackRun, "cycle-01");
+    await mkdir(attackRun, { recursive: true });
+    await symlink(fixture.cycleDir, linkedCycle, linkDirectoryType());
+    const before = (await readdir(fixture.cycleDir)).sort();
+
+    let captureError;
+    try {
+      await captureRenderedEvidence({
+        siteDir: path.join(linkedCycle, "site"),
+        cycleDir: linkedCycle,
+        port: 4601,
+      });
+    } catch (error) {
+      captureError = error;
+    }
+
+    assert.deepEqual((await readdir(fixture.cycleDir)).sort(), before);
+    assert.match(captureError?.message ?? "", /symlink|junction|linked path/i);
+  });
+
+  await t.test("rejects a precreated screenshots link", async () => {
+    const fixture = await writeFixture({ move: "staged hero entrance" });
+    const external = path.join(process.cwd(), "tmp", randomUUID(), "outside");
+    await mkdir(external, { recursive: true });
+    await symlink(external, path.join(fixture.cycleDir, "screenshots"), linkDirectoryType());
+
+    let captureError;
+    try {
+      await captureRenderedEvidence({
+        siteDir: fixture.siteDir,
+        cycleDir: fixture.cycleDir,
+        port: 4601,
+      });
+    } catch (error) {
+      captureError = error;
+    }
+
+    assert.deepEqual(await readdir(external), []);
+    assert.match(captureError?.message ?? "", /symlink|junction|linked path/i);
+  });
+});
+
+test("partial and corrupt completed packets are rejected before recapture", async (t) => {
+  for (const packet of ["partial", "corrupt"]) {
+    await t.test(packet, async () => {
+      const fixture = await writeFixture({ move: "staged hero entrance" });
+      const screenshotsDir = path.join(fixture.cycleDir, "screenshots");
+      await mkdir(screenshotsDir, { recursive: true });
+      await writeFile(path.join(screenshotsDir, "desktop-home.png"), ONE_PIXEL_PNG);
+      if (packet === "corrupt") {
+        await Promise.all([
+          writeFile(path.join(screenshotsDir, "tablet-home.png"), ONE_PIXEL_PNG),
+          writeFile(path.join(screenshotsDir, "mobile-home.png"), ONE_PIXEL_PNG),
+          writeFile(path.join(screenshotsDir, "manifest.json"), "{}\n", "utf8"),
+          writeFile(path.join(fixture.cycleDir, "visible-text.txt"), "visible\n", "utf8"),
+          writeFile(path.join(fixture.cycleDir, "mechanical.json"), "{}\n", "utf8"),
+        ]);
+      }
+
+      await assert.rejects(
+        captureRenderedEvidence({
+          siteDir: fixture.siteDir,
+          cycleDir: fixture.cycleDir,
+          port: 4601,
+          startServer: async () => {
+            throw new Error("invalid packets must not be recaptured");
+          },
+        }),
+        (error) => error?.code === "EVIDENCE_PACKET_INVALID",
+      );
+    });
+  }
+});
+
+test("preview infrastructure failures are explicitly classified", async () => {
+  const fixture = await writeFixture({ move: "staged hero entrance" });
+  const unavailable = Object.assign(new Error("port unavailable"), { code: "EADDRINUSE" });
+  await assert.rejects(
+    captureRenderedEvidence({
+      siteDir: fixture.siteDir,
+      cycleDir: fixture.cycleDir,
+      port: 4601,
+      startServer: async () => {
+        throw unavailable;
+      },
+    }),
+    (error) => error?.code === "CAPTURE_UNAVAILABLE" && error.cause === unavailable,
+  );
+
+  const programmingFixture = await writeFixture({ move: "staged hero entrance" });
+  const programmingError = new TypeError("fixture server contract is broken");
+  await assert.rejects(
+    captureRenderedEvidence({
+      siteDir: programmingFixture.siteDir,
+      cycleDir: programmingFixture.cycleDir,
+      port: 4601,
+      startServer: async () => {
+        throw programmingError;
+      },
+    }),
+    (error) => error === programmingError,
   );
 });
 
@@ -420,6 +648,20 @@ async function writeFixture({
   const cycleDir = path.join(root, "cycle-01");
   const siteDir = path.join(cycleDir, "site");
   await mkdir(path.join(siteDir, "assets"), { recursive: true });
+  const plan = canonicalImagePlan();
+  const buffers = Object.fromEntries(
+    plan.map((item) => [
+      item.filename,
+      assetsResolved
+        ? RESOLVED_PNG
+        : createDeterministicPng({ ...item, shootDirection: SHOOT_DIRECTION }),
+    ]),
+  );
+  const baseAssetManifest = canonicalAssetManifest({
+    resolved: assetsResolved,
+    plan,
+    buffers,
+  });
 
   const slug = MOTION_MOVE_SLUGS[move];
   const interactive =
@@ -506,41 +748,60 @@ ${extraStyles}`;
       path.join(cycleDir, "build.json"),
       `${JSON.stringify({
         cycle: 1,
-        designNotes: { motionMoves: declaredMoves },
+        designNotes: {
+          motionMoves: declaredMoves,
+          shootDirection: SHOOT_DIRECTION,
+        },
+        imagePlan: plan,
+        assetSummary: {
+          allResolved: baseAssetManifest.allResolved,
+          requestCount: baseAssetManifest.requestCount,
+          successCount: baseAssetManifest.successCount,
+          fallbackCount: baseAssetManifest.fallbackCount,
+        },
       })}\n`,
       { encoding: "utf8", flag: "wx" },
     ),
   ]);
   if (writeImage) {
     await Promise.all(
-      ["hero.png", "detail-one.png", "detail-two.png"].map((filename) =>
-        writeFile(path.join(siteDir, "assets", filename), PNG, { flag: "wx" }),
+      plan.map((item) =>
+        writeFile(path.join(siteDir, "assets", item.filename), buffers[item.filename], { flag: "wx" }),
       ),
     );
   }
   if (writeAssets) {
-    const manifest = canonicalAssetManifest({ resolved: assetsResolved });
     await writeFile(
       path.join(cycleDir, "assets.json"),
-      `${JSON.stringify(assetManifestTransform(manifest))}\n`,
+      `${JSON.stringify(assetManifestTransform(baseAssetManifest))}\n`,
       { encoding: "utf8", flag: "wx" },
     );
   }
   return { cycleDir, siteDir };
 }
 
-function canonicalAssetManifest({ resolved }) {
-  const files = ["hero.png", "detail-one.png", "detail-two.png"].map(
-    (filename) => ({
-      filename,
-      path: `assets/${filename}`,
-      role: filename === "hero.png" ? "hero" : "detail",
-      alt: `Rendered ${filename}`,
-      focalPoint: { x: 0.5, y: 0.5 },
-      promptHash: createHash("sha256").update(`prompt:${filename}`).digest("hex"),
+function canonicalImagePlan() {
+  return ["hero.png", "detail-one.png", "detail-two.png"].map((filename) => ({
+    filename,
+    role: filename === "hero.png" ? "hero" : "detail",
+    alt: `Rendered ${filename}`,
+    prompt: `Photograph the planned ${filename} scene`,
+    focalPoint: { x: 0.5, y: 0.5 },
+  }));
+}
+
+function canonicalAssetManifest({ resolved, plan, buffers }) {
+  const files = plan.map(
+    (item) => ({
+      filename: item.filename,
+      path: `assets/${item.filename}`,
+      role: item.role,
+      alt: item.alt,
+      focalPoint: { ...item.focalPoint },
+      promptHash: sha256Hex(`${SHOOT_DIRECTION}\n\n${item.prompt}`),
       mediaType: "image/png",
-      bytes: PNG.length,
-      sha256: createHash("sha256").update(PNG).digest("hex"),
+      bytes: buffers[item.filename].length,
+      sha256: sha256Hex(buffers[item.filename]),
       source: resolved ? "openai" : "deterministic-fallback",
       resolved,
       errorCode: resolved ? null : "IMAGE_REQUEST_FAILED",
@@ -554,6 +815,21 @@ function canonicalAssetManifest({ resolved }) {
     fallbackCount: resolved ? 0 : files.length,
     files,
   };
+}
+
+function assertAssetIntegrityFailure(evidence) {
+  assert.equal(evidence.assetsResolved, false);
+  assert.equal(evidence.mechanical.passed, false);
+  assert.ok(
+    evidence.mechanical.failures.some(
+      (failure) => failure.code === "assets-manifest-invalid",
+    ),
+    JSON.stringify(evidence.mechanical.failures),
+  );
+}
+
+function linkDirectoryType() {
+  return process.platform === "win32" ? "junction" : "dir";
 }
 
 async function startPermissiveFixtureServer({ root, port }) {

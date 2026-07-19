@@ -140,6 +140,7 @@ export async function runCriticCycle({
     mechanical = evidence.mechanical;
     assetsResolved = evidence.assetsResolved;
   } catch (error) {
+    if (error?.code !== "CAPTURE_UNAVAILABLE") throw error;
     mode = "source-fallback";
     await writeJsonNew(resolveInside(cycleDir, "capture-error.json"), {
       schemaVersion: "1.0",
