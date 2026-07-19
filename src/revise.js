@@ -8,6 +8,7 @@ import {
   writeSiteFiles,
 } from "./build.js";
 import { materializeAssets } from "./assets.js";
+import { deriveClaimPolicy, validateBriefClaims } from "./claim-policy.js";
 import { requestImage, requestStructured } from "./lib/openai.js";
 import { resolveInside, writeJsonNew } from "./lib/runs.js";
 
@@ -29,6 +30,7 @@ export async function reviseSite({
     throw new TypeError("Brief, current site, and critique are required for revision.");
   }
   validateSiteManifest(currentManifest);
+  const claimPolicy = deriveClaimPolicy(brief);
 
   const [systemPrompt, schema] = await Promise.all([
     readFile(promptUrl, "utf8"),
@@ -45,6 +47,7 @@ export async function reviseSite({
       systemPrompt,
       userPayload: {
         brief,
+        claimPolicy,
         currentSite: {
           indexHtml: currentManifest.indexHtml,
           stylesCss: stripOwnedMotionStyles(currentManifest),
@@ -66,6 +69,7 @@ export async function reviseSite({
 
     try {
       const hydrated = hydrateSiteManifest(candidate);
+      validateBriefClaims(hydrated.indexHtml, brief, claimPolicy);
       await validateRenderedSourceVisibility(hydrated);
       return { ...hydrated, source: "openai-revision" };
     } catch (error) {
@@ -130,6 +134,7 @@ export async function reviseRun({
     mechanical,
     availableAssets: priorAssets,
   });
+  validateBriefClaims(revisedManifest.indexHtml, brief);
 
   const handoff = {
     schemaVersion: "1.0",

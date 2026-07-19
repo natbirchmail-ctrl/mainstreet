@@ -8,6 +8,7 @@ import {
   EVIDENCE_VIEWPORTS as CRITIC_VIEWPORTS,
   captureCycle,
   critiqueCycle,
+  critiqueSource,
   runCriticCycle,
 } from "../../src/critic.js";
 import { captureRenderedEvidence } from "../../src/critic-evidence.js";
@@ -149,6 +150,7 @@ test("critiqueCycle sends labeled initial and full page evidence plus bounded me
   assert.equal(packet.visibleText, "Fresh from the oven");
   assert.equal(packet.evidencePacketSha256, EVIDENCE_PACKET_SHA256);
   assert.equal(packet.brief.business.name, "Juniper Oven");
+  assert.equal(packet.claimPolicy.mode, "guidance-only");
   assert.deepEqual(
     packet.viewports,
     Object.fromEntries(
@@ -173,6 +175,44 @@ test("critiqueCycle sends labeled initial and full page evidence plus bounded me
   assert.equal("priorCritique" in packet, false);
   assert.equal("sourceCode" in packet, false);
   assert.equal("contexts" in packet.renderedMechanics, false);
+});
+
+test("source critique receives the same deterministic claim policy", async () => {
+  const cycleDir = path.join(process.cwd(), "tmp", randomUUID(), "cycle-01");
+  const siteDir = path.join(cycleDir, "site");
+  await mkdir(siteDir, { recursive: true });
+  await Promise.all([
+    writeFile(path.join(siteDir, "index.html"), "<!doctype html><main><h1>Paper Petal</h1></main>", "utf8"),
+    writeFile(path.join(siteDir, "styles.css"), "body { color: #111111; }", "utf8"),
+  ]);
+  let request;
+  await critiqueSource({
+    brief: {
+      business: { name: "Paper Petal", category: "Flower studio" },
+      offerings: [
+        {
+          name: "Event Florals",
+          description: "Custom flowers for weddings and gatherings.",
+          confidence: "inferred",
+        },
+      ],
+      contact: { phone: null, email: null, address: null, hours: null },
+      facts: { confirmed: [], inferred: [], needed: ["Services"] },
+    },
+    cycleDir,
+    structuredRequester: async (value) => {
+      request = value;
+      return rawCritique();
+    },
+  });
+
+  assert.equal(request.userPayload.claimPolicy.mode, "guidance-only");
+  assert.deepEqual(request.userPayload.claimPolicy.inferredOfferingHints, [
+    {
+      name: "Event Florals",
+      description: "Custom flowers for weddings and gatherings.",
+    },
+  ]);
 });
 
 test("runCriticCycle derives an uncapped vision outcome from explicit gates", async () => {

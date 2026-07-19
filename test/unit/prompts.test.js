@@ -133,6 +133,32 @@ test("source critic never claims visual proof or recommends shipping", async () 
   );
 });
 
+test("generation and critique prompts enforce the deterministic claim policy", async () => {
+  for (const name of promptNames) {
+    const prompt = await readPrompt(name);
+    assertIncludesAll(
+      prompt,
+      [
+        /claimPolicy/i,
+        /inferred offerings?[^.]*private (?:creative )?hypotheses/i,
+        /may be available/i,
+        /where available/i,
+        /(?:qualifiers?|those phrases?)[^.]*not[^.]*safe/i,
+        /guidance.only/i,
+      ],
+      name,
+    );
+  }
+
+  const revision = await readPrompt("revise-system.md");
+  assert.match(revision, /re.audit[^.]*visible claims/i);
+
+  for (const name of ["critic-system.md", "critic-source-system.md"]) {
+    const prompt = await readPrompt(name);
+    assert.match(prompt, /factual restraint[^.]*fail/i);
+  }
+});
+
 test("each public prompt is business agnostic and free of source provenance", async () => {
   const privateSourceTerms = [
     ["BSC", "Workspace"].join("-"),

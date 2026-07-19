@@ -9,6 +9,7 @@ import {
   deriveCritiqueOutcome,
   normalizeModelCritique,
 } from "./critic-policy.js";
+import { deriveClaimPolicy } from "./claim-policy.js";
 import { requestStructured } from "./lib/openai.js";
 import {
   isEvidencePacketSha256,
@@ -51,6 +52,7 @@ export async function critiqueCycle({
     throw invalidEvidencePacket();
   }
   const renderedMechanics = summarizeRenderedMechanics(mechanical);
+  const claimPolicy = deriveClaimPolicy(brief);
   const inputContent = [
     {
       type: "input_text",
@@ -58,6 +60,7 @@ export async function critiqueCycle({
         rubricVersion: "1.0",
         cycle: cycleNumberFromPath(cycleDir),
         brief,
+        claimPolicy,
         visibleText,
         evidencePacketSha256,
         renderedMechanics,
@@ -143,6 +146,7 @@ export async function critiqueSource({
       rubricVersion: "1.0",
       cycle: cycleNumberFromPath(cycleDir),
       brief,
+      claimPolicy: deriveClaimPolicy(brief),
       indexHtml,
       stylesCss,
     },

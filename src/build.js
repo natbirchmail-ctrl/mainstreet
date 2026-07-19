@@ -2,6 +2,7 @@ import { lstat, mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { chromium } from "playwright";
 
+import { deriveClaimPolicy, validateBriefClaims } from "./claim-policy.js";
 import { requestStructured } from "./lib/openai.js";
 import { resolveInside, writeJsonNew } from "./lib/runs.js";
 import { materializeAssets } from "./assets.js";
@@ -27,6 +28,7 @@ export async function buildSite({
   if (!brief?.business?.name) {
     throw new TypeError("A complete brief is required to build a site.");
   }
+  const claimPolicy = deriveClaimPolicy(brief);
 
   const [systemPrompt, schema] = await Promise.all([
     readFile(promptUrl, "utf8"),
@@ -45,6 +47,7 @@ export async function buildSite({
         systemPrompt,
         userPayload: {
           brief,
+          claimPolicy,
           generationAttempt,
           repairInstruction:
             generationAttempt === 2
@@ -59,6 +62,7 @@ export async function buildSite({
 
     try {
       const hydrated = hydrateSiteManifest(candidate);
+      validateBriefClaims(hydrated.indexHtml, brief, claimPolicy);
       await validateRenderedSourceVisibility(hydrated);
       return { ...hydrated, source: "openai" };
     } catch (error) {
@@ -66,8 +70,9 @@ export async function buildSite({
     }
   }
 
-  const fallback = createDeterministicSite(brief);
+  const fallback = createDeterministicSite(brief, claimPolicy);
   validateSiteManifest(fallback);
+  validateBriefClaims(fallback.indexHtml, brief, claimPolicy);
   await validateRenderedSourceVisibility(fallback);
   return {
     ...fallback,
@@ -88,6 +93,7 @@ export async function buildRun({
   const briefPath = resolveInside(runDir, "brief.json");
   const brief = JSON.parse(await readFile(briefPath, "utf8"));
   const manifest = await buildSiteFn({ brief });
+  validateBriefClaims(manifest.indexHtml, brief);
   const cycleDir = resolveInside(runDir, "cycle-01");
   const siteDir = resolveInside(cycleDir, "site");
 
@@ -1020,36 +1026,48 @@ async function assertNoLinkedSitePath(trustedRunRoot, target) {
   }
 }
 
-function createDeterministicSite(brief) {
-  const name = escapeHtml(brief.business.name);
-  const city = brief.business.city ? escapeHtml(brief.business.city) : "Your neighborhood";
-  const content = brief.content;
+function createDeterministicSite(brief, claimPolicy = deriveClaimPolicy(brief)) {
+  const rawName = String(brief.business.name);
+  const name = escapeHtml(rawName);
+  const rawCategory = String(brief.business.category || "local business");
+  const category = escapeHtml(rawCategory.toLocaleLowerCase("en-US"));
+  const city = brief.business.city ? escapeHtml(brief.business.city) : "Local guide";
+  const guidanceOnly = claimPolicy.mode === "guidance-only";
+  const sectionLabel = guidanceOnly ? "Ideas" : "Services";
+  const sectionEyebrow = guidanceOnly ? "Planning notes" : "Confirmed details";
+  const sectionHeading = guidanceOnly ? "Useful Directions" : "Known Services";
+  const heroIntro = guidanceOnly
+    ? `A visual guide inspired by ${category}. Use it to consider priorities and fit before confirming details.`
+    : "Confirmed service information and planning context, presented with a clear local point of view.";
+  const primaryAction = guidanceOnly ? "Explore Ideas" : "Explore Services";
   const motionMoves = ["staged hero entrance"];
   const imagePlan = [
     {
       filename: "workbench-hero.png",
       role: "hero",
-      alt: "Hands arranging materials on a clean work surface",
-      prompt: `Contemporary editorial hero scene for ${brief.business.name} with natural materials and calm light`,
+      alt: `Contemporary still life inspired by ${rawCategory.toLocaleLowerCase("en-US")}`,
+      prompt: `Contemporary editorial still life inspired by ${rawCategory} with natural materials calm light no logos no signage and no business specific details`,
       focalPoint: { x: 0.56, y: 0.44 },
     },
     {
       filename: "offerings-detail.png",
       role: "offerings",
-      alt: "A close view of tools and tactile materials",
-      prompt: `Close editorial detail of the work and materials associated with ${brief.business.name}`,
+      alt: "Materials and colors arranged as a planning reference",
+      prompt: `Close editorial detail of materials and colors inspired by ${rawCategory} with no logos no signage and no claimed business activity`,
       focalPoint: { x: 0.5, y: 0.5 },
     },
     {
       filename: "story-detail.png",
       role: "story",
       alt: "A quiet neighborhood scene in natural morning light",
-      prompt: `Quiet neighborhood context scene for ${brief.business.name} using the same light palette and lens feel`,
+      prompt: "Quiet contemporary neighborhood context in natural morning light with no logos no signage and no identifiable people",
       focalPoint: { x: 0.42, y: 0.52 },
     },
   ];
-  const offerings = brief.offerings
-    .slice(0, 4)
+  const publicItems = guidanceOnly
+    ? createGuidanceItems(brief)
+    : claimPolicy.confirmedOfferings.slice(0, 4);
+  const offerings = publicItems
     .map(
       (offering, index) => `
         <article class="offering">
@@ -1065,7 +1083,7 @@ function createDeterministicSite(brief) {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="${escapeHtml(brief.business.summary)}">
+  <meta name="description" content="A visual planning guide for ${name}. Service and availability details are shown only when confirmed.">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'">
   <title>${name}</title>
   <link rel="stylesheet" href="styles.css">
@@ -1075,44 +1093,44 @@ function createDeterministicSite(brief) {
   <header class="site-header">
     <a class="wordmark" href="#top" aria-label="${name} home">${name}</a>
     <nav aria-label="Primary">
-      <a href="#offerings">Offerings</a>
-      <a href="#story">Story</a>
-      <a href="#contact">Contact</a>
+      <a href="#offerings">${sectionLabel}</a>
+      <a href="#story">Context</a>
+      <a href="#contact">Details</a>
     </nav>
   </header>
   <main id="main">
     <section class="hero" id="top" data-section="hero" data-motion-root="staged-hero-entrance">
       <div class="hero-copy" data-first-beat data-motion-target>
-        <p class="eyebrow">${escapeHtml(content.eyebrow)}</p>
-        <h1>${escapeHtml(content.headline)}</h1>
-        <p class="hero-intro">${escapeHtml(content.subheadline)}</p>
-        <a class="primary-action" href="#offerings" data-primary-action>${escapeHtml(content.primaryAction)}</a>
+        <p class="eyebrow">${city}</p>
+        <h1>${name}</h1>
+        <p class="hero-intro">${heroIntro}</p>
+        <a class="primary-action" href="#offerings" data-primary-action>${primaryAction}</a>
       </div>
       <div class="hero-art"><img src="assets/workbench-hero.png" alt="${escapeHtml(imagePlan[0].alt)}"><span></span><span></span><span></span></div>
     </section>
     <section class="offerings-section" id="offerings" data-section="offerings">
       <div class="section-heading" data-first-beat>
-        <p class="eyebrow">What we make</p>
-        <h2>A small collection with a clear point of view</h2>
+        <p class="eyebrow">${sectionEyebrow}</p>
+        <h2>${sectionHeading}</h2>
         <img src="assets/offerings-detail.png" alt="${escapeHtml(imagePlan[1].alt)}">
       </div>
       <div class="offerings-list">${offerings}
       </div>
     </section>
     <section class="story" id="story" data-section="story">
-      <div class="story-marker" aria-hidden="true">${name.charAt(0)}</div>
+      <div class="story-marker" aria-hidden="true">${escapeHtml(rawName.charAt(0))}</div>
       <div data-first-beat>
-        <p class="eyebrow">Our point of view</p>
-        <h2>Made with attention. Shared with ease.</h2>
-        <p>${escapeHtml(content.about)}</p>
+        <p class="eyebrow">Planning context</p>
+        <h2>Local Context</h2>
+        <p>Use the neighborhood, timing, and personal preferences to shape a clearer conversation before choosing a direction.</p>
         <img src="assets/story-detail.png" alt="${escapeHtml(imagePlan[2].alt)}">
       </div>
     </section>
     <section class="contact" id="contact" data-section="contact">
       <div data-first-beat>
         <p class="eyebrow">${city}</p>
-        <h2>${escapeHtml(content.contactPrompt)}</h2>
-        <p>Verified contact details will appear here when the owner provides them.</p>
+        <h2>Confirm Details</h2>
+        <p>Service and availability details are not confirmed. Check directly with the business before making plans.</p>
       </div>
     </section>
   </main>
@@ -1207,6 +1225,79 @@ footer { display: flex; justify-content: space-between; gap: 1rem; padding: 1.5r
       motionMoves,
     },
   };
+}
+
+function createGuidanceItems(brief) {
+  const categoryHints = [
+    brief?.business?.category,
+    ...(Array.isArray(brief?.offerings) ? brief.offerings.map((offering) => offering?.name) : []),
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLocaleLowerCase("en-US");
+
+  if (/flor|flower|bouquet/.test(categoryHints)) {
+    return [
+      {
+        name: "Gift Moment",
+        description: "Consider color, scale, and how the flowers will travel with the recipient.",
+      },
+      {
+        name: "Event Setting",
+        description: "For a gathering, consider the setting, timing, and colors before choosing a direction.",
+      },
+      {
+        name: "Seasonal Mood",
+        description: "Use season, texture, and palette as a starting point for a clearer conversation.",
+      },
+    ];
+  }
+  if (/bak|bread|oven|pastr/.test(categoryHints)) {
+    return [
+      {
+        name: "Bread Style",
+        description: "Consider texture, flavor, and the meal the bread will accompany.",
+      },
+      {
+        name: "Sharing Size",
+        description: "Think about the table, the number of guests, and how the food will be shared.",
+      },
+      {
+        name: "Flavor Direction",
+        description: "Use familiar tastes, season, and occasion to narrow the right direction.",
+      },
+    ];
+  }
+  if (/bicycle|bike|cycle|wheel/.test(categoryHints)) {
+    return [
+      {
+        name: "Ride Pattern",
+        description: "Consider distance, terrain, frequency, and the way the bicycle is used.",
+      },
+      {
+        name: "Repair Priorities",
+        description: "Note current symptoms, recent changes, and the result that matters most.",
+      },
+      {
+        name: "Route Context",
+        description: "Daily routes, weather, and storage can help frame a more useful conversation.",
+      },
+    ];
+  }
+  return [
+    {
+      name: "First Priority",
+      description: "Start with the result that matters most and the context around it.",
+    },
+    {
+      name: "Use Setting",
+      description: "Consider where, when, and how the final choice needs to work.",
+    },
+    {
+      name: "Personal Fit",
+      description: "Gather preferences and constraints before confirming a direction.",
+    },
+  ];
 }
 
 function escapeHtml(value) {

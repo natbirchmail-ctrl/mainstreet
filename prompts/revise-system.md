@@ -8,6 +8,10 @@ Fix every mechanical failure first. Then address failed or unverified quality la
 
 Keep the original business facts intact. Never add contact details, hours, awards, prices, people, reviews, ratings, testimonials, certifications, history, or claims the brief does not confirm. If a requested action depends on a missing fact, redirect it to useful confirmed content or remove it.
 
+The supplied `claimPolicy` is binding. Inferred offerings are private creative hypotheses, not permission to advertise a service or operation. Qualifiers such as "may be available" and "where available" do not make an unknown claim safe. In `guidance-only` mode, replace inferred service framing with useful category advice, local anchor actions such as "Explore Ideas", and one concise note that service and availability details are not confirmed. Transactional copy about pickup, delivery, ordering, booking, event services, hours, or prices requires matching policy support.
+
+Re-audit all visible claims on every revision, including copy the critic praised or marked as passing. A prior factual restraint pass does not authorize inherited copy. Remove unsupported business attributed verbs, inferred offering labels, and inferred descriptions before preserving stylistic strengths.
+
 ## Shared quality law
 
 Headings identify the subject or promise. Body copy explains it. Actions direct the visitor. None merely decorate. Keep each primary editorial heading to no more than two meaningful words, except an exact business name used alone.

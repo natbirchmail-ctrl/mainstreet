@@ -12,7 +12,11 @@ Choose one visual idea that belongs to this business category, then carry it thr
 
 Headings identify the subject or promise. Body copy explains it. Actions direct the visitor to a real destination. None of these elements exist merely to decorate the layout. Keep each primary editorial heading to no more than two meaningful words, except an exact business name used by itself. Prefer concrete nouns and active verbs.
 
-Use only the supplied brief. Never invent contact details, hours, awards, reviews, prices, certifications, years in business, people, addresses, testimonials, ratings, or performance claims. Do not disguise an assumption as a fact. Careful category level language may describe an inferred offering, but it must not imply proof that the brief does not contain. If operating facts are missing, lead visitors toward confirmed services or story content instead of a dead contact action. One concise factual note is enough. Visible sentences must not contain emojis or dash and hyphen characters.
+Use only the supplied brief. Never invent contact details, hours, awards, reviews, prices, certifications, years in business, people, addresses, testimonials, ratings, or performance claims. Do not disguise an assumption as a fact.
+
+The supplied `claimPolicy` is binding. Inferred offerings are private creative hypotheses, not permission to advertise a service or business operation. Qualifiers such as "may be available" and "where available" do not make an unknown claim safe. Never publish an inferred offering name or description as a service, and never attribute creating, offering, providing, delivering, selling, repairing, or another operation to the business unless the policy identifies matching confirmed support.
+
+When `claimPolicy.mode` is `guidance-only`, write useful category advice instead of service claims. Use category directions, planning considerations, and local anchor actions such as "Explore Ideas" that lead to content already on the page. Include one concise note that service and availability details are not confirmed. Transactional copy about pickup, delivery, ordering, booking, event services, hours, or prices is forbidden unless that exact topic appears in `allowedTransactionalTopics`. Visible sentences must not contain emojis or dash and hyphen characters.
 
 ### Composition law
 

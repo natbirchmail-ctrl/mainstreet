@@ -116,6 +116,41 @@ test("fast intake records optional owner details as confirmed without exposing t
   assert.equal(brief.contact.phone, null);
 });
 
+test("name only fast intake replaces transactional public copy with guidance", async () => {
+  const candidate = modelBrief();
+  candidate.business.summary = "We deliver flowers for every event.";
+  candidate.offerings = [
+    {
+      name: "Event Florals",
+      description: "Custom flowers for weddings and gatherings.",
+      confidence: "inferred",
+    },
+  ];
+  candidate.content = {
+    ...candidate.content,
+    headline: "Flowers delivered with care",
+    subheadline: "Pickup and delivery may be available.",
+    primaryAction: "Order Flowers",
+    secondaryAction: "Book Event Florals",
+    contactPrompt: "Ask about pickup and delivery.",
+  };
+
+  const brief = await createBrief({
+    businessName: "Paper Petal",
+    fast: true,
+    structuredRequester: async () => candidate,
+  });
+  const publicCopy = JSON.stringify({
+    summary: brief.business.summary,
+    content: brief.content,
+  });
+
+  assert.doesNotMatch(publicCopy, /\b(?:order|book|pickup|delivery|deliver|event florals)\b/i);
+  assert.equal(brief.content.primaryAction, "Explore Ideas");
+  assert.match(publicCopy, /service and availability details are not confirmed/i);
+  assert.equal(brief.offerings[0].confidence, "inferred");
+});
+
 test("visible generated copy removes dash characters and emojis", () => {
   assert.equal(
     sanitizeVisibleCopy("Slow methods — honest ingredients - always. Fresh bread 🍞"),

@@ -205,7 +205,7 @@ function brief() {
     },
     audience: { primary: "Neighbors", needs: ["Fresh bread", "Clear details"] },
     offerings: [
-      { name: "Daily bread", description: "Fresh loaves", confidence: "inferred" },
+      { name: "Daily bread", description: "Fresh loaves", confidence: "confirmed" },
     ],
     brand: {
       personality: ["Warm", "Grounded", "Craft focused"],
@@ -236,6 +236,51 @@ function brief() {
     contact: { phone: null, email: null, address: null, hours: null },
     facts: { confirmed: [], inferred: [], needed: ["Hours"] },
   };
+}
+
+function inferredOnlyBrief() {
+  const value = brief();
+  value.business = {
+    name: "Paper Petal",
+    city: "Flagstaff, AZ",
+    category: "Flower studio",
+    summary: "A flower studio concept.",
+  };
+  value.offerings = [
+    {
+      name: "Event Florals",
+      description: "Custom flowers for weddings and gatherings.",
+      confidence: "inferred",
+    },
+    {
+      name: "Flower Delivery",
+      description: "Bouquets delivered across town.",
+      confidence: "inferred",
+    },
+    {
+      name: "Pickup Orders",
+      description: "Prepared flowers ready for pickup.",
+      confidence: "inferred",
+    },
+  ];
+  value.content = {
+    eyebrow: "Local flowers",
+    headline: "Flowers for every occasion",
+    subheadline: "We create artful arrangements for gifts and events.",
+    about: "Our studio offers a thoughtful flower service.",
+    primaryAction: "Order Flowers",
+    secondaryAction: "Book Event Florals",
+    contactPrompt: "Ask about pickup and delivery.",
+  };
+  value.facts = {
+    confirmed: [
+      { label: "Business name", value: "Paper Petal", source: "user" },
+      { label: "City", value: "Flagstaff, AZ", source: "user" },
+    ],
+    inferred: [],
+    needed: ["Services", "Availability"],
+  };
+  return value;
 }
 
 test("validateSiteManifest accepts a semantic, self contained site", () => {
@@ -1271,6 +1316,34 @@ test("buildSite regenerates one unsafe model page before accepting output", asyn
   assert.equal(result.indexHtml, safeManifest().indexHtml);
 });
 
+test("buildSite rejects an inferred service claim and accepts category guidance", async () => {
+  let calls = 0;
+  const unsupported = modelManifest();
+  unsupported.indexHtml = unsupported.indexHtml.replace(
+    "<h2>From the oven</h2><p>Fresh loaves made with care.</p>",
+    "<h2>Event Florals</h2><p>Custom flowers for weddings and gatherings may be available.</p>",
+  );
+  const guidance = modelManifest();
+  guidance.indexHtml = guidance.indexHtml.replace(
+    "<h2>From the oven</h2><p>Fresh loaves made with care.</p>",
+    "<h2>Floral Directions</h2><p>For a gathering, consider the setting, timing, and colors.</p>",
+  );
+
+  const result = await buildSite({
+    brief: inferredOnlyBrief(),
+    structuredRequester: async (request) => {
+      calls += 1;
+      assert.equal(request.userPayload.claimPolicy.mode, "guidance-only");
+      return calls === 1 ? unsupported : guidance;
+    },
+  });
+
+  assert.equal(calls, 2);
+  assert.equal(result.source, "openai");
+  assert.doesNotMatch(result.indexHtml, /Event Florals/i);
+  assert.match(result.indexHtml, /Floral Directions/i);
+});
+
 test("buildSite ships a deterministic baseline when the model is unavailable", async () => {
   const result = await buildSite({
     brief: brief(),
@@ -1283,6 +1356,35 @@ test("buildSite ships a deterministic baseline when the model is unavailable", a
   assert.match(result.indexHtml, /Juniper Oven/);
   assert.match(result.indexHtml, /<script src="script\.js" defer><\/script>/i);
   assert.equal(result.scriptJs, buildModule.createOwnedMotionRuntime(result.designNotes.motionMoves));
+  validateSiteManifest(result);
+});
+
+test("deterministic fallback turns inferred offerings into useful guidance", async () => {
+  const inferred = inferredOnlyBrief();
+  const result = await buildSite({
+    brief: inferred,
+    structuredRequester: async () => {
+      throw new Error("network unavailable");
+    },
+  });
+
+  assert.equal(result.source, "deterministic-fallback");
+  for (const prohibited of [
+    "What we make",
+    "Our services",
+    "Order Flowers",
+    "Book Event Florals",
+    "Custom flowers for weddings and gatherings.",
+    "Bouquets delivered across town.",
+    "Prepared flowers ready for pickup.",
+  ]) {
+    assert.equal(result.indexHtml.includes(prohibited), false, prohibited);
+  }
+  assert.doesNotMatch(result.indexHtml, /\b(?:creates|offers|provides|delivers|pickup|delivery)\b/i);
+  assert.match(result.indexHtml, />Explore Ideas</i);
+  assert.match(result.indexHtml, /Service and availability details are not confirmed/i);
+  assert.ok((result.indexHtml.match(/<article\b/g) ?? []).length >= 3);
+  assert.match(result.indexHtml, /consider/i);
   validateSiteManifest(result);
 });
 

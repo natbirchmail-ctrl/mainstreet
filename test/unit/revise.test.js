@@ -72,6 +72,33 @@ function critique() {
   };
 }
 
+function inferredOnlyBrief() {
+  return {
+    business: {
+      name: "Paper Petal",
+      city: "Flagstaff, AZ",
+      category: "Flower studio",
+      summary: "A flower studio concept.",
+    },
+    offerings: [
+      {
+        name: "Event Florals",
+        description: "Custom flowers for weddings and gatherings.",
+        confidence: "inferred",
+      },
+    ],
+    contact: { phone: null, email: null, address: null, hours: null },
+    facts: {
+      confirmed: [
+        { label: "Business name", value: "Paper Petal", source: "user" },
+        { label: "City", value: "Flagstaff, AZ", source: "user" },
+      ],
+      inferred: [],
+      needed: ["Services", "Availability"],
+    },
+  };
+}
+
 function assetSha256(bytes) {
   return createHash("sha256").update(bytes).digest("hex");
 }
@@ -130,6 +157,7 @@ test("reviseSite supplies current files and fresh critique to the model", async 
   assert.equal(request.userPayload.currentSite.scriptJs, manifest().scriptJs);
   assert.deepEqual(request.userPayload.currentSite.imagePlan, manifest().imagePlan);
   assert.equal(request.userPayload.critique.score, 76);
+  assert.equal(request.userPayload.claimPolicy.mode, "guidance-only");
 });
 
 test("reviseSite exposes only sanitized available asset descriptors while retaining the authored image plan", async () => {
@@ -196,6 +224,45 @@ test("reviseSite retries one unsafe replacement before accepting it", async () =
 
   assert.equal(calls, 2);
   assert.match(revised.indexHtml, /A safer revision/);
+});
+
+test("revision reaudits and removes an inherited inferred claim even after a critic pass", async () => {
+  let calls = 0;
+  const current = manifest();
+  current.indexHtml = current.indexHtml.replace(
+    "<h2>Fresh from the oven</h2><p>Made with care.</p>",
+    "<h2>Event Florals</h2><p>Custom flowers for weddings and gatherings may be available.</p>",
+  );
+  const repeated = manifest(undefined, { modelOutput: true });
+  repeated.indexHtml = repeated.indexHtml.replace(
+    "<h2>Fresh from the oven</h2><p>Made with care.</p>",
+    "<h2>Event Florals</h2><p>Custom flowers for weddings and gatherings may be available.</p>",
+  );
+  const guidance = manifest(undefined, { modelOutput: true });
+  guidance.indexHtml = guidance.indexHtml.replace(
+    "<h2>Fresh from the oven</h2><p>Made with care.</p>",
+    "<h2>Floral Directions</h2><p>For a gathering, consider the setting, timing, and colors.</p>",
+  );
+  const priorCritique = {
+    ...critique(),
+    laws: { factualRestraint: { status: "pass" } },
+  };
+
+  const revised = await reviseSite({
+    brief: inferredOnlyBrief(),
+    currentManifest: current,
+    critique: priorCritique,
+    mechanical: { passed: true, failures: [] },
+    structuredRequester: async (request) => {
+      calls += 1;
+      assert.equal(request.userPayload.claimPolicy.mode, "guidance-only");
+      return calls === 1 ? repeated : guidance;
+    },
+  });
+
+  assert.equal(calls, 2);
+  assert.doesNotMatch(revised.indexHtml, /Event Florals/i);
+  assert.match(revised.indexHtml, /Floral Directions/i);
 });
 
 test("reviseRun writes a new immutable cycle and a revision handoff", async () => {

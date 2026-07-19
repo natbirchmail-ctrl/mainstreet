@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 
+import { deriveClaimPolicy } from "./claim-policy.js";
 import { requestStructured } from "./lib/openai.js";
 
 const projectRoot = new URL("../", import.meta.url);
@@ -101,7 +102,26 @@ function normalizeBrief(candidate, input) {
     };
   }
 
+  if (input.fast && deriveClaimPolicy(brief).mode === "guidance-only") {
+    applyGuidanceOnlyPublicCopy(brief);
+  }
+
   return brief;
+}
+
+function applyGuidanceOnlyPublicCopy(brief) {
+  const category = sanitizeVisibleCopy(brief.business.category) || "local business";
+  const categoryLower = category.toLocaleLowerCase("en-US");
+  brief.business.summary = `A planning guide inspired by ${categoryLower}. Service and availability details are not confirmed.`;
+  brief.content = {
+    eyebrow: "Local inspiration",
+    headline: "Explore Ideas",
+    subheadline: `A practical starting point for considering ${categoryLower} before confirming details with the business.`,
+    about: "Use these notes to clarify priorities, setting, and personal preferences before confirming details.",
+    primaryAction: "Explore Ideas",
+    secondaryAction: "Read Guidance",
+    contactPrompt: "Confirm Details",
+  };
 }
 
 function sanitizeObjectStrings(value) {
