@@ -12,6 +12,10 @@ import {
   motionSlugsFor,
 } from "./motion.js";
 import { EVIDENCE_VIEWPORTS } from "./viewports.js";
+import {
+  createPlaywrightRecovery,
+  isPlaywrightBrowserUnavailable,
+} from "./playwright-recovery.js";
 
 export { createOwnedMotionRuntime, createOwnedMotionStyles } from "./motion.js";
 
@@ -24,6 +28,7 @@ export async function buildSite({
   model = process.env.OPENAI_MODEL || "gpt-5.6",
   client,
   structuredRequester = requestStructured,
+  browserRecovery = createPlaywrightRecovery(),
 }) {
   if (!brief?.business?.name) {
     throw new TypeError("A complete brief is required to build a site.");
@@ -60,12 +65,24 @@ export async function buildSite({
       break;
     }
 
+    let hydrated;
     try {
-      const hydrated = hydrateSiteManifest(candidate);
+      hydrated = hydrateSiteManifest(candidate);
       validateBriefClaims(hydrated.indexHtml, brief, claimPolicy);
-      await validateRenderedSourceVisibility(hydrated);
+    } catch (error) {
+      lastValidationError = error;
+      continue;
+    }
+
+    try {
+      await validateRenderedSourceVisibility(hydrated, { browserRecovery });
       return { ...hydrated, source: "openai" };
     } catch (error) {
+      const renderedVerification = unavailableRenderedVerification(error);
+      if (renderedVerification) {
+        return { ...hydrated, source: "openai", renderedVerification };
+      }
+      if (error?.code !== "RENDERED_SOURCE_VISIBILITY_FAILED") throw error;
       lastValidationError = error;
     }
   }
@@ -73,7 +90,20 @@ export async function buildSite({
   const fallback = createDeterministicSite(brief, claimPolicy);
   validateSiteManifest(fallback);
   validateBriefClaims(fallback.indexHtml, brief, claimPolicy);
-  await validateRenderedSourceVisibility(fallback);
+  try {
+    await validateRenderedSourceVisibility(fallback, { browserRecovery });
+  } catch (error) {
+    const renderedVerification = unavailableRenderedVerification(error);
+    if (renderedVerification) {
+      return {
+        ...fallback,
+        source: "deterministic-fallback",
+        fallbackReason: lastValidationError?.message || "OpenAI generation was unavailable.",
+        renderedVerification,
+      };
+    }
+    throw error;
+  }
   return {
     ...fallback,
     source: "deterministic-fallback",
@@ -89,15 +119,16 @@ export async function buildRun({
   model = process.env.OPENAI_IMAGE_MODEL || "gpt-image-1",
   requestImage,
   now = () => new Date(),
+  browserRecovery = createPlaywrightRecovery(),
 }) {
   const briefPath = resolveInside(runDir, "brief.json");
   const brief = JSON.parse(await readFile(briefPath, "utf8"));
-  const manifest = await buildSiteFn({ brief });
+  const manifest = await buildSiteFn({ brief, browserRecovery });
   validateBriefClaims(manifest.indexHtml, brief);
   const cycleDir = resolveInside(runDir, "cycle-01");
   const siteDir = resolveInside(cycleDir, "site");
 
-  await writeSiteFiles(siteDir, manifest, runDir);
+  await writeSiteFiles(siteDir, manifest, runDir, { browserRecovery });
   const assets = await materializeAssetsFn({
     cycleDir,
     siteDir,
@@ -112,6 +143,7 @@ export async function buildRun({
     createdAt: now().toISOString(),
     source: manifest.source,
     fallbackReason: manifest.fallbackReason ?? null,
+    renderedVerification: manifest.renderedVerification ?? null,
     designNotes: manifest.designNotes,
     imagePlan: manifest.imagePlan,
     assetSummary: sanitizeAssetSummary(assets),
@@ -140,7 +172,7 @@ export function hydrateSiteManifest(manifest) {
 }
 
 const manifestFields = ["indexHtml", "stylesCss", "scriptJs", "imagePlan", "designNotes"];
-const buildMetadataFields = ["source", "fallbackReason"];
+const buildMetadataFields = ["source", "fallbackReason", "renderedVerification"];
 const imagePlanFields = ["filename", "role", "alt", "prompt", "focalPoint"];
 const designNoteFields = [
   "aesthetic",
@@ -172,6 +204,9 @@ function validateManifest(manifest, { modelOutput, allowBuildMetadata }) {
   requireString(manifest.stylesCss, "stylesCss", 80_000);
   const motionMoves = validateDesignNotes(manifest.designNotes);
   validateImagePlan(manifest.imagePlan);
+  if (Object.hasOwn(manifest, "renderedVerification")) {
+    validateRenderedVerification(manifest.renderedVerification);
+  }
 
   if (modelOutput) {
     if (manifest.scriptJs !== "") {
@@ -243,7 +278,14 @@ function selectorCouldMatchTag(selector, tag) {
   return new RegExp(`(?:^|[\\s>+~,(])${tag.tagName}(?=$|[\\s>+~,:.)\\[])`, "i").test(normalized);
 }
 
-export async function validateRenderedSourceVisibility(manifest) {
+export async function validateRenderedSourceVisibility(
+  manifest,
+  {
+    browserRecovery = createPlaywrightRecovery(),
+    browserType = chromium,
+    stage = "build",
+  } = {},
+) {
   const sourceSelector = "[data-first-beat], [data-motion-root], [data-motion-target], [data-motion-panel], [data-motion-control]";
   const stylesheetUrl = `data:text/css;base64,${Buffer.from(manifest.stylesCss, "utf8").toString("base64")}`;
   const browserHtml = manifest.indexHtml
@@ -254,7 +296,10 @@ export async function validateRenderedSourceVisibility(manifest) {
     )
     .replace(/<script\b(?=[^>]*\bsrc\s*=\s*["']script\.js["'])[^>]*>\s*<\/script>/gi, "");
 
-  const browser = await chromium.launch({ headless: true });
+  const browser = await browserRecovery.run(
+    () => browserType.launch({ headless: true }),
+    { stage },
+  );
   try {
     const context = await browser.newContext({ javaScriptEnabled: false });
     try {
@@ -446,7 +491,11 @@ export async function validateRenderedSourceVisibility(manifest) {
           return failures;
         }, viewport);
         if (failures.length > 0) {
-          throw new Error(`Rendered no JavaScript source visibility failed at ${viewport.name}: ${JSON.stringify(failures)}`);
+          const error = new Error(
+            `Rendered no JavaScript source visibility failed at ${viewport.name}: ${JSON.stringify(failures)}`,
+          );
+          error.code = "RENDERED_SOURCE_VISIBILITY_FAILED";
+          throw error;
         }
       }
     } finally {
@@ -909,9 +958,22 @@ function isUnitNumber(value) {
   return typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 1;
 }
 
-export async function writeSiteFiles(siteDir, manifest, trustedRunRoot) {
+export async function writeSiteFiles(
+  siteDir,
+  manifest,
+  trustedRunRoot,
+  {
+    browserRecovery = createPlaywrightRecovery(),
+    recoveryStage = "build",
+  } = {},
+) {
   validateSiteManifest(manifest);
-  await validateRenderedSourceVisibility(manifest);
+  if (manifest.renderedVerification?.status !== "unavailable") {
+    await validateRenderedSourceVisibility(manifest, {
+      browserRecovery,
+      stage: recoveryStage,
+    });
+  }
   const normalizedSiteDir = path.resolve(siteDir);
   await assertNoLinkedSitePath(trustedRunRoot, normalizedSiteDir);
   await mkdir(normalizedSiteDir, { recursive: true });
@@ -919,6 +981,41 @@ export async function writeSiteFiles(siteDir, manifest, trustedRunRoot) {
   await writeNew(path.join(normalizedSiteDir, "index.html"), manifest.indexHtml, trustedRunRoot);
   await writeNew(path.join(normalizedSiteDir, "styles.css"), manifest.stylesCss, trustedRunRoot);
   await writeNew(path.join(normalizedSiteDir, "script.js"), manifest.scriptJs, trustedRunRoot);
+}
+
+function unavailableRenderedVerification(error) {
+  if (!isPlaywrightBrowserUnavailable(error)) return null;
+  return Object.freeze({
+    status: "unavailable",
+    reason: error.recovery.reason,
+    installStatus: error.recovery.installStatus,
+    installReason: error.recovery.installReason,
+  });
+}
+
+function validateRenderedVerification(value) {
+  const installedEvidenceIsValid =
+    value?.installStatus === "installed" &&
+    value.installReason === null &&
+    value.reason === "chromium_missing_after_retry";
+  const unavailableReasons = new Set([
+    "installer_missing",
+    "installer_nonzero",
+    "installer_start_failed",
+    "installer_timeout",
+  ]);
+  const unavailableEvidenceIsValid =
+    value?.installStatus === "unavailable" &&
+    unavailableReasons.has(value.installReason) &&
+    value.reason === value.installReason;
+  if (
+    !isPlainObject(value) ||
+    !hasExactKeys(value, ["status", "reason", "installStatus", "installReason"]) ||
+    value.status !== "unavailable" ||
+    (!installedEvidenceIsValid && !unavailableEvidenceIsValid)
+  ) {
+    throw new TypeError("Rendered verification metadata is invalid.");
+  }
 }
 
 function extractVisibleText(html) {

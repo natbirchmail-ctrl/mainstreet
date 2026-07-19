@@ -17,6 +17,10 @@ import {
 } from "./lib/rendered-evidence.js";
 import { resolveInside, writeJsonNew } from "./lib/runs.js";
 import { EVIDENCE_VIEWPORTS } from "./viewports.js";
+import {
+  createPlaywrightRecovery,
+  isPlaywrightBrowserUnavailable,
+} from "./playwright-recovery.js";
 
 const projectRoot = new URL("../", import.meta.url);
 const promptUrl = new URL("prompts/critic-system.md", projectRoot);
@@ -163,6 +167,7 @@ export async function runCriticCycle({
   critiqueCycleFn = critiqueCycle,
   critiqueSourceFn = critiqueSource,
   now = () => new Date(),
+  browserRecovery = createPlaywrightRecovery(),
 }) {
   if (!Number.isInteger(cycle) || cycle < 1 || cycle > 3) {
     throw new TypeError("Critic cycle must be an integer from 1 through 3.");
@@ -178,7 +183,12 @@ export async function runCriticCycle({
   let evidencePacketSha256 = null;
   let critique;
   try {
-    const evidence = await captureCycleFn({ siteDir, cycleDir, port });
+    const evidence = await captureCycleFn({
+      siteDir,
+      cycleDir,
+      port,
+      browserRecovery,
+    });
     mechanical = evidence.mechanical;
     assetsResolved = evidence.assetsResolved;
     evidencePacketSha256 = evidence.evidencePacketSha256;
@@ -186,7 +196,9 @@ export async function runCriticCycle({
       throw invalidEvidencePacket();
     }
   } catch (error) {
-    if (error?.code !== "CAPTURE_UNAVAILABLE") throw error;
+    if (error?.code !== "CAPTURE_UNAVAILABLE" && !isPlaywrightBrowserUnavailable(error)) {
+      throw error;
+    }
     mode = "source-fallback";
     await writeJsonNew(resolveInside(cycleDir, "capture-error.json"), {
       schemaVersion: "1.0",
@@ -194,6 +206,15 @@ export async function runCriticCycle({
       createdAt: now().toISOString(),
       errorCode: error?.code || error?.name || "CAPTURE_ERROR",
       message: "Playwright capture failed. Source review was used.",
+      ...(isPlaywrightBrowserUnavailable(error)
+        ? {
+            recovery: {
+              reason: error.recovery.reason,
+              installStatus: error.recovery.installStatus,
+              installReason: error.recovery.installReason,
+            },
+          }
+        : {}),
     });
   }
 

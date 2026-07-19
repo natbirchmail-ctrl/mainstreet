@@ -11,6 +11,17 @@ import {
 } from "./lib/runs.js";
 import { slugify } from "./lib/slug.js";
 import { reviseRun } from "./revise.js";
+import {
+  createPlaywrightRecovery,
+  installPlaywrightChromium,
+  isPlaywrightChromiumExecutableMissing,
+} from "./playwright-recovery.js";
+
+export {
+  createPlaywrightRecovery,
+  installPlaywrightChromium,
+  isPlaywrightChromiumExecutableMissing,
+};
 
 export async function executePipeline({
   businessName,
@@ -27,10 +38,14 @@ export async function executePipeline({
   deliveryFn = null,
   onProgress = () => {},
   now = () => new Date(),
+  browserRecovery = null,
+  playwrightInstallerFn = installPlaywrightChromium,
 }) {
   if (!Number.isInteger(maxCycles) || maxCycles < 1 || maxCycles > 3) {
     throw new TypeError("maxCycles must be an integer from 1 through 3.");
   }
+  const invocationBrowserRecovery =
+    browserRecovery ?? createPlaywrightRecovery({ installer: playwrightInstallerFn });
 
   const startedAt = now().toISOString();
   const slug = slugify(businessName);
@@ -39,7 +54,7 @@ export async function executePipeline({
   const brief = await createBriefFn({ businessName, city, details, fast });
   await writeJsonNew(resolveInside(runDir, "brief.json"), brief);
   onProgress({ type: "intake_complete", slug });
-  await buildRunFn({ runDir });
+  await buildRunFn({ runDir, browserRecovery: invocationBrowserRecovery });
   onProgress({ type: "build_complete", cycle: 1 });
 
   const cycles = [];
@@ -47,8 +62,13 @@ export async function executePipeline({
   for (let cycle = 1; cycle <= maxCycles; cycle += 1) {
     let critique;
     try {
-      critique = await criticFn({ runDir, cycle });
+      critique = await criticFn({
+        runDir,
+        cycle,
+        browserRecovery: invocationBrowserRecovery,
+      });
     } catch (error) {
+      if (!isPipelineStageUnavailable(error)) throw error;
       stopReason = "critic_unavailable";
       await writeJsonNew(resolveInside(runDir, `cycle-${pad(cycle)}`, "critic-error.json"), {
         schemaVersion: "1.0",
@@ -67,6 +87,10 @@ export async function executePipeline({
       score: critique.score,
       verdict: critique.verdict,
     });
+    if (critique.mode === "source-fallback") {
+      stopReason = "source_fallback";
+      break;
+    }
     if (critique.shipEligible === true) {
       stopReason = "threshold_reached";
       break;
@@ -76,9 +100,14 @@ export async function executePipeline({
     }
 
     try {
-      await reviseRunFn({ runDir, fromCycle: cycle });
+      await reviseRunFn({
+        runDir,
+        fromCycle: cycle,
+        browserRecovery: invocationBrowserRecovery,
+      });
       onProgress({ type: "revision_complete", fromCycle: cycle, toCycle: cycle + 1 });
     } catch (error) {
+      if (!isPipelineStageUnavailable(error)) throw error;
       stopReason = "revision_unavailable";
       await writeJsonNew(resolveInside(runDir, `cycle-${pad(cycle)}`, "revision-error.json"), {
         schemaVersion: "1.0",
@@ -111,6 +140,13 @@ export async function executePipeline({
 
   const selected = selectBestCycle(cycles);
   const selectedSiteDir = resolveInside(runDir, `cycle-${pad(selected.cycle)}`, "site");
+  const recoveryEvidence = invocationBrowserRecovery.snapshot();
+  if (recoveryEvidence.installAttempted) {
+    await writeJsonNew(
+      resolveInside(runDir, "playwright-recovery.json"),
+      recoveryEvidence,
+    );
+  }
   const delivery = deliveryFn
     ? await deliveryFn({ runDir, slug, selectedCycle: selected.cycle, siteDir: selectedSiteDir })
     : null;
@@ -263,11 +299,12 @@ ${rows}
 }
 
 function toCycleSummary(critique) {
+  const shipEligible = critique.mode === "vision" && critique.shipEligible === true;
   return {
     cycle: critique.cycle,
     score: Number.isFinite(critique.score) ? critique.score : null,
     visionScore: Number.isFinite(critique.visionScore) ? critique.visionScore : null,
-    verdict: critique.shipEligible === true ? "ship" : "revise",
+    verdict: shipEligible ? "ship" : "revise",
     mode: critique.mode,
     evidencePacketSha256:
       typeof critique.evidencePacketSha256 === "string"
@@ -277,7 +314,7 @@ function toCycleSummary(critique) {
     assetsResolved: booleanOrNull(critique.assetsResolved),
     lawGatePassed: critique.lawGatePassed === true,
     lawGateFailures: cloneArray(critique.lawGateFailures),
-    shipEligible: critique.shipEligible === true,
+    shipEligible,
     hardGateFailures: cloneArray(critique.hardGateFailures),
     laws: cloneObjectOrNull(critique.laws),
     lawCoverage: cloneObjectOrNull(critique.lawCoverage),
@@ -302,4 +339,29 @@ function cloneObjectOrNull(value) {
   return value && typeof value === "object" && !Array.isArray(value)
     ? structuredClone(value)
     : null;
+}
+
+function isPipelineStageUnavailable(error) {
+  const codes = new Set([
+    "CAPTURE_UNAVAILABLE",
+    "CONTENT_FILTER",
+    "EMPTY_RESPONSE",
+    "INCOMPLETE_RESPONSE",
+    "INVALID_JSON",
+    "MODEL_REFUSAL",
+    "MODEL_RESPONSE_ERROR",
+  ]);
+  const names = new Set([
+    "APIConnectionError",
+    "APIConnectionTimeoutError",
+    "APIError",
+    "InternalServerError",
+    "ModelResponseError",
+    "RateLimitError",
+  ]);
+  return (
+    codes.has(error?.code) ||
+    names.has(error?.name) ||
+    (Number.isInteger(error?.status) && error.status >= 400)
+  );
 }

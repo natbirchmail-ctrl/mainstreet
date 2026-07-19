@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
+import { syntheticWindowsPath } from "../helpers/windows-path.js";
 
 import {
   executePipeline,
@@ -245,6 +246,157 @@ test("executePipeline records delivery after selecting the best cycle", async ()
   assert.equal(result.delivery.url, "https://mainstreet-hackathon.pages.dev/");
 });
 
+test("executePipeline shares one Playwright recovery latch across build critic and revise", async () => {
+  const root = path.join(process.cwd(), ".trash", "tests", randomUUID());
+  const receivedRecoveries = [];
+  const operationCalls = { build: 0, critic: 0, revise: 0 };
+  let installerCalls = 0;
+
+  const result = await executePipeline({
+    businessName: "Recovery Latch",
+    fast: true,
+    maxCycles: 2,
+    runsRoot: path.join(root, "runs"),
+    trashRoot: path.join(root, "trash"),
+    playwrightInstallerFn: async () => {
+      installerCalls += 1;
+      return { status: "installed", reason: null };
+    },
+    createBriefFn: async () => ({ business: { name: "Recovery Latch" } }),
+    buildRunFn: async ({ runDir, browserRecovery }) => {
+      receivedRecoveries.push(browserRecovery);
+      await recoverOnce(browserRecovery, "build", operationCalls);
+      await mkdir(path.join(runDir, "cycle-01", "site"), { recursive: true });
+    },
+    criticFn: async ({ cycle, browserRecovery }) => {
+      receivedRecoveries.push(browserRecovery);
+      await recoverOnce(browserRecovery, "critic", operationCalls);
+      return critiqueArtifact({
+        cycle,
+        score: cycle === 1 ? 70 : 90,
+        shipEligible: cycle === 2,
+      });
+    },
+    reviseRunFn: async ({ runDir, fromCycle, browserRecovery }) => {
+      receivedRecoveries.push(browserRecovery);
+      await recoverOnce(browserRecovery, "revise", operationCalls);
+      await mkdir(
+        path.join(runDir, `cycle-${String(fromCycle + 1).padStart(2, "0")}`, "site"),
+        { recursive: true },
+      );
+    },
+    deliveryFn: async () => ({ mode: "local", url: "http://127.0.0.1:4601/", verified: true }),
+  });
+
+  assert.equal(installerCalls, 1);
+  assert.ok(receivedRecoveries.length >= 3);
+  assert.ok(receivedRecoveries.every((recovery) => recovery === receivedRecoveries[0]));
+  assert.deepEqual(operationCalls, { build: 2, critic: 4, revise: 2 });
+  assert.equal(result.delivery.mode, "local");
+});
+
+test("persistent browser absence completes to local delivery and records sanitized recovery", async () => {
+  const root = path.join(process.cwd(), ".trash", "tests", randomUUID());
+  let installerCalls = 0;
+  let browserCalls = 0;
+  let revisionCalled = false;
+  const result = await executePipeline({
+    businessName: "Source Review Local",
+    fast: true,
+    maxCycles: 3,
+    runsRoot: path.join(root, "runs"),
+    trashRoot: path.join(root, "trash"),
+    playwrightInstallerFn: async () => {
+      installerCalls += 1;
+      return { status: "installed", reason: null };
+    },
+    createBriefFn: async () => ({ business: { name: "Source Review Local" } }),
+    buildRunFn: async ({ runDir, browserRecovery }) => {
+      try {
+        await browserRecovery.run(async () => {
+          browserCalls += 1;
+          throw missingChromiumError();
+        }, { stage: "build" });
+      } catch (error) {
+        assert.equal(error?.code, "PLAYWRIGHT_BROWSER_UNAVAILABLE");
+      }
+      await mkdir(path.join(runDir, "cycle-01", "site"), { recursive: true });
+    },
+    criticFn: async ({ cycle, browserRecovery }) => {
+      try {
+        await browserRecovery.run(async () => {
+          browserCalls += 1;
+          throw missingChromiumError();
+        }, { stage: "critic" });
+      } catch (error) {
+        assert.equal(error?.code, "PLAYWRIGHT_BROWSER_UNAVAILABLE");
+      }
+      return critiqueArtifact({
+        cycle,
+        score: 92,
+        mode: "source-fallback",
+        mechanicalPassed: null,
+        assetsResolved: null,
+        lawGatePassed: false,
+        lawGateFailures: ["law:foldComposition:unverified"],
+        shipEligible: false,
+        hardGateFailures: ["mode:source-fallback"],
+      });
+    },
+    reviseRunFn: async () => {
+      revisionCalled = true;
+      throw new TypeError("source fallback must not enter rendered revision");
+    },
+    deliveryFn: async () => ({ mode: "local", url: "http://127.0.0.1:4601/", verified: true }),
+  });
+
+  assert.equal(installerCalls, 1);
+  assert.equal(browserCalls, 4);
+  assert.equal(result.report.cycles[0].mode, "source-fallback");
+  assert.equal(result.report.cycles[0].shipEligible, false);
+  assert.equal(result.report.stopReason, "source_fallback");
+  assert.equal(revisionCalled, false);
+  assert.equal(result.delivery.mode, "local");
+  const recovery = JSON.parse(
+    await readFile(path.join(result.runDir, "playwright-recovery.json"), "utf8"),
+  );
+  assert.deepEqual(recovery, {
+    schemaVersion: "1.0",
+    installAttempted: true,
+    installStatus: "installed",
+    installReason: null,
+    triggerStage: "build",
+    unavailableStages: ["build", "critic"],
+  });
+  assert.doesNotMatch(JSON.stringify(recovery), /private|chrome\.exe|stdout|stderr/i);
+});
+
+test("executePipeline rejects critic programming and integrity faults", async (t) => {
+  for (const [name, fault] of [
+    ["programming", new TypeError("critic contract is broken")],
+    ["integrity", Object.assign(new Error("evidence digest mismatch"), { code: "EVIDENCE_PACKET_INVALID" })],
+  ]) {
+    await t.test(name, async () => {
+      const root = path.join(process.cwd(), ".trash", "tests", randomUUID());
+      await assert.rejects(
+        executePipeline({
+          businessName: `Fault ${name}`,
+          fast: true,
+          maxCycles: 1,
+          runsRoot: path.join(root, "runs"),
+          trashRoot: path.join(root, "trash"),
+          createBriefFn: async () => ({ business: { name: `Fault ${name}` } }),
+          buildRunFn: async ({ runDir }) => {
+            await mkdir(path.join(runDir, "cycle-01", "site"), { recursive: true });
+          },
+          criticFn: async () => { throw fault; },
+        }),
+        (error) => error === fault,
+      );
+    });
+  }
+});
+
 test("finalizeExistingRun selects from preserved critique artifacts", async () => {
   const runDir = path.join(process.cwd(), "tmp", randomUUID(), "run");
   await mkdir(runDir, { recursive: true });
@@ -310,4 +462,20 @@ function critiqueArtifact(overrides = {}) {
 function sequenceClock() {
   let tick = 0;
   return () => new Date(Date.UTC(2026, 6, 17, 12, 0, tick++));
+}
+
+async function recoverOnce(browserRecovery, stage, calls) {
+  let invocationCalls = 0;
+  return browserRecovery.run(async () => {
+    invocationCalls += 1;
+    calls[stage] += 1;
+    if (invocationCalls === 1) throw missingChromiumError();
+    return true;
+  }, { stage });
+}
+
+function missingChromiumError() {
+  return new Error(
+    `browserType.launch: Executable doesn't exist at ${syntheticWindowsPath("private", "playwright", "chrome.exe")}`,
+  );
 }

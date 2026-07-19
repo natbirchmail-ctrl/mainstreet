@@ -1614,3 +1614,117 @@ test("buildRun keeps a complete deterministic site when every real image request
   assert.equal(JSON.stringify(buildRecord).includes("provider response"), false);
   assert.equal(Object.hasOwn(buildRecord, "files"), false);
 });
+
+test("missing Chromium preserves the first statically valid model candidate without a second generation", async () => {
+  let modelCalls = 0;
+  const unavailable = Object.assign(
+    new Error("Chromium is unavailable after one recovery attempt."),
+    {
+      code: "PLAYWRIGHT_BROWSER_UNAVAILABLE",
+      recovery: {
+        schemaVersion: "1.0",
+        stage: "build",
+        reason: "chromium_missing_after_retry",
+        installStatus: "installed",
+        installReason: null,
+      },
+    },
+  );
+  const browserRecovery = {
+    async run() {
+      throw unavailable;
+    },
+  };
+
+  const result = await buildSite({
+    brief: brief(),
+    browserRecovery,
+    structuredRequester: async () => {
+      modelCalls += 1;
+      return modelManifest();
+    },
+  });
+
+  assert.equal(modelCalls, 1);
+  assert.equal(result.source, "openai");
+  assert.deepEqual(result.renderedVerification, {
+    status: "unavailable",
+    reason: "chromium_missing_after_retry",
+    installStatus: "installed",
+    installReason: null,
+  });
+  validateSiteManifest(result);
+});
+
+test("rendered verification metadata rejects inconsistent installed evidence", () => {
+  const candidate = {
+    ...safeManifest(),
+    source: "openai",
+    renderedVerification: {
+      status: "unavailable",
+      reason: "chromium_missing_after_retry",
+      installStatus: "installed",
+      installReason: "installer_nonzero",
+    },
+  };
+  assert.throws(() => validateSiteManifest(candidate), /rendered verification metadata/i);
+});
+
+test("buildRun writes a statically valid local cycle with sanitized recovery evidence", async () => {
+  const runDir = path.join(process.cwd(), ".trash", "tests", randomUUID(), "run");
+  await mkdir(runDir, { recursive: true });
+  await writeFile(path.join(runDir, "brief.json"), JSON.stringify(brief()), "utf8");
+  const unavailable = Object.assign(
+    new Error("Chromium is unavailable after one recovery attempt."),
+    {
+      code: "PLAYWRIGHT_BROWSER_UNAVAILABLE",
+      recovery: {
+        schemaVersion: "1.0",
+        stage: "build",
+        reason: "installer_nonzero",
+        installStatus: "unavailable",
+        installReason: "installer_nonzero",
+      },
+    },
+  );
+  const browserRecovery = {
+    async run() {
+      throw unavailable;
+    },
+  };
+  let modelCalls = 0;
+
+  const result = await buildRun({
+    runDir,
+    browserRecovery,
+    buildSiteFn: ({ brief: inputBrief, browserRecovery: receivedRecovery }) =>
+      buildSite({
+        brief: inputBrief,
+        browserRecovery: receivedRecovery,
+        structuredRequester: async () => {
+          modelCalls += 1;
+          return modelManifest();
+        },
+      }),
+    materializeAssetsFn: async () => ({
+      allResolved: false,
+      requestCount: 3,
+      successCount: 0,
+      fallbackCount: 3,
+    }),
+  });
+
+  assert.equal(modelCalls, 1);
+  assert.equal(result.manifest.renderedVerification.status, "unavailable");
+  assert.match(await readFile(path.join(result.siteDir, "index.html"), "utf8"), /Juniper Oven/);
+  const buildRecord = JSON.parse(
+    await readFile(path.join(runDir, "cycle-01", "build.json"), "utf8"),
+  );
+  assert.deepEqual(buildRecord.renderedVerification, {
+    status: "unavailable",
+    reason: "installer_nonzero",
+    installStatus: "unavailable",
+    installReason: "installer_nonzero",
+  });
+  assert.doesNotMatch(JSON.stringify(buildRecord), /private|chrome\.exe|stdout|stderr/i);
+});

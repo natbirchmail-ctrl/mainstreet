@@ -23,6 +23,10 @@ import {
 import { resolveInside } from "./lib/runs.js";
 import { startStaticServer } from "./serve.js";
 import { EVIDENCE_VIEWPORTS } from "./viewports.js";
+import {
+  createPlaywrightRecovery,
+  isPlaywrightBrowserUnavailable,
+} from "./playwright-recovery.js";
 
 export { EVIDENCE_VIEWPORTS };
 
@@ -265,12 +269,11 @@ export class CaptureUnavailableError extends Error {
 function classifyCaptureUnavailable(error, stage) {
   if (error?.code === "CAPTURE_UNAVAILABLE") return error;
   const serverCodes = new Set(["EADDRINUSE", "EADDRNOTAVAIL", "EACCES"]);
-  const browserCodes = new Set(["ECONNRESET", "EPIPE", "ENOENT"]);
   const explicitlyUnavailable =
     (stage === "server" && serverCodes.has(error?.code)) ||
-    (stage === "browser" &&
-      (browserCodes.has(error?.code) || /^browserType\.launch:/i.test(error?.message ?? "")));
+    (stage === "browser" && isPlaywrightBrowserUnavailable(error));
   if (!explicitlyUnavailable) return null;
+  if (stage === "browser") return error;
   return new CaptureUnavailableError(
     stage === "server"
       ? "Preview server is unavailable."
@@ -286,6 +289,7 @@ export async function captureRenderedEvidence({
   cycleDir,
   port = 4601,
   browserType = chromium,
+  browserRecovery = createPlaywrightRecovery(),
   now = () => new Date(),
   startServer = startStaticServer,
 }) {
@@ -378,7 +382,10 @@ export async function captureRenderedEvidence({
   let browser;
   try {
     try {
-      browser = await browserType.launch({ headless: true });
+      browser = await browserRecovery.run(
+        () => browserType.launch({ headless: true }),
+        { stage: "critic" },
+      );
     } catch (error) {
       const unavailable = classifyCaptureUnavailable(error, "browser");
       if (unavailable) throw unavailable;

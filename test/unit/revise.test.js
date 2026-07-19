@@ -482,3 +482,79 @@ test("reviseRun rejects a fourth cycle", async () => {
     /cycle three is terminal/i,
   );
 });
+
+test("missing Chromium preserves the first statically valid revision without a second model call", async () => {
+  let modelCalls = 0;
+  const unavailable = Object.assign(
+    new Error("Chromium is unavailable after one recovery attempt."),
+    {
+      code: "PLAYWRIGHT_BROWSER_UNAVAILABLE",
+      recovery: {
+        schemaVersion: "1.0",
+        stage: "revise",
+        reason: "chromium_missing_after_retry",
+        installStatus: "installed",
+        installReason: null,
+      },
+    },
+  );
+  const revised = await reviseSite({
+    brief: { business: { name: "Juniper Oven" } },
+    currentManifest: manifest(),
+    critique: critique(),
+    mechanical: { passed: true, failures: [] },
+    browserRecovery: {
+      run: async (_operation, { stage }) => {
+        assert.equal(stage, "revise");
+        throw unavailable;
+      },
+    },
+    structuredRequester: async () => {
+      modelCalls += 1;
+      return manifest("A statically valid revision", { modelOutput: true });
+    },
+  });
+
+  assert.equal(modelCalls, 1);
+  assert.equal(revised.source, "openai-revision");
+  assert.deepEqual(revised.renderedVerification, {
+    status: "unavailable",
+    reason: "chromium_missing_after_retry",
+    installStatus: "installed",
+    installReason: null,
+  });
+  validateSiteManifest(revised);
+});
+
+test("reviseRun shares browser recovery and writes an unverified static cycle", async () => {
+  const runDir = path.join(process.cwd(), ".trash", "tests", randomUUID(), "run");
+  await makeResolvedFirstCycle(runDir);
+  const browserRecovery = { run: async () => { throw new Error("must not relaunch"); } };
+  const renderedVerification = {
+    status: "unavailable",
+    reason: "installer_timeout",
+    installStatus: "unavailable",
+    installReason: "installer_timeout",
+  };
+
+  const result = await reviseRun({
+    runDir,
+    fromCycle: 1,
+    browserRecovery,
+    reviseSiteFn: async ({ browserRecovery: receivedRecovery }) => {
+      assert.equal(receivedRecovery, browserRecovery);
+      return {
+        ...manifest("A local static revision"),
+        source: "openai-revision",
+        renderedVerification,
+      };
+    },
+  });
+
+  assert.equal(result.manifest.renderedVerification.status, "unavailable");
+  assert.match(await readFile(path.join(result.siteDir, "index.html"), "utf8"), /A local static revision/);
+  const buildRecord = JSON.parse(
+    await readFile(path.join(result.toCycleDir, "build.json"), "utf8"),
+  );
+  assert.deepEqual(buildRecord.renderedVerification, renderedVerification);
+});

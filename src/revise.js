@@ -11,6 +11,10 @@ import { materializeAssets } from "./assets.js";
 import { deriveClaimPolicy, validateBriefClaims } from "./claim-policy.js";
 import { requestImage, requestStructured } from "./lib/openai.js";
 import { resolveInside, writeJsonNew } from "./lib/runs.js";
+import {
+  createPlaywrightRecovery,
+  isPlaywrightBrowserUnavailable,
+} from "./playwright-recovery.js";
 
 const projectRoot = new URL("../", import.meta.url);
 const promptUrl = new URL("prompts/revise-system.md", projectRoot);
@@ -25,6 +29,7 @@ export async function reviseSite({
   model = process.env.OPENAI_MODEL || "gpt-5.6",
   client,
   structuredRequester = requestStructured,
+  browserRecovery = createPlaywrightRecovery(),
 }) {
   if (!brief?.business?.name || !currentManifest?.indexHtml || !critique?.issues) {
     throw new TypeError("Brief, current site, and critique are required for revision.");
@@ -67,12 +72,35 @@ export async function reviseSite({
       maxOutputTokens: 24_000,
     });
 
+    let hydrated;
     try {
-      const hydrated = hydrateSiteManifest(candidate);
+      hydrated = hydrateSiteManifest(candidate);
       validateBriefClaims(hydrated.indexHtml, brief, claimPolicy);
-      await validateRenderedSourceVisibility(hydrated);
+    } catch (error) {
+      lastValidationError = error;
+      continue;
+    }
+
+    try {
+      await validateRenderedSourceVisibility(hydrated, {
+        browserRecovery,
+        stage: "revise",
+      });
       return { ...hydrated, source: "openai-revision" };
     } catch (error) {
+      if (isPlaywrightBrowserUnavailable(error)) {
+        return {
+          ...hydrated,
+          source: "openai-revision",
+          renderedVerification: {
+            status: "unavailable",
+            reason: error.recovery.reason,
+            installStatus: error.recovery.installStatus,
+            installReason: error.recovery.installReason,
+          },
+        };
+      }
+      if (error?.code !== "RENDERED_SOURCE_VISIBILITY_FAILED") throw error;
       lastValidationError = error;
     }
   }
@@ -89,6 +117,7 @@ export async function reviseRun({
   client,
   model = process.env.OPENAI_IMAGE_MODEL || "gpt-image-1",
   now = () => new Date(),
+  browserRecovery = createPlaywrightRecovery(),
 }) {
   if (!Number.isInteger(fromCycle) || fromCycle < 1) {
     throw new TypeError("fromCycle must be a positive integer.");
@@ -133,6 +162,7 @@ export async function reviseRun({
     critique,
     mechanical,
     availableAssets: priorAssets,
+    browserRecovery,
   });
   validateBriefClaims(revisedManifest.indexHtml, brief);
 
@@ -155,7 +185,10 @@ export async function reviseRun({
   };
 
   const siteDir = resolveInside(toCycleDir, "site");
-  await writeSiteFiles(siteDir, revisedManifest, runDir);
+  await writeSiteFiles(siteDir, revisedManifest, runDir, {
+    browserRecovery,
+    recoveryStage: "revise",
+  });
   const assets = await assetMaterializerFn({
     cycleDir: toCycleDir,
     siteDir,
@@ -175,6 +208,7 @@ export async function reviseRun({
       createdAt: now().toISOString(),
       source: revisedManifest.source,
       fallbackReason: null,
+      renderedVerification: revisedManifest.renderedVerification ?? null,
       designNotes: revisedManifest.designNotes,
       imagePlan: revisedManifest.imagePlan,
       assetSummary: sanitizeAssetSummary(assets),

@@ -4,6 +4,7 @@ import { mkdir, readdir, readFile, symlink, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import path from "node:path";
 import test from "node:test";
+import { syntheticWindowsPath } from "../helpers/windows-path.js";
 import { isDeepStrictEqual } from "node:util";
 import { chromium } from "playwright";
 
@@ -12,6 +13,7 @@ import {
   captureRenderedEvidence,
 } from "../../src/critic-evidence.js";
 import { EVIDENCE_VIEWPORTS as CANONICAL_VIEWPORTS } from "../../src/viewports.js";
+import { createPlaywrightRecovery } from "../../src/playwright-recovery.js";
 import {
   createDeterministicPng,
   sha256Hex,
@@ -939,6 +941,63 @@ test("preview infrastructure failures are explicitly classified", async () => {
     }),
     (error) => error === programmingError,
   );
+});
+
+test("browser recovery accepts only the exact missing executable condition", async () => {
+  const genericFixture = await writeFixture({ move: "staged hero entrance" });
+  const generic = new Error("browserType.launch: Invalid fixture launch configuration");
+  let genericInstallerCalls = 0;
+  const genericRecovery = createPlaywrightRecovery({
+    installer: async () => {
+      genericInstallerCalls += 1;
+      return { status: "installed", reason: null };
+    },
+  });
+  await assert.rejects(
+    captureRenderedEvidence({
+      siteDir: genericFixture.siteDir,
+      cycleDir: genericFixture.cycleDir,
+      port: 4601,
+      browserRecovery: genericRecovery,
+      browserType: { launch: async () => { throw generic; } },
+      startServer: async () => ({
+        url: "http://127.0.0.1:4601/",
+        close: async () => {},
+      }),
+    }),
+    (error) => error === generic,
+  );
+  assert.equal(genericInstallerCalls, 0);
+
+  const recoveredFixture = await writeFixture({ move: "staged hero entrance" });
+  let launchCalls = 0;
+  let installerCalls = 0;
+  const recovery = createPlaywrightRecovery({
+    installer: async () => {
+      installerCalls += 1;
+      return { status: "installed", reason: null };
+    },
+  });
+  const evidence = await captureRenderedEvidence({
+    siteDir: recoveredFixture.siteDir,
+    cycleDir: recoveredFixture.cycleDir,
+    port: 4601,
+    browserRecovery: recovery,
+    browserType: {
+      async launch(options) {
+        launchCalls += 1;
+        if (launchCalls === 1) {
+          throw new Error(
+            `browserType.launch: Executable doesn't exist at ${syntheticWindowsPath("private", "chrome.exe")}`,
+          );
+        }
+        return chromium.launch(options);
+      },
+    },
+  });
+  assert.equal(installerCalls, 1);
+  assert.equal(launchCalls, 2);
+  assert.equal(evidence.mechanical.passed, true);
 });
 
 test("no JavaScript counts roots per declared slug instead of by aggregate", async () => {

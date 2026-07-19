@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
+import { syntheticWindowsPath } from "../helpers/windows-path.js";
 
 import {
   EVIDENCE_VIEWPORTS as CRITIC_VIEWPORTS,
@@ -18,6 +19,7 @@ import {
   normalizeModelCritique,
 } from "../../src/critic-policy.js";
 import { EVIDENCE_VIEWPORTS as CANONICAL_VIEWPORTS } from "../../src/viewports.js";
+import { createPlaywrightRecovery } from "../../src/playwright-recovery.js";
 
 const COMPLETE_VIEWPORTS = ["desktop", "tablet", "phone"];
 const EVIDENCE_PACKET_SHA256 = "d".repeat(64);
@@ -406,6 +408,106 @@ test("a later vision failure propagates without poisoning reusable capture state
     readFile(path.join(cycleDir, "capture-error.json"), "utf8"),
     (error) => error?.code === "ENOENT",
   );
+});
+
+test("runCriticCycle shares recovery with capture and keeps vision after one successful install retry", async () => {
+  const runDir = path.join(process.cwd(), ".trash", "tests", randomUUID(), "run");
+  const cycleDir = path.join(runDir, "cycle-01");
+  await mkdir(path.join(cycleDir, "site"), { recursive: true });
+  await writeFile(
+    path.join(runDir, "brief.json"),
+    JSON.stringify({ business: { name: "Juniper Oven" } }),
+    "utf8",
+  );
+  let installerCalls = 0;
+  let launchCalls = 0;
+  const browserRecovery = createPlaywrightRecovery({
+    installer: async () => {
+      installerCalls += 1;
+      return { status: "installed", reason: null };
+    },
+  });
+
+  const result = await runCriticCycle({
+    runDir,
+    cycle: 1,
+    browserRecovery,
+    captureCycleFn: async ({ browserRecovery: receivedRecovery }) => {
+      assert.equal(receivedRecovery, browserRecovery);
+      return receivedRecovery.run(async () => {
+        launchCalls += 1;
+        if (launchCalls === 1) {
+          throw new Error(
+            `browserType.launch: Executable doesn't exist at ${syntheticWindowsPath("private", "chrome.exe")}`,
+          );
+        }
+        return {
+          mechanical: renderedMechanicalEvidence(),
+          assetsResolved: true,
+          evidencePacketSha256: EVIDENCE_PACKET_SHA256,
+        };
+      }, { stage: "critic" });
+    },
+    critiqueCycleFn: async () => normalizeModelCritique(rawCritique()),
+  });
+
+  assert.equal(installerCalls, 1);
+  assert.equal(launchCalls, 2);
+  assert.equal(result.mode, "vision");
+  assert.equal(result.shipEligible, true);
+});
+
+test("persistent missing Chromium uses source fallback with sanitized recovery evidence", async () => {
+  const runDir = path.join(process.cwd(), ".trash", "tests", randomUUID(), "run");
+  const cycleDir = path.join(runDir, "cycle-01");
+  await mkdir(path.join(cycleDir, "site"), { recursive: true });
+  await Promise.all([
+    writeFile(
+      path.join(runDir, "brief.json"),
+      JSON.stringify({ business: { name: "Juniper Oven" } }),
+      "utf8",
+    ),
+    writeFile(path.join(cycleDir, "site", "index.html"), "<!doctype html><main><h1>Proof</h1></main>", "utf8"),
+    writeFile(path.join(cycleDir, "site", "styles.css"), "body { color: #111111; }", "utf8"),
+  ]);
+  let installerCalls = 0;
+  let launchCalls = 0;
+  const browserRecovery = createPlaywrightRecovery({
+    installer: async () => {
+      installerCalls += 1;
+      return { status: "installed", reason: null };
+    },
+  });
+
+  const result = await runCriticCycle({
+    runDir,
+    cycle: 1,
+    browserRecovery,
+    captureCycleFn: ({ browserRecovery: receivedRecovery }) =>
+      receivedRecovery.run(async () => {
+        launchCalls += 1;
+        throw new Error(
+          `browserType.launch: Executable doesn't exist at ${syntheticWindowsPath("Users", "secret", "chrome.exe")}\nraw diagnostic`,
+        );
+      }, { stage: "critic" }),
+    critiqueSourceFn: async () => normalizeModelCritique(rawCritique()),
+  });
+
+  assert.equal(installerCalls, 1);
+  assert.equal(launchCalls, 2);
+  assert.equal(result.mode, "source-fallback");
+  assert.equal(result.shipEligible, false);
+  const captureError = JSON.parse(
+    await readFile(path.join(cycleDir, "capture-error.json"), "utf8"),
+  );
+  assert.equal(captureError.errorCode, "PLAYWRIGHT_BROWSER_UNAVAILABLE");
+  assert.equal(captureError.message, "Playwright capture failed. Source review was used.");
+  assert.deepEqual(captureError.recovery, {
+    reason: "chromium_missing_after_retry",
+    installStatus: "installed",
+    installReason: null,
+  });
+  assert.doesNotMatch(JSON.stringify(captureError), /secret|chrome\.exe|raw diagnostic|stdout|stderr/i);
 });
 
 function dimension(score) {
