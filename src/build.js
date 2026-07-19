@@ -313,6 +313,11 @@ export async function validateRenderedSourceVisibility(manifest) {
               resolved[0] + resolved[2] >= bounds.height ||
               resolved[1] + resolved[3] >= bounds.width;
           };
+          const hasUnsafeMaskImage = (style) =>
+            ["mask-image", "-webkit-mask-image"].some((property) => {
+              const value = style.getPropertyValue(property).trim();
+              return value !== "" && value !== "none";
+            });
           const describe = (element) => {
             const id = element.id ? `#${element.id}` : "";
             const classes = element.classList.length > 0 ? `.${[...element.classList].join(".")}` : "";
@@ -334,6 +339,7 @@ export async function validateRenderedSourceVisibility(manifest) {
             if (isTransparent(style.color)) reasons.push("transparent text color");
             if (hasZeroOpacityFilter(style.filter)) reasons.push("zero opacity filter");
             if (hasUnsafeClipPath(style.clipPath, element)) reasons.push("unsafe clip path");
+            if (hasUnsafeMaskImage(style)) reasons.push("unsafe mask image");
 
             if ((state.isHook || state.isContent) && style.display !== "contents") {
               const bounds = element.getBoundingClientRect();

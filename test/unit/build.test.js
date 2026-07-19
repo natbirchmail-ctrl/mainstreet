@@ -553,6 +553,50 @@ test("buildSite rejects unsupported clip path shapes through indirect selectors"
   }
 });
 
+test("buildSite rejects computed masks on protected motion source", async (t) => {
+  const attacks = [
+    [
+      "desktop hook transparent mask image",
+      '@media (min-width: 1200px) { [class="motion-copy"] { mask-image: linear-gradient(transparent, transparent) !important; } }',
+    ],
+    [
+      "tablet content transparent prefixed mask image",
+      '@media (min-width: 600px) and (max-width: 900px) { [class="motion-copy"] h1 { -webkit-mask-image: linear-gradient(transparent, transparent) !important; } }',
+    ],
+    [
+      "phone hook transparent mask shorthand",
+      '@media (max-width: 500px) { [class="motion-copy"] { mask: linear-gradient(transparent, transparent) !important; } }',
+    ],
+  ];
+  for (const [name, attack] of attacks) {
+    await t.test(name, async () => {
+      const candidate = modelManifest();
+      candidate.indexHtml = candidate.indexHtml.replace(
+        "<div data-first-beat data-motion-target>",
+        '<div class="motion-copy" data-first-beat data-motion-target>',
+      );
+      candidate.stylesCss += `\n${attack}`;
+      const result = await buildSite({ brief: brief(), structuredRequester: async () => candidate });
+      assert.equal(result.source, "deterministic-fallback");
+      assert.equal(result.stylesCss.includes(attack), false);
+    });
+  }
+});
+
+test("buildSite accepts explicit none masks through the rendered gate", async () => {
+  const candidate = modelManifest();
+  candidate.indexHtml = candidate.indexHtml.replace(
+    "<div data-first-beat data-motion-target>",
+    '<div class="motion-copy" data-first-beat data-motion-target>',
+  );
+  candidate.stylesCss += `
+@media (min-width: 1200px) { [class="motion-copy"] { mask-image: none; } }
+@media (min-width: 600px) and (max-width: 900px) { [class="motion-copy"] h1 { -webkit-mask-image: none; } }
+@media (max-width: 500px) { [class="motion-copy"] { mask: none; } }`;
+  const result = await buildSite({ brief: brief(), structuredRequester: async () => candidate });
+  assert.equal(result.source, "openai");
+});
+
 test("buildSite accepts visible filters and partial clipping through the rendered gate", async () => {
   const candidate = modelManifest();
   candidate.indexHtml = candidate.indexHtml.replace(
