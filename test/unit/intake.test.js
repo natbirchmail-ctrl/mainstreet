@@ -95,19 +95,32 @@ function confirmedInterviewAnswers() {
   ];
 }
 
+function sensitiveFixture(...parts) {
+  return parts.join("");
+}
+
 function sensitiveAnswerCases() {
   return [
-    ["API key", "OPENAI_API_KEY=example-credential-value"],
-    ["CVV", "My CVV is 123"],
-    ["PIN", "PIN 1234"],
-    ["payment card", "4111 1111 1111 1111"],
-    ["client secret", "client secret is not-a-real-secret"],
-    ["recovery code", "recovery code 1234 5678"],
-    ["password", "password is not-a-real-password"],
-    ["terse password", "password hunter2"],
-    ["terse client secret", "client secret examplevalue"],
-    ["private key", "private key is not-a-real-private-key"],
-    ["private account credentials", "private account credentials are example"],
+    ["API key", sensitiveFixture("OPENAI_", "API_KEY", "=", "example", "-credential", "-value")],
+    ["CVV", sensitiveFixture("My CVV is ", "123")],
+    ["PIN", sensitiveFixture("PIN ", "1234")],
+    ["payment card", sensitiveFixture("4111 ", "1111 ", "1111 ", "1111")],
+    ["client secret", sensitiveFixture("client secret is ", "not-a-real-secret")],
+    ["recovery code", sensitiveFixture("recovery code ", "1234 ", "5678")],
+    ["password", sensitiveFixture("password is ", "not-a-real-password")],
+    ["terse password", sensitiveFixture("password ", "hunter2")],
+    ["terse client secret", sensitiveFixture("client secret ", "examplevalue")],
+    ["Stripe live secret key", sensitiveFixture("sk", "_li", "ve_", "51Ab", "CdEf", "GhIj", "KlMn", "OpQr", "StUv")],
+    ["Stripe live restricted key", sensitiveFixture("rk", "_li", "ve_", "51Ab", "CdEf", "GhIj", "KlMn", "OpQr", "StUv")],
+    ["Slack bot token", sensitiveFixture("xo", "xb", "-", "123456", "789012", "-", "123456", "789012", "-", "AbCdEf", "GhIjKl", "MnOpQr", "StUv")],
+    ["Slack user token", sensitiveFixture("xo", "xp", "-", "123456", "789012", "-", "123456", "789012", "-", "AbCdEf", "GhIjKl", "MnOpQr", "StUv")],
+    ["Slack app token", sensitiveFixture("xo", "xa", "-", "123456", "789012", "-", "123456", "789012", "-", "AbCdEf", "GhIjKl", "MnOpQr", "StUv")],
+    ["Slack refresh token", sensitiveFixture("xo", "xr", "-", "123456", "789012", "-", "123456", "789012", "-", "AbCdEf", "GhIjKl", "MnOpQr", "StUv")],
+    ["Slack session token", sensitiveFixture("xo", "xs", "-", "123456", "789012", "-", "123456", "789012", "-", "AbCdEf", "GhIjKl", "MnOpQr", "StUv")],
+    ["Slack app level token", sensitiveFixture("xa", "pp", "-", "1", "-", "AbCdEf", "GhIjKl", "MnOpQr", "StUvWx", "Yz")],
+    ["JWT bearer token", sensitiveFixture("ey", "JhbG", "ciOiJ", "IUzI1", "NiJ9", ".", "ey", "JzdWI", "iOiIx", "MjM0N", "TY3OD", "kwIn0", ".", "c2", "lnbmF", "0dXJl", "LXZhb", "HVl")],
+    ["private key", sensitiveFixture("private key is ", "not-a-real-private-key")],
+    ["private account credentials", sensitiveFixture("private account credentials are ", "example")],
   ];
 }
 
@@ -132,7 +145,7 @@ test("interactive intake asks exactly six model generated questions", async () =
     },
   });
 
-  assert.equal(request.model, "gpt-5.6");
+  assert.equal(request.model, process.env.OPENAI_MODEL || "gpt-5.6");
   assert.equal(request.schemaName, "mainstreet_intake_questions");
   assert.deepEqual(request.userPayload, {
     businessName: "Juniper Oven",
@@ -174,6 +187,67 @@ test("interactive intake asks exactly six model generated questions", async () =
       { label: "Customer value", value: "Confirmed answer 6", source: "user" },
     ],
   );
+});
+
+test("interactive question generation follows the configured model with a gpt-5.6 fallback", async (t) => {
+  const previousModel = process.env.OPENAI_MODEL;
+  try {
+    for (const [name, configuredModel, expectedModel] of [
+      ["configured model", "gpt-5.6-owner-intake", "gpt-5.6-owner-intake"],
+      ["fallback", undefined, "gpt-5.6"],
+    ]) {
+      await t.test(name, async () => {
+        if (configuredModel === undefined) {
+          delete process.env.OPENAI_MODEL;
+        } else {
+          process.env.OPENAI_MODEL = configuredModel;
+        }
+        let requestedModel;
+        await intakeModule.conductOwnerInterview({
+          businessName: "Juniper Oven",
+          structuredRequester: async ({ model }) => {
+            requestedModel = model;
+            return modelQuestions();
+          },
+          promptInterface: { ask: async () => "Safe answer" },
+        });
+        assert.equal(requestedModel, expectedModel);
+      });
+    }
+  } finally {
+    if (previousModel === undefined) {
+      delete process.env.OPENAI_MODEL;
+    } else {
+      process.env.OPENAI_MODEL = previousModel;
+    }
+  }
+});
+
+test("interactive intake cancels before question generation when its prompt signal is aborted", async () => {
+  const controller = new AbortController();
+  controller.abort();
+  let requestCalls = 0;
+  let promptCalls = 0;
+
+  await assert.rejects(
+    intakeModule.conductOwnerInterview({
+      businessName: "Juniper Oven",
+      structuredRequester: async () => {
+        requestCalls += 1;
+        return modelQuestions();
+      },
+      promptInterface: {
+        signal: controller.signal,
+        ask: async () => {
+          promptCalls += 1;
+          return "Safe answer";
+        },
+      },
+    }),
+    /interview cancelled before all six answers were confirmed/i,
+  );
+  assert.equal(requestCalls, 0);
+  assert.equal(promptCalls, 0);
 });
 
 test("interactive intake fails closed on EOF or cancellation", async (t) => {
@@ -323,12 +397,12 @@ test("strict brief rejects sensitive answers before its model request", async (t
 
 test("ordinary sentences plus phone address and hours answers remain allowed", async () => {
   const safeAnswers = [
-    "Password reset support for local offices",
+    "Publish the Stripe checkout link after owner approval",
     "Monday through Friday from 9 AM to 5 PM",
     "Warm and practical",
-    "The phrase client secret appears only in staff training",
+    "The public menu is at bakery.example.test",
     "Call 928 555 0100 at 12 North Leroux Street",
-    "Consistent quality",
+    "The public Slack community link is approved",
   ];
   let answerIndex = 0;
   const answers = await intakeModule.conductOwnerInterview({

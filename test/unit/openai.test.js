@@ -245,6 +245,58 @@ test("requestStructured retries transient API failures without SDK retry multipl
   assert.equal(attempts, 3);
 });
 
+test("requestStructured forwards cancellation and does not retry an aborted request", async () => {
+  const controller = new AbortController();
+  const cancellation = new Error("cancelled by test");
+  let attempts = 0;
+  let sleepCalls = 0;
+  let requestSignal;
+  let markRequestStarted;
+  const requestStarted = new Promise((resolve) => {
+    markRequestStarted = resolve;
+  });
+  const pending = requestStructured({
+    client: {
+      responses: {
+        create: async (_request, options) => {
+          attempts += 1;
+          requestSignal = options?.signal;
+          markRequestStarted();
+          if (!requestSignal) {
+            const error = new Error("Abort signal was not forwarded to the SDK request.");
+            error.status = 400;
+            throw error;
+          }
+          if (requestSignal.aborted) {
+            throw requestSignal.reason;
+          }
+          return new Promise((resolve, reject) => {
+            requestSignal.addEventListener("abort", () => reject(requestSignal.reason), {
+              once: true,
+            });
+          });
+        },
+      },
+    },
+    schema,
+    schemaName: "cancelled_response",
+    systemPrompt: "Return JSON.",
+    userPayload: {},
+    signal: controller.signal,
+    maxAttempts: 3,
+    sleep: async () => {
+      sleepCalls += 1;
+    },
+  });
+
+  await requestStarted;
+  controller.abort(cancellation);
+  await assert.rejects(pending, (error) => error === cancellation);
+  assert.equal(requestSignal, controller.signal);
+  assert.equal(attempts, 1);
+  assert.equal(sleepCalls, 0);
+});
+
 test("requestStructured retries incomplete output and then succeeds", async () => {
   const responses = [
     {

@@ -234,16 +234,26 @@ export function createTerminalPromptInterface({
   output = process.stdout,
 } = {}) {
   const terminal = createInterface({ input, output });
+  const lifecycleController = new AbortController();
   let activeQuestion = null;
   let closed = false;
+  const abort = () => {
+    if (!lifecycleController.signal.aborted) {
+      lifecycleController.abort();
+    }
+    activeQuestion?.abort();
+  };
+  const handleInterrupt = () => abort();
   terminal.once("close", () => {
     closed = true;
-    activeQuestion?.abort();
+    terminal.off("SIGINT", handleInterrupt);
+    abort();
   });
-  terminal.on("SIGINT", () => activeQuestion?.abort());
+  terminal.on("SIGINT", handleInterrupt);
   return {
+    signal: lifecycleController.signal,
     ask: async ({ index, total, label, question }) => {
-      if (closed) {
+      if (closed || lifecycleController.signal.aborted) {
         throw new Error("Terminal input closed.");
       }
       const controller = new AbortController();
@@ -259,7 +269,11 @@ export function createTerminalPromptInterface({
         }
       }
     },
-    close: () => terminal.close(),
+    close: () => {
+      closed = true;
+      abort();
+      terminal.close();
+    },
   };
 }
 

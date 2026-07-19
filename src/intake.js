@@ -27,13 +27,15 @@ const sensitiveCodePattern =
   /\b(?:(?:cvv|cvc)\s*\d{3,4}|pin\s*\d{4,8}|recovery\s*code\s*[A-Za-z0-9]{4}(?:[ -]?[A-Za-z0-9]{4})+)\b/i;
 const privateKeyBlockPattern = /-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----/i;
 const credentialTokenPattern =
-  /\b(?:sk-(?:proj-)?[A-Za-z0-9_-]{8,}|gh[pousr]_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16})\b/;
+  /\b(?:sk-(?:proj-)?[A-Za-z0-9_-]{8,}|(?:sk|rk)_live_[A-Za-z0-9_]{8,}|(?:xox[bpars]|xapp)-[A-Za-z0-9_-]{8,}|gh[pousr]_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16})\b/;
+const jwtTokenPattern =
+  /(?:^|[^A-Za-z0-9_-])eyJ[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}(?=$|[^A-Za-z0-9_-])/;
 
 export async function conductOwnerInterview({
   businessName,
   city = null,
   details = null,
-  model = "gpt-5.6",
+  model = process.env.OPENAI_MODEL || "gpt-5.6",
   client,
   structuredRequester = requestStructured,
   promptInterface,
@@ -44,28 +46,41 @@ export async function conductOwnerInterview({
   if (!promptInterface || typeof promptInterface.ask !== "function") {
     throw new TypeError("Interactive intake requires a prompt interface.");
   }
+  const signal = promptInterface.signal;
+  throwIfInterviewCancelled(signal);
 
   const [systemPrompt, schema] = await Promise.all([
     readFile(questionPromptUrl, "utf8"),
     readFile(questionSchemaUrl, "utf8").then(JSON.parse),
   ]);
-  const candidate = await structuredRequester({
-    client,
-    model,
-    schema,
-    schemaName: "mainstreet_intake_questions",
-    systemPrompt,
-    userPayload: {
-      businessName: cleanName,
-      city: cleanCity,
-      ownerDetails: cleanDetails,
-      safety: {
-        askOnlyBusinessFacts: true,
-        neverRequestSecrets: true,
+  throwIfInterviewCancelled(signal);
+  let candidate;
+  try {
+    candidate = await structuredRequester({
+      client,
+      model,
+      schema,
+      schemaName: "mainstreet_intake_questions",
+      systemPrompt,
+      userPayload: {
+        businessName: cleanName,
+        city: cleanCity,
+        ownerDetails: cleanDetails,
+        safety: {
+          askOnlyBusinessFacts: true,
+          neverRequestSecrets: true,
+        },
       },
-    },
-    maxOutputTokens: 1_200,
-  });
+      maxOutputTokens: 1_200,
+      signal,
+    });
+  } catch (error) {
+    if (signal?.aborted) {
+      throw interviewCancelledError();
+    }
+    throw error;
+  }
+  throwIfInterviewCancelled(signal);
   const questions = normalizeInterviewQuestions(candidate);
   const answers = [];
 
@@ -349,6 +364,7 @@ function requireSafeInterviewText(value, {
       sensitiveCodePattern.test(normalized) ||
       privateKeyBlockPattern.test(normalized) ||
       credentialTokenPattern.test(normalized) ||
+      jwtTokenPattern.test(normalized) ||
       containsPaymentCardNumber(normalized);
 
   if (unsafe) {
@@ -386,4 +402,10 @@ function passesLuhn(digits) {
 
 function interviewCancelledError() {
   return new Error("Interview cancelled before all six answers were confirmed.");
+}
+
+function throwIfInterviewCancelled(signal) {
+  if (signal?.aborted) {
+    throw interviewCancelledError();
+  }
 }

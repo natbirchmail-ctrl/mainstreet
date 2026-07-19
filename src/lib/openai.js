@@ -96,43 +96,50 @@ export async function requestStructured({
   maxOutputTokens = 8_000,
   maxAttempts = DEFAULT_ATTEMPTS,
   sleep = defaultSleep,
+  signal,
 }) {
   assertStructuredRequest({ schema, schemaName, systemPrompt, maxAttempts });
 
   let lastError;
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    if (signal?.aborted) {
+      throw signal.reason ?? new Error("The model request was aborted.");
+    }
     try {
-      const response = await client.responses.create({
-        model,
-        instructions: systemPrompt,
-        input: [
-          {
-            role: "user",
-            content:
-              inputContent ??
-              [
-                {
-                  type: "input_text",
-                  text: JSON.stringify(userPayload),
-                },
-              ],
+      const response = await client.responses.create(
+        {
+          model,
+          instructions: systemPrompt,
+          input: [
+            {
+              role: "user",
+              content:
+                inputContent ??
+                [
+                  {
+                    type: "input_text",
+                    text: JSON.stringify(userPayload),
+                  },
+                ],
+            },
+          ],
+          text: {
+            format: {
+              type: "json_schema",
+              name: schemaName,
+              schema,
+              strict: true,
+            },
           },
-        ],
-        text: {
-          format: {
-            type: "json_schema",
-            name: schemaName,
-            schema,
-            strict: true,
-          },
+          max_output_tokens: maxOutputTokens,
         },
-        max_output_tokens: maxOutputTokens,
-      });
+        { signal },
+      );
 
       return parseStructuredResponse(response);
     } catch (error) {
       lastError = error;
-      if (attempt >= maxAttempts || !isRetryable(error)) {
+      if (signal?.aborted || attempt >= maxAttempts || !isRetryable(error)) {
         throw error;
       }
 

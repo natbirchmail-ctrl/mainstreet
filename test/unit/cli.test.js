@@ -8,6 +8,7 @@ import {
   main,
   parseCli,
 } from "../../bin/mainstreet.js";
+import { conductOwnerInterview } from "../../src/intake.js";
 
 function interviewAnswers() {
   return [
@@ -235,6 +236,100 @@ test("cancelled intake closes the terminal and never creates a brief or run", as
 
   assert.equal(promptInterface.closeCalled, true);
   assert.equal(creates, 0);
+});
+
+test("terminal prompt exposes a lifecycle signal that aborts on close", () => {
+  const input = new PassThrough();
+  const output = new PassThrough();
+  const promptInterface = createTerminalPromptInterface({ input, output });
+  try {
+    assert.equal(promptInterface.signal.aborted, false);
+    promptInterface.close();
+    assert.equal(promptInterface.signal.aborted, true);
+  } finally {
+    promptInterface.close();
+  }
+});
+
+test("SIGINT during GPT question generation cancels before prompting or creating a run", async () => {
+  const input = new PassThrough();
+  const terminalOutput = new PassThrough();
+  terminalOutput.isTTY = true;
+  const processListenerCount = process.listenerCount("SIGINT");
+  let promptInterface;
+  let closeCalls = 0;
+  let promptCalls = 0;
+  let createCalls = 0;
+  let requestSignal;
+  let markRequestStarted;
+  const requestStarted = new Promise((resolve) => {
+    markRequestStarted = resolve;
+  });
+
+  const running = main(["intake", "Juniper Oven"], {
+    promptInterfaceFactory: () => {
+      const terminalPrompt = createTerminalPromptInterface({ input, output: terminalOutput });
+      promptInterface = {
+        signal: terminalPrompt.signal,
+        ask: async (question) => {
+          promptCalls += 1;
+          return terminalPrompt.ask(question);
+        },
+        close: () => {
+          closeCalls += 1;
+          terminalPrompt.close();
+        },
+      };
+      return promptInterface;
+    },
+    conductOwnerInterviewFn: (options) =>
+      conductOwnerInterview({
+        ...options,
+        structuredRequester: async ({ signal }) => {
+          requestSignal = signal;
+          markRequestStarted();
+          return new Promise((resolve, reject) => {
+            const timeout = setTimeout(
+              () => reject(new Error("Question generation was not aborted.")),
+              75,
+            );
+            signal?.addEventListener(
+              "abort",
+              () => {
+                clearTimeout(timeout);
+                reject(signal.reason);
+              },
+              { once: true },
+            );
+          });
+        },
+      }),
+    createBriefFn: async () => {
+      createCalls += 1;
+    },
+    initializeRunFn: async () => {
+      createCalls += 1;
+    },
+    writeJsonNewFn: async () => {
+      createCalls += 1;
+    },
+    stdout: { write: () => {} },
+  });
+
+  await requestStarted;
+  input.write("\x03");
+  await assert.rejects(
+    running,
+    /interview cancelled before all six answers were confirmed/i,
+  );
+
+  assert.ok(promptInterface.signal instanceof AbortSignal);
+  assert.equal(requestSignal, promptInterface.signal);
+  assert.equal(requestSignal.aborted, true);
+  assert.equal(promptCalls, 0);
+  assert.equal(closeCalls, 1);
+  assert.equal(createCalls, 0);
+  assert.equal(process.listenerCount("SIGINT"), processListenerCount);
 });
 
 test("terminal prompt rejects when its input reaches EOF", async () => {
