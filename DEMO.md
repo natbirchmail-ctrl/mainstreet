@@ -106,11 +106,11 @@ Narration:
 
 ### 2:38 to 2:46: Built with Codex
 
-Visual: Show a short commit history, then the README's Built with Codex section.
+Visual: Show a short sequence of timestamped commit subjects without author fields, then the README's Built with Codex section. Label the commit shot `Build milestones, not agent authorship`.
 
 Narration:
 
-> A Codex agent team built Mainstreet. Agents handled bounded implementation, testing, review, release tooling, and documentation in parallel. The root Codex agent integrated the work, enforced the shared contracts, and made the final decisions.
+> A Codex agent team built Mainstreet under root integration. The commits use the repository owner's configured Git identity, so they prove timestamped build milestones, not which agent wrote a change. The documented Codex process records bounded agent contributions, with the root Codex agent responsible for integration, verification, and final decisions.
 
 ### 2:46 to 2:50: End card
 

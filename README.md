@@ -240,7 +240,7 @@ See [SECURITY.md](SECURITY.md) for the trust boundary and disclosure process.
 
 A Codex agent team built Mainstreet during OpenAI Build Week. The root Codex agent owned integration, scope control, verification, and final decisions. Other Codex agents worked in parallel on bounded research, implementation, tests, adversarial review, release tooling, and documentation. The root agent reconciled those contributions against the shared contracts and retained responsibility for the final repository state.
 
-The commit history records the work in reviewable milestones from scaffold through the quality rebuild. It is the source of truth for authorship and integration. Multiple agents contributed repository writes under root integration.
+Repository commits use the repository owner's configured Git identity. They prove timestamped build milestones from scaffold through the quality rebuild, not which Codex agent wrote an individual change. Implementation provenance is documented by the Codex agent process described here: bounded agent contributions under root integration, verification, and final decisions.
 
 GPT 5.6 powers Mainstreet's text and vision stages at runtime. The configured image model produces the planned PNGs. Deterministic code remains responsible for schemas, source safety, the owned script, asset integrity, rendered evidence, mechanical gates, cycle limits, selection, storage, delivery, and release validation.
 
