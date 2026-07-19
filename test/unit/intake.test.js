@@ -104,6 +104,8 @@ function sensitiveAnswerCases() {
     ["client secret", "client secret is not-a-real-secret"],
     ["recovery code", "recovery code 1234 5678"],
     ["password", "password is not-a-real-password"],
+    ["terse password", "password hunter2"],
+    ["terse client secret", "client secret examplevalue"],
     ["private key", "private key is not-a-real-private-key"],
     ["private account credentials", "private account credentials are example"],
   ];
@@ -223,6 +225,9 @@ test("interactive intake rejects sensitive data requests before prompting", asyn
     ["recovery code", "What is the account recovery code?"],
     ["password", "What is the private account password?"],
     ["private key", "Paste the private key used by the business account."],
+    ["financial account details", "What financial account details should be published?"],
+    ["private account data", "Share the private account data."],
+    ["private account credential", "What is the private account credential?"],
     ["private account credentials", "What are the private account credentials?"],
   ]) {
     await t.test(name, async () => {
@@ -267,6 +272,8 @@ test("question generator explicitly forbids sensitive requests", async () => {
     /recovery code/i,
     /password/i,
     /private key/i,
+    /financial account details/i,
+    /private account data/i,
     /private account credentials/i,
   ]) {
     assert.match(systemPrompt, pattern);
@@ -314,12 +321,12 @@ test("strict brief rejects sensitive answers before its model request", async (t
   }
 });
 
-test("ordinary phone address and hours answers remain allowed", async () => {
+test("ordinary sentences plus phone address and hours answers remain allowed", async () => {
   const safeAnswers = [
-    "Bread and pastries",
+    "Password reset support for local offices",
     "Monday through Friday from 9 AM to 5 PM",
     "Warm and practical",
-    "Storefront and product photos",
+    "The phrase client secret appears only in staff training",
     "Call 928 555 0100 at 12 North Leroux Street",
     "Consistent quality",
   ];
@@ -332,6 +339,17 @@ test("ordinary phone address and hours answers remain allowed", async () => {
 
   assert.equal(answers[1].value, safeAnswers[1]);
   assert.equal(answers[4].value, safeAnswers[4]);
+
+  let modelCalls = 0;
+  await createBrief({
+    businessName: "Juniper Oven",
+    interviewAnswers: answers,
+    structuredRequester: async () => {
+      modelCalls += 1;
+      return modelBrief({ mode: "interview" });
+    },
+  });
+  assert.equal(modelCalls, 1);
 });
 
 test("strict brief generation records interview answers as confirmed owner facts", async () => {

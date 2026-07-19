@@ -19,9 +19,10 @@ const interviewFields = Object.freeze([
 const maxInterviewQuestionLength = 240;
 const maxInterviewAnswerLength = 300;
 const sensitiveRequestPattern =
-  /\b(?:api\s*key|access\s*token|authentication\s*token|password|passcode|client\s*secret|secret\s*key|private\s*key|recovery\s*code|cvv|cvc|pin|(?:credit|debit)\s*card\s*number|bank\s*account(?:\s*(?:number|credentials?))?|social\s*security(?:\s*number)?|private\s*account\s*credentials?)\b/i;
+  /\b(?:api\s*key|access\s*token|authentication\s*token|password|passcode|client\s*secret|secret\s*key|private\s*key|recovery\s*code|cvv|cvc|pin|(?:credit|debit)\s*card\s*number|bank\s*account(?:\s*(?:number|credentials?))?|financial\s+account\s+details?|social\s*security(?:\s*number)?|private\s+account\s+(?:data|credentials?))\b/i;
 const sensitiveValuePattern =
   /(?:^|[^A-Za-z0-9])(?:[A-Za-z0-9]+[_-])?(?:api[_\s-]*key|access[_\s-]*token|authentication[_\s-]*token|password|passcode|client[_\s-]*secret|secret[_\s-]*key|private[_\s-]*key|recovery[_\s-]*code|cvv|cvc|pin|private[_\s-]*account[_\s-]*credentials?)\s*(?:(?:=|:)\s*|(?:is|are)\s+)\S+/i;
+const terseSensitiveValuePattern = /^(?:password\s+\S+|client\s+secret\s+\S+)$/i;
 const sensitiveCodePattern =
   /\b(?:(?:cvv|cvc)\s*\d{3,4}|pin\s*\d{4,8}|recovery\s*code\s*[A-Za-z0-9]{4}(?:[ -]?[A-Za-z0-9]{4})+)\b/i;
 const privateKeyBlockPattern = /-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----/i;
@@ -344,6 +345,7 @@ function requireSafeInterviewText(value, {
   const unsafe = mode === "question"
     ? sensitiveRequestPattern.test(normalized)
     : sensitiveValuePattern.test(normalized) ||
+      terseSensitiveValuePattern.test(normalized) ||
       sensitiveCodePattern.test(normalized) ||
       privateKeyBlockPattern.test(normalized) ||
       credentialTokenPattern.test(normalized) ||
