@@ -8,19 +8,21 @@ Mainstreet is an AI website generator for local small businesses. Give it a busi
 
 ## Public release status
 
-The quality rebuild changes the run artifacts and promotion contract. The final public values must come from the regenerated, committed artifacts. Replace these markers after regeneration:
+Canyon Wheelworks owns the current shared alias. Cloudflare verified the selected site and every deployed file against the committed deployment manifest.
 
-- `LIVE_ALIAS_OWNER_SLUG: PENDING_REGENERATION`
-- `LIVE_URL: PENDING_REGENERATION`
-- `LIVE_AGGREGATE_SHA256: PENDING_REGENERATION`
+- `LIVE_ALIAS_OWNER_SLUG: canyon-wheelworks`
+- `LIVE_URL: https://mainstreet-hackathon.pages.dev/`
+- `LIVE_IMMUTABLE_URL: https://f3a57ad6.mainstreet-hackathon.pages.dev/`
+- `LIVE_AGGREGATE_SHA256: e9af70db174e2ac1a3be49fb6519513c5098f61ad377e6900bb5e1e56c9140e9`
+- `DEPLOYMENT_COMMIT: 26e6714c571ab07f25a7a230b8fa73674fa9a6ce`
 
-A loopback URL is proof of local delivery only. It is never a substitute for the public alias.
+The shared alias points to the most recent verified promotion. Each example also has an immutable Cloudflare URL in the evidence table below. A loopback URL proves local delivery only and never replaces either public record.
 
 ## Why Mainstreet
 
 Small businesses often need a credible web presence before they have the time, budget, copy, photography, or design vocabulary to commission one. Mainstreet turns the blank page into an inspectable prototype while keeping uncertain facts out of public copy.
 
-The critic loop is the core idea. Generation is not the finish line. Every cycle preserves the source, local image evidence, three screenshots, a 320 pixel mechanical probe, rendered checks, law findings, score, and revision handoff. Mainstreet derives ship eligibility from those artifacts instead of accepting a model's recommendation.
+The critic loop is the core idea. Generation is not the finish line. Every cycle preserves the source, local image evidence, canonical desktop, tablet, and phone screenshots, and a digest-bound full-page critic screenshot for each viewport. It also records normal, reduced motion, JavaScript disabled, and 320 pixel mechanical evidence, law findings, the score, and the revision handoff. Mainstreet derives ship eligibility from those artifacts instead of accepting a model's recommendation.
 
 ## What it does
 
@@ -29,6 +31,7 @@ The critic loop is the core idea. Generation is not the finish line. Every cycle
 - Requires the model to return semantic HTML, CSS, an empty script sentinel, a plan for three to five local PNG images, and design notes.
 - Materializes an owned deterministic `script.js` and its matching motion styles. Model supplied JavaScript is rejected.
 - Captures desktop at 1440 by 900, tablet at 1024 by 768, and phone at 390 by 844.
+- Captures a digest-bound full-page critic image for each canonical viewport.
 - Probes a 320 by 800 viewport mechanically without treating it as a fourth critic screenshot.
 - Preserves every cycle as immutable judging evidence.
 - Blocks public promotion when any ship gate fails, when the critic uses source fallback, or when deployment verification fails.
@@ -94,12 +97,12 @@ npm run mainstreet -- run "Harborlight Flower Studio" --fast
 
 ### Design contract
 
-The builder commits to one visual idea and carries it through type, color, spacing, imagery, and interaction.
+The builder commits to one visual idea and carries it through type, color, spacing, imagery, and interaction. Mainstreet expresses the design contract as fresh clean-room prompt language and checks the same rules in the vision critic.
 
-- **Copy:** headings identify the subject or promise, body copy explains it, and actions lead somewhere real. Primary editorial headings use at most two meaningful words unless the exact business name stands alone. Unknown operating facts remain unpublished.
-- **Composition:** every section opens as a complete thought. Its first meaningful beat appears in the upper two thirds when the section aligns to the viewport. Repeating layouts must fit their actual item count without empty slots or orphan cards.
-- **Motion:** each site chooses one or two named moves from `pinned chapter passage`, `horizontal click reel`, `numbered story stepper`, `staged hero entrance`, and `gentle one direction scroll reveals`. Content remains visible with JavaScript disabled and with reduced motion enabled.
-- **Imagery:** each site plans three to five PNGs as one contemporary commissioned shoot. Every image has a distinct job, precise prompt, alt text, and focal point. Mainstreet records whether each file came from image generation, verified carry forward, or deterministic fallback.
+- **Copy:** headings identify the subject or promise, body copy explains it, and buttons direct. None of them decorate. Primary editorial headings use at most two meaningful words unless the exact business name stands alone. Unknown operating facts remain unpublished.
+- **Composition:** every section opens as a complete thought. Its first meaningful beat appears in the upper two thirds when the section aligns to the viewport. Centered heading blocks stay centered as one unit. Repeating layouts fit their actual item count without empty slots or orphan cards.
+- **Motion:** each site chooses one or two calm moves from the named vocabulary: `pinned chapter parallax`, `click reel row`, `story stepper`, `staged hero arrival`, and `gentle one-way scroll reveals`. It never uses all five at once. No content depends on animation to become visible or reachable. JavaScript-disabled and reduced-motion modes preserve the complete page.
+- **Imagery:** each site plans three to five PNGs as one contemporary commissioned shoot. Every image has a distinct job, precise prompt, alt text, and deliberate focal crop. No image pretends to document a history that was never supplied. Mainstreet records whether each file came from image generation, verified carry forward, or deterministic fallback.
 
 ### Eight hard laws
 
@@ -176,6 +179,11 @@ runs/<slug>/
       tablet-home.png
       mobile-home.png
       manifest.json
+      critic/
+        desktop-full-page.png
+        tablet-full-page.png
+        mobile-full-page.png
+        manifest.json
     visible-text.txt
     mechanical.json
     critique.json
@@ -191,17 +199,17 @@ runs/<slug>/
 
 `revise.json`, later cycles, and versioned deployment records appear only when the run reaches those stages. Failure artifacts such as `capture-error.json`, `critic-error.json`, or `revision-error.json` preserve bounded failures without changing prior evidence.
 
-## Regenerated example evidence
+## Example evidence
 
-The three rows below are deliberately pending. Replace the score path, selected cycle, verdict, delivery disposition, and aggregate digest from each regenerated committed run. Do not reuse pre-rebuild values.
+Each selected critique ran in vision mode and passed mechanics, asset resolution, all eight laws, and ship eligibility. Every run stopped when it reached the score threshold. Cloudflare verified all three deployments. Harborlight and Juniper record commit `fe6fb5c4d65fcb5ddadc83caebdbd80a07fb0fd1`; Canyon records commit `26e6714c571ab07f25a7a230b8fa73674fa9a6ce`.
 
-| Business | Score path | Selected cycle | Final verdict | Delivery | Aggregate SHA 256 | Evidence |
-| --- | --- | ---: | --- | --- | --- | --- |
-| Canyon Wheelworks | `PENDING_REGENERATION` | `PENDING_REGENERATION` | `PENDING_REGENERATION` | `PENDING_REGENERATION` | `PENDING_REGENERATION` | [Run report](runs/canyon-wheelworks/RUN-REPORT.md) |
-| Harborlight Flower Studio | `PENDING_REGENERATION` | `PENDING_REGENERATION` | `PENDING_REGENERATION` | `PENDING_REGENERATION` | `PENDING_REGENERATION` | [Run report](runs/harborlight-flower-studio/RUN-REPORT.md) |
-| Juniper Oven | `PENDING_REGENERATION` | `PENDING_REGENERATION` | `PENDING_REGENERATION` | `PENDING_REGENERATION` | `PENDING_REGENERATION` | [Run report](runs/juniper-oven/RUN-REPORT.md) |
+| Business | Score path | Selected cycle | Final verdict | Stop reason | Delivery | Immutable URL | Aggregate SHA 256 | Evidence |
+| --- | --- | ---: | --- | --- | --- | --- | --- | --- |
+| Canyon Wheelworks | `71 to 86` | 2 | ship | `threshold_reached` | Cloudflare verified | [Immutable deployment](https://f3a57ad6.mainstreet-hackathon.pages.dev/) | `e9af70db174e2ac1a3be49fb6519513c5098f61ad377e6900bb5e1e56c9140e9` | [Run report](runs/canyon-wheelworks/RUN-REPORT.md) |
+| Harborlight Flower Studio | `75 to 88` | 2 | ship | `threshold_reached` | Cloudflare verified | [Immutable deployment](https://a4eb8385.mainstreet-hackathon.pages.dev/) | `a1241109055834ae36aac9f642b78c774bd6212fa41e96c94ad8b7600e22a4df` | [Run report](runs/harborlight-flower-studio/RUN-REPORT.md) |
+| Juniper Oven | `80 to 85` | 2 | ship | `threshold_reached` | Cloudflare verified | [Immutable deployment](https://8107ec4c.mainstreet-hackathon.pages.dev/) | `028250693db26937ae9f84f8a8046278921e3a291d18567ff635ef818738d5c8` | [Run report](runs/juniper-oven/RUN-REPORT.md) |
 
-The live alias owner, public URL, and public aggregate digest at the top of this document must match the committed deployment artifact for the promoted run.
+The shared alias at the top of this document currently serves Canyon Wheelworks. The immutable URLs keep the Harborlight and Juniper deployments addressable after the shared alias moves.
 
 ## Testing and release checks
 
@@ -223,7 +231,7 @@ Validate the public release snapshot:
 npm run release:check
 ```
 
-`release:check` fails closed on the example set, immutable artifact structure, image and deployment digests, screenshot evidence, law and ship eligibility consistency, documentation metadata, unsafe paths, secrets, and private source references across the working tree and reachable history. The pending markers in this document must be replaced from regenerated artifacts before that command can pass.
+`release:check` fails closed on the example set, immutable artifact structure, image and deployment digests, screenshot evidence, law and ship eligibility consistency, documentation metadata, unsafe paths, secrets, and private source references across the working tree and reachable history. It also checks the score paths, selected cycles, and verdicts documented above against the committed run reports.
 
 ## Security and privacy
 
@@ -238,15 +246,15 @@ See [SECURITY.md](SECURITY.md) for the trust boundary and disclosure process.
 
 ## Built with Codex
 
-A Codex agent team built Mainstreet during OpenAI Build Week. The root Codex agent owned integration, scope control, verification, and final decisions. Other Codex agents worked in parallel on bounded research, implementation, tests, adversarial review, release tooling, and documentation. The root agent reconciled those contributions against the shared contracts and retained responsibility for the final repository state.
+Codex was the sole code author for Mainstreet during OpenAI Build Week. The human owner supplied the mission, deadline, and product plan. A root Codex agent then ran the build autonomously from scaffold through deployment. It split bounded research, implementation, tests, adversarial review, visual inspection, release tooling, and documentation among Codex subagents, reconciled their work, and made the final integration decisions.
 
-Repository commits use the repository owner's configured Git identity. They prove timestamped build milestones from scaffold through the quality rebuild, not which Codex agent wrote an individual change. Implementation provenance is documented by the Codex agent process described here: bounded agent contributions under root integration, verification, and final decisions.
+The process left inspectable proof instead of a polished result alone: small timestamped commits, test first changes, immutable cycle artifacts, Playwright screenshots, vision critiques, deployment manifests, and final release checks. Repository commits use the owner's configured Git identity, so they prove build milestones rather than the identity of a particular Codex subagent.
 
 GPT 5.6 powers Mainstreet's text and vision stages at runtime. The configured image model produces the planned PNGs. Deterministic code remains responsible for schemas, source safety, the owned script, asset integrity, rendered evidence, mechanical gates, cycle limits, selection, storage, delivery, and release validation.
 
 ## Devpost description
 
-Mainstreet gives a local business an inspectable website concept from one command. A business name enters a structured pipeline for intake, editorial site generation, local image creation, rendered criticism, and targeted revision. Each cycle contains semantic HTML, CSS, an owned deterministic motion script, three to five local PNGs, desktop, tablet, and phone screenshots, a 320 pixel mechanical probe, and an eight law critique. Mainstreet derives ship eligibility from a score threshold, issue severity, rendered mechanics, asset resolution, vision evidence, and every quality law. It promotes only an eligible, fully verified site to Cloudflare Pages. Failed gates and deployment failures remain available on a loopback preview without replacing the public alias. Three regenerated public examples will provide the final score paths, selected cycles, verdicts, deployment digests, and live URL evidence.
+Mainstreet gives a local business an inspectable website concept from one command. A business name enters a structured pipeline for intake, editorial site generation, local image creation, rendered criticism, and targeted revision. Each cycle contains semantic HTML, CSS, an owned deterministic motion script, three to five local PNGs, canonical desktop, tablet, and phone screenshots, three digest-bound full-page critic images, a 320 pixel mechanical probe, and an eight law critique. Mainstreet derives ship eligibility from a score threshold, issue severity, rendered mechanics, asset resolution, vision evidence, and every quality law. It promotes only an eligible, fully verified site to Cloudflare Pages. Failed gates and deployment failures remain available on a loopback preview without replacing the public alias. The three committed examples improve from `75 to 88`, `80 to 85`, and `71 to 86`; each selected cycle ships from verified vision evidence.
 
 ## Limits
 

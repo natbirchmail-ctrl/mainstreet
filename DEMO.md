@@ -2,34 +2,44 @@
 
 Target length: 2 minutes 55 seconds. Hard limit: 3 minutes.
 
-## Regeneration fields
+## Recording evidence
 
-Fill these values from the regenerated, committed artifacts before recording. Do not reuse prior score paths, terminal output, deployment records, or URLs.
+Canyon Wheelworks is both the demo run and the current shared alias owner. These values come from the committed run report and verified deployment manifest.
 
-- `DEMO_RUN_SLUG: PENDING_REGENERATION`
-- `DEMO_SCORE_PATH: PENDING_REGENERATION`
-- `DEMO_SELECTED_CYCLE: PENDING_REGENERATION`
-- `DEMO_VERDICT: PENDING_REGENERATION`
-- `DEMO_DELIVERY_MODE: PENDING_REGENERATION`
-- `DEMO_AGGREGATE_SHA256: PENDING_REGENERATION`
-- `LIVE_ALIAS_OWNER_SLUG: PENDING_REGENERATION`
-- `LIVE_URL: PENDING_REGENERATION`
+- `DEMO_RUN_SLUG: canyon-wheelworks`
+- `DEMO_SCORE_PATH: 71 to 86`
+- `DEMO_SELECTED_CYCLE: 2`
+- `DEMO_VERDICT: ship`
+- `DEMO_STOP_REASON: threshold_reached`
+- `DEMO_DELIVERY_MODE: cloudflare`
+- `DEMO_AGGREGATE_SHA256: e9af70db174e2ac1a3be49fb6519513c5098f61ad377e6900bb5e1e56c9140e9`
+- `DEMO_IMMUTABLE_URL: https://f3a57ad6.mainstreet-hackathon.pages.dev/`
+- `LIVE_ALIAS_OWNER_SLUG: canyon-wheelworks`
+- `LIVE_URL: https://mainstreet-hackathon.pages.dev/`
+- `DEPLOYMENT_COMMIT: 26e6714c571ab07f25a7a230b8fa73674fa9a6ce`
 
-Paste the exact successful run output here after regeneration:
+Exact successful run output:
 
 ```text
-DEMO_TERMINAL_OUTPUT_FROM_REGENERATED_RUN
+Run started: canyon-wheelworks
+Intake brief complete.
+Build complete: cycle 1.
+Critic cycle 1: 71/100 (revise).
+Revision complete: cycle 2.
+Critic cycle 2: 86/100 (ship).
+Delivery selected: cloudflare.
+Site URL: https://mainstreet-hackathon.pages.dev/
 ```
 
-The demo run and live alias owner may differ. If they do, say so on screen. A local URL can demonstrate preserved delivery, but it cannot be presented as the public release or as a replacement for the live alias.
+The shared alias currently resolves to Canyon. The immutable URL identifies this specific Canyon deployment even after another verified run takes ownership of the shared alias. A local URL can demonstrate preserved delivery, but it cannot be presented as the public release.
 
 ## Recording setup
 
 - Use a 1920 by 1080 canvas.
 - Increase terminal text to at least 22 pixels.
 - Close notifications and unrelated applications.
-- Open the selected run's evidence folder, its selected cycle, the README diagram, and the verified public alias before recording.
-- Prepare the desktop, tablet, and phone screenshots as a three image comparison.
+- Open Canyon's evidence folder, selected cycle, README diagram, immutable deployment URL, and verified shared alias before recording.
+- Prepare the canonical desktop, tablet, and phone screenshots as one comparison, followed by the three digest-bound full-page critic screenshots.
 - Prepare `assets.json`, three generated PNGs, `site/script.js`, `mechanical.json`, `critique.json`, and `deployment.json` as static shots.
 - Keep secrets and `.env` off screen.
 - Record the command separately, then time compress waiting periods. Add `Time compressed` whenever an API is working off screen.
@@ -38,7 +48,7 @@ The demo run and live alias owner may differ. If they do, say so on screen. A lo
 
 ### 0:00 to 0:12: Verified outcome
 
-Visual: Open the regenerated public site whose slug matches `LIVE_ALIAS_OWNER_SLUG`. Keep the verified public URL visible. Scroll from the hero into the next complete section.
+Visual: Open `https://mainstreet-hackathon.pages.dev/`, which currently serves Canyon Wheelworks. Keep the shared alias visible. Scroll from the hero into the next complete section.
 
 Narration:
 
@@ -54,10 +64,10 @@ Narration:
 
 ### 0:26 to 0:48: One command
 
-Visual: Run the regenerated demo command. Show the exact terminal output saved in `DEMO_TERMINAL_OUTPUT_FROM_REGENERATED_RUN`. Do not recreate or type output for the camera.
+Visual: Run the Canyon command. Show the exact terminal output recorded above. Do not recreate or type output for the camera.
 
 ```powershell
-mainstreet run "<regenerated public example name>" --fast
+mainstreet run "Canyon Wheelworks" --city "Tucson, AZ" --details "Neighborhood bicycle repair for commuters. Walk in service is welcome." --fast
 ```
 
 Narration:
@@ -74,15 +84,15 @@ Narration:
 
 ### 1:08 to 1:30: Rendered evidence
 
-Visual: Show `desktop-home.png`, `tablet-home.png`, and `mobile-home.png` together. Then show the 320 pixel context in `mechanical.json` and the screenshot dimensions in `screenshots/manifest.json`.
+Visual: Show the canonical `desktop-home.png`, `tablet-home.png`, and `mobile-home.png` together. Follow them with the digest-bound full-page images in `screenshots/critic/`. Then show the normal, reduced motion, JavaScript disabled, and 320 pixel contexts in `mechanical.json`, plus both screenshot manifests.
 
 Narration:
 
-> Every cycle captures desktop, tablet, and phone screenshots for the vision critic. A separate 320 pixel probe tests the narrow layout, overflow, visibility, touch behavior, and motion states without pretending to be a fourth critic image.
+> Every cycle preserves canonical desktop, tablet, and phone frames plus a digest-bound full-page critic image for each viewport. Mechanical evidence tests normal, reduced motion, JavaScript disabled, and 320 pixel states without pretending that the narrow probe is a fourth critic viewport.
 
 ### 1:30 to 1:56: Quality laws and revision
 
-Visual: Open the selected `critique.json`. Show the score, hard gate failures, ship eligibility, and the eight law records. If the demo uses more than one cycle, place the first and selected desktop screenshots side by side and show the exact score path from the regenerated run report.
+Visual: Open Canyon cycle two's `critique.json`. Show its vision mode, score, hard gate failures, ship eligibility, and eight law records. Place cycle one's desktop frame beside cycle two's frame and show the exact `71 to 86` score path from the run report.
 
 Narration:
 
@@ -90,11 +100,11 @@ Narration:
 
 ### 1:56 to 2:20: Local versus public
 
-Visual: Show the README pipeline decision, then the selected `deployment.json`. Highlight `mode`, `selectedCycle`, `verified`, `aggregateSha256`, and the per file verification records. If useful, place a loopback preview label beside the public alias label.
+Visual: Show the README pipeline decision, then Canyon's `deployment.json`. Highlight `mode`, `selectedCycle`, `verified`, `aggregateSha256`, the immutable URL, and the per file verification records. Place the shared alias beside the immutable Canyon URL.
 
 Narration:
 
-> A failed critic gate does not publish a best effort. Mainstreet preserves the selected site and keeps delivery local. Source fallback can guide revision, but it can never ship. The public alias changes only after an eligible cycle is tied to a commit and every deployed HTML, CSS, script, and PNG verifies against the digest manifest.
+> A failed critic gate does not publish a best effort. Mainstreet preserves the selected site and keeps delivery local. Source fallback can guide revision, but it can never ship. The shared alias changes only after an eligible cycle is tied to a commit and every deployed HTML, CSS, script, and PNG verifies against the digest manifest. The immutable URL keeps that exact deployment addressable.
 
 ### 2:20 to 2:38: Failure behavior
 
@@ -110,39 +120,41 @@ Visual: Show a short sequence of timestamped commit subjects without author fiel
 
 Narration:
 
-> The Codex agent process records implementation provenance under root integration and final decisions. Commits use the owner's Git identity and prove milestones, not agent authorship.
+> Codex was the sole code author. One root agent directed bounded Codex subagents, integrated every change, ran the evidence pipeline, and made the final release decisions. Commits use the owner's Git identity and prove milestones, not individual agent authorship.
 
 ### 2:50 to 2:55: End card
 
-Visual: Return to the verified public site. Keep `LIVE_URL` visible and hold through the final frame.
+Visual: Return to Canyon at the verified shared alias. Keep `https://mainstreet-hackathon.pages.dev/` visible and hold through the final frame.
 
 Narration:
 
 > Mainstreet. One name in. Evidence at every cycle. Public only when it passes.
 
-On screen text, filled after regeneration:
+On screen text:
 
 ```text
-LIVE_URL_FROM_REGENERATED_DEPLOYMENT
+https://mainstreet-hackathon.pages.dev/
 github.com/natbirchmail-ctrl/mainstreet
 ```
 
-## Regenerated evidence ledger
+## Evidence ledger
 
-Replace each pending value from its committed `run-report.json` and selected `deployment.json`. These lines are intentionally formatted for the release checker.
+These lines match each committed `run-report.json` and selected `deployment.json`. The score format is intentionally machine checked.
 
-Evidence: `runs/canyon-wheelworks/` Scores: PENDING_REGENERATION. Selected cycle: PENDING_REGENERATION. Verdict: PENDING_REGENERATION. Delivery: PENDING_REGENERATION. Aggregate SHA 256: PENDING_REGENERATION.
+Evidence: `runs/canyon-wheelworks/` Scores: 71 to 86. Selected cycle: 2. Verdict: ship. Stop reason: threshold_reached. Delivery: cloudflare verified. Immutable URL: https://f3a57ad6.mainstreet-hackathon.pages.dev/. Aggregate SHA 256: e9af70db174e2ac1a3be49fb6519513c5098f61ad377e6900bb5e1e56c9140e9.
 
-Evidence: `runs/harborlight-flower-studio/` Scores: PENDING_REGENERATION. Selected cycle: PENDING_REGENERATION. Verdict: PENDING_REGENERATION. Delivery: PENDING_REGENERATION. Aggregate SHA 256: PENDING_REGENERATION.
+Evidence: `runs/harborlight-flower-studio/` Scores: 75 to 88. Selected cycle: 2. Verdict: ship. Stop reason: threshold_reached. Delivery: cloudflare verified. Immutable URL: https://a4eb8385.mainstreet-hackathon.pages.dev/. Aggregate SHA 256: a1241109055834ae36aac9f642b78c774bd6212fa41e96c94ad8b7600e22a4df.
 
-Evidence: `runs/juniper-oven/` Scores: PENDING_REGENERATION. Selected cycle: PENDING_REGENERATION. Verdict: PENDING_REGENERATION. Delivery: PENDING_REGENERATION. Aggregate SHA 256: PENDING_REGENERATION.
+Evidence: `runs/juniper-oven/` Scores: 80 to 85. Selected cycle: 2. Verdict: ship. Stop reason: threshold_reached. Delivery: cloudflare verified. Immutable URL: https://8107ec4c.mainstreet-hackathon.pages.dev/. Aggregate SHA 256: 028250693db26937ae9f84f8a8046278921e3a291d18567ff635ef818738d5c8.
+
+Canyon's deployment manifest records commit `26e6714c571ab07f25a7a230b8fa73674fa9a6ce`. Harborlight and Juniper record commit `fe6fb5c4d65fcb5ddadc83caebdbd80a07fb0fd1`. Each selected critique used vision mode and records `mechanicalPassed`, `assetsResolved`, `lawGatePassed`, and `shipEligible` as true. Canyon owns the current shared alias.
 
 ## Final recording checks
 
 - The finished video is under 3 minutes.
-- The command and terminal output match the regenerated run exactly.
-- The desktop, tablet, and phone screenshots are all visible and identified.
-- The 320 pixel probe is described as mechanical evidence, not a critic screenshot.
+- The command and terminal output match the committed Canyon run exactly.
+- The canonical desktop, tablet, and phone screenshots and their digest-bound full-page critic images are visible and identified.
+- Normal, reduced motion, JavaScript disabled, and 320 pixel mechanics appear. The 320 pixel probe is mechanical evidence, not a critic screenshot.
 - Three generated PNGs, `assets.json`, the owned `script.js`, and all eight laws appear on screen.
 - The selected cycle, score path, verdict, delivery mode, aggregate digest, live alias owner, and URL match committed artifacts.
 - Failed gates, source fallback, image fallback, and Cloudflare failure are described as local only.
