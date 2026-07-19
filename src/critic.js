@@ -215,6 +215,7 @@ export async function runCriticCycle({
   });
   const artifact = {
     ...outcome,
+    summary: alignSummaryScore(outcome.summary, outcome.score),
     evidencePacketSha256,
     cycle,
     createdAt: now().toISOString(),
@@ -232,4 +233,11 @@ function invalidEvidencePacket() {
   const error = new Error("Rendered evidence packet is invalid.");
   error.code = "EVIDENCE_PACKET_INVALID";
   return error;
+}
+
+function alignSummaryScore(summary, score) {
+  return summary.replace(
+    /\b(?:100|[0-9]{1,2})\s*\/\s*100\b/g,
+    `${score}/100`,
+  );
 }

@@ -252,6 +252,49 @@ test("runCriticCycle derives an uncapped vision outcome from explicit gates", as
   assert.equal(saved.evidencePacketSha256, EVIDENCE_PACKET_SHA256);
 });
 
+test("runCriticCycle aligns every explicit summary score with the derived dimension score", async () => {
+  const runDir = path.join(process.cwd(), "tmp", randomUUID(), "run");
+  const cycleDir = path.join(runDir, "cycle-01");
+  await mkdir(path.join(cycleDir, "site"), { recursive: true });
+  await writeFile(
+    path.join(runDir, "brief.json"),
+    JSON.stringify({ business: { name: "Canyon Wheelworks" } }),
+    "utf8",
+  );
+  const candidate = rawCritique();
+  candidate.summary =
+    "Initial score: 80 / 100. The final 81/100 still needs work across 3 viewports and 24 controls.";
+  candidate.dimensions = {
+    layout: dimension(14),
+    hierarchy: dimension(12),
+    color: dimension(10),
+    typography: dimension(12),
+    mobile: dimension(12),
+    specificity: dimension(7),
+    accessibility: dimension(7),
+    polish: dimension(3),
+  };
+
+  const result = await runCriticCycle({
+    runDir,
+    cycle: 1,
+    captureCycleFn: async () => ({
+      mechanical: renderedMechanicalEvidence(),
+      assetsResolved: true,
+      evidencePacketSha256: EVIDENCE_PACKET_SHA256,
+    }),
+    critiqueCycleFn: async () => normalizeModelCritique(candidate),
+  });
+
+  assert.equal(result.score, 77);
+  assert.equal(
+    result.summary,
+    "Initial score: 77/100. The final 77/100 still needs work across 3 viewports and 24 controls.",
+  );
+  const saved = JSON.parse(await readFile(path.join(cycleDir, "critique.json"), "utf8"));
+  assert.equal(saved.summary, result.summary);
+});
+
 test("runCriticCycle uses source review when screenshot capture fails", async () => {
   const runDir = path.join(process.cwd(), "tmp", randomUUID(), "run");
   const cycleDir = path.join(runDir, "cycle-01");
