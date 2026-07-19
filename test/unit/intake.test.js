@@ -95,6 +95,20 @@ function confirmedInterviewAnswers() {
   ];
 }
 
+function sensitiveAnswerCases() {
+  return [
+    ["API key", "OPENAI_API_KEY=example-credential-value"],
+    ["CVV", "My CVV is 123"],
+    ["PIN", "PIN 1234"],
+    ["payment card", "4111 1111 1111 1111"],
+    ["client secret", "client secret is not-a-real-secret"],
+    ["recovery code", "recovery code 1234 5678"],
+    ["password", "password is not-a-real-password"],
+    ["private key", "private key is not-a-real-private-key"],
+    ["private account credentials", "private account credentials are example"],
+  ];
+}
+
 test("interactive intake asks exactly six model generated questions", async () => {
   assert.equal(typeof intakeModule.conductOwnerInterview, "function");
 
@@ -180,10 +194,9 @@ test("interactive intake fails closed on EOF or cancellation", async (t) => {
   }
 });
 
-test("interactive intake rejects oversized or secret seeking model input", async (t) => {
+test("interactive intake rejects oversized model questions and answers", async (t) => {
   for (const [name, questions, ask, pattern] of [
     ["oversized question", modelQuestions({ services: "Q".repeat(241) }), async () => "Answer", /question.*240/i],
-    ["secret seeking question", modelQuestions({ contact: "What is your API key?" }), async () => "Answer", /unsafe interview question/i],
     ["oversized answer", modelQuestions(), async () => "A".repeat(301), /answer.*300/i],
   ]) {
     await t.test(name, async () => {
@@ -197,6 +210,128 @@ test("interactive intake rejects oversized or secret seeking model input", async
       );
     });
   }
+});
+
+test("interactive intake rejects sensitive data requests before prompting", async (t) => {
+  for (const [name, question] of [
+    ["API key", "What is your API key?"],
+    ["CVV", "What is the CVV for the business card?"],
+    ["PIN", "What is the PIN for the business debit card?"],
+    ["debit card number", "What is the debit card number?"],
+    ["credit card number", "What is the credit card number?"],
+    ["client secret", "What is the OAuth client secret?"],
+    ["recovery code", "What is the account recovery code?"],
+    ["password", "What is the private account password?"],
+    ["private key", "Paste the private key used by the business account."],
+    ["private account credentials", "What are the private account credentials?"],
+  ]) {
+    await t.test(name, async () => {
+      let promptCalls = 0;
+      await assert.rejects(
+        intakeModule.conductOwnerInterview({
+          businessName: "Juniper Oven",
+          structuredRequester: async () => modelQuestions({ contact: question }),
+          promptInterface: {
+            ask: async () => {
+              promptCalls += 1;
+              return "Answer";
+            },
+          },
+        }),
+        (error) =>
+          /unsafe interview question/i.test(error.message) &&
+          !error.message.includes(question),
+      );
+      assert.equal(promptCalls, 0);
+    });
+  }
+});
+
+test("question generator explicitly forbids sensitive requests", async () => {
+  let systemPrompt;
+  await intakeModule.conductOwnerInterview({
+    businessName: "Juniper Oven",
+    structuredRequester: async (options) => {
+      systemPrompt = options.systemPrompt;
+      return modelQuestions();
+    },
+    promptInterface: { ask: async () => "Safe answer" },
+  });
+
+  for (const pattern of [
+    /CVV/i,
+    /PIN/i,
+    /debit[^.]*card number/i,
+    /credit[^.]*card number/i,
+    /client secret/i,
+    /recovery code/i,
+    /password/i,
+    /private key/i,
+    /private account credentials/i,
+  ]) {
+    assert.match(systemPrompt, pattern);
+  }
+});
+
+test("interactive intake rejects sensitive answers without echoing them", async (t) => {
+  for (const [name, sensitiveAnswer] of sensitiveAnswerCases()) {
+    await t.test(name, async () => {
+      await assert.rejects(
+        intakeModule.conductOwnerInterview({
+          businessName: "Juniper Oven",
+          structuredRequester: async () => modelQuestions(),
+          promptInterface: { ask: async () => sensitiveAnswer },
+        }),
+        (error) =>
+          /sensitive data/i.test(error.message) &&
+          !error.message.includes(sensitiveAnswer),
+      );
+    });
+  }
+});
+
+test("strict brief rejects sensitive answers before its model request", async (t) => {
+  for (const [name, sensitiveAnswer] of sensitiveAnswerCases()) {
+    await t.test(name, async () => {
+      const answers = confirmedInterviewAnswers();
+      answers[4] = { ...answers[4], value: sensitiveAnswer };
+      let modelCalls = 0;
+      await assert.rejects(
+        createBrief({
+          businessName: "Juniper Oven",
+          interviewAnswers: answers,
+          structuredRequester: async () => {
+            modelCalls += 1;
+            return modelBrief({ mode: "interview" });
+          },
+        }),
+        (error) =>
+          /sensitive data/i.test(error.message) &&
+          !error.message.includes(sensitiveAnswer),
+      );
+      assert.equal(modelCalls, 0);
+    });
+  }
+});
+
+test("ordinary phone address and hours answers remain allowed", async () => {
+  const safeAnswers = [
+    "Bread and pastries",
+    "Monday through Friday from 9 AM to 5 PM",
+    "Warm and practical",
+    "Storefront and product photos",
+    "Call 928 555 0100 at 12 North Leroux Street",
+    "Consistent quality",
+  ];
+  let answerIndex = 0;
+  const answers = await intakeModule.conductOwnerInterview({
+    businessName: "Juniper Oven",
+    structuredRequester: async () => modelQuestions(),
+    promptInterface: { ask: async () => safeAnswers[answerIndex++] },
+  });
+
+  assert.equal(answers[1].value, safeAnswers[1]);
+  assert.equal(answers[4].value, safeAnswers[4]);
 });
 
 test("strict brief generation records interview answers as confirmed owner facts", async () => {

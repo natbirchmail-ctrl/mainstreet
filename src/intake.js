@@ -18,8 +18,15 @@ const interviewFields = Object.freeze([
 ]);
 const maxInterviewQuestionLength = 240;
 const maxInterviewAnswerLength = 300;
-const unsafeQuestionPattern =
-  /\b(?:api\s*key|access\s*token|password|passcode|secret\s*key|credit\s*card|bank\s*account|social\s*security)\b/i;
+const sensitiveRequestPattern =
+  /\b(?:api\s*key|access\s*token|authentication\s*token|password|passcode|client\s*secret|secret\s*key|private\s*key|recovery\s*code|cvv|cvc|pin|(?:credit|debit)\s*card\s*number|bank\s*account(?:\s*(?:number|credentials?))?|social\s*security(?:\s*number)?|private\s*account\s*credentials?)\b/i;
+const sensitiveValuePattern =
+  /(?:^|[^A-Za-z0-9])(?:[A-Za-z0-9]+[_-])?(?:api[_\s-]*key|access[_\s-]*token|authentication[_\s-]*token|password|passcode|client[_\s-]*secret|secret[_\s-]*key|private[_\s-]*key|recovery[_\s-]*code|cvv|cvc|pin|private[_\s-]*account[_\s-]*credentials?)\s*(?:(?:=|:)\s*|(?:is|are)\s+)\S+/i;
+const sensitiveCodePattern =
+  /\b(?:(?:cvv|cvc)\s*\d{3,4}|pin\s*\d{4,8}|recovery\s*code\s*[A-Za-z0-9]{4}(?:[ -]?[A-Za-z0-9]{4})+)\b/i;
+const privateKeyBlockPattern = /-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----/i;
+const credentialTokenPattern =
+  /\b(?:sk-(?:proj-)?[A-Za-z0-9_-]{8,}|gh[pousr]_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16})\b/;
 
 export async function conductOwnerInterview({
   businessName,
@@ -77,14 +84,15 @@ export async function conductOwnerInterview({
     if (answer === null || answer === undefined) {
       throw interviewCancelledError();
     }
+    const value = requireSafeInterviewText(answer, {
+      mode: "answer",
+      message: `Interview answer for ${item.label} is required.`,
+      maxLength: maxInterviewAnswerLength,
+      label: `Interview answer for ${item.label}`,
+    });
     answers.push({
       label: item.label,
-      value: requireText(
-        answer,
-        `Interview answer for ${item.label} is required.`,
-        maxInterviewAnswerLength,
-        `Interview answer for ${item.label}`,
-      ),
+      value,
       source: "user",
     });
   }
@@ -281,10 +289,12 @@ function normalizeInterviewQuestions(candidate) {
       maxInterviewQuestionLength,
       `Generated interview question for ${label}`,
     );
-    const question = sanitizeVisibleCopy(rawQuestion);
-    if (!question || unsafeQuestionPattern.test(question)) {
-      throw new TypeError(`Unsafe interview question generated for ${label}.`);
-    }
+    const question = requireSafeInterviewText(sanitizeVisibleCopy(rawQuestion), {
+      mode: "question",
+      message: `Generated interview question for ${label} is required.`,
+      maxLength: maxInterviewQuestionLength,
+      label: `Generated interview question for ${label}`,
+    });
     return { label, question };
   });
 }
@@ -312,15 +322,64 @@ function normalizeInterviewAnswers(value, { required }) {
     }
     return {
       label: expected.label,
-      value: requireText(
-        answer.value,
-        `Interview answer for ${expected.label} is required.`,
-        maxInterviewAnswerLength,
-        `Interview answer for ${expected.label}`,
-      ),
+      value: requireSafeInterviewText(answer.value, {
+        mode: "answer",
+        message: `Interview answer for ${expected.label} is required.`,
+        maxLength: maxInterviewAnswerLength,
+        label: `Interview answer for ${expected.label}`,
+      }),
       source: "user",
     };
   });
+}
+
+function requireSafeInterviewText(value, {
+  mode,
+  message,
+  maxLength,
+  label,
+}) {
+  const text = requireText(value, message, maxLength, label);
+  const normalized = text.normalize("NFKC");
+  const unsafe = mode === "question"
+    ? sensitiveRequestPattern.test(normalized)
+    : sensitiveValuePattern.test(normalized) ||
+      sensitiveCodePattern.test(normalized) ||
+      privateKeyBlockPattern.test(normalized) ||
+      credentialTokenPattern.test(normalized) ||
+      containsPaymentCardNumber(normalized);
+
+  if (unsafe) {
+    throw new TypeError(
+      mode === "question"
+        ? "Unsafe interview question generated."
+        : "Interview answer contains sensitive data and cannot be used.",
+    );
+  }
+  return text;
+}
+
+function containsPaymentCardNumber(value) {
+  const candidates = value.match(/(?:\d[ -]?){13,19}/g) ?? [];
+  return candidates.some((candidate) => {
+    const digits = candidate.replace(/\D/g, "");
+    return digits.length >= 13 && digits.length <= 19 && passesLuhn(digits);
+  });
+}
+
+function passesLuhn(digits) {
+  let sum = 0;
+  let double = false;
+  for (let index = digits.length - 1; index >= 0; index -= 1) {
+    let value = Number(digits[index]);
+    if (double) {
+      value *= 2;
+      if (value > 9) value -= 9;
+    }
+    sum += value;
+    double = !double;
+  }
+  return sum % 10 === 0;
 }
 
 function interviewCancelledError() {
