@@ -523,6 +523,36 @@ test("buildSite rejects fully transparent filters and fully clipped motion sourc
   }
 });
 
+test("buildSite rejects unsupported clip path shapes through indirect selectors", async (t) => {
+  const attacks = [
+    [
+      "desktop hook zero radius circle",
+      '@media (min-width: 1200px) { [class="motion-copy"] { clip-path: circle(0) !important; } }',
+    ],
+    [
+      "tablet content zero area polygon",
+      '@media (min-width: 600px) and (max-width: 900px) { [class="motion-copy"] h1 { clip-path: polygon(0 0, 0 0, 0 0) !important; } }',
+    ],
+    [
+      "phone hook unsupported ellipse",
+      '@media (max-width: 500px) { [class="motion-copy"] { clip-path: ellipse(40% 30%) !important; } }',
+    ],
+  ];
+  for (const [name, attack] of attacks) {
+    await t.test(name, async () => {
+      const candidate = modelManifest();
+      candidate.indexHtml = candidate.indexHtml.replace(
+        "<div data-first-beat data-motion-target>",
+        '<div class="motion-copy" data-first-beat data-motion-target>',
+      );
+      candidate.stylesCss += `\n${attack}`;
+      const result = await buildSite({ brief: brief(), structuredRequester: async () => candidate });
+      assert.equal(result.source, "deterministic-fallback");
+      assert.equal(result.stylesCss.includes(attack), false);
+    });
+  }
+});
+
 test("buildSite accepts visible filters and partial clipping through the rendered gate", async () => {
   const candidate = modelManifest();
   candidate.indexHtml = candidate.indexHtml.replace(
@@ -530,9 +560,9 @@ test("buildSite accepts visible filters and partial clipping through the rendere
     '<div class="motion-copy" data-first-beat data-motion-target>',
   );
   candidate.stylesCss += `
-@media (min-width: 1200px) { [class="motion-copy"] { filter: blur(1px); } [class="motion-copy"] h1 { clip-path: inset(5%); } }
-@media (min-width: 600px) and (max-width: 900px) { [class="motion-copy"] { filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.25)); } [class="motion-copy"] h1 { clip-path: inset(5% 10%); } }
-@media (max-width: 500px) { [class="motion-copy"] { filter: opacity(0.75); } [class="motion-copy"] h1 { clip-path: inset(0 5%); } }`;
+@media (min-width: 1200px) { [class="motion-copy"] { filter: blur(1px); clip-path: none; } [class="motion-copy"] h1 { clip-path: inset(5%); } }
+@media (min-width: 600px) and (max-width: 900px) { [class="motion-copy"] { filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.25)); clip-path: none; } [class="motion-copy"] h1 { clip-path: inset(5% 10%); } }
+@media (max-width: 500px) { [class="motion-copy"] { filter: opacity(0.75); clip-path: none; } [class="motion-copy"] h1 { clip-path: inset(0 5%); } }`;
   const result = await buildSite({ brief: brief(), structuredRequester: async () => candidate });
   assert.equal(result.source, "openai");
 });

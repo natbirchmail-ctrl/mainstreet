@@ -282,11 +282,12 @@ export async function validateRenderedSourceVisibility(manifest) {
           const hasZeroOpacityFilter = (filter) =>
             [...filter.matchAll(/\bopacity\(\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+))(%?)\s*\)/gi)]
               .some((match) => Number.parseFloat(match[1]) <= 0);
-          const isFullyClippedInset = (clipPath, element) => {
+          const hasUnsafeClipPath = (clipPath, element) => {
+            if (clipPath === "none") return false;
             const inset = /^inset\((.*)\)$/i.exec(clipPath);
-            if (!inset) return false;
+            if (!inset) return true;
             const values = inset[1].split(/\s+round\s+/i, 1)[0].trim().split(/\s+/);
-            if (values.length < 1 || values.length > 4) return false;
+            if (values.length < 1 || values.length > 4) return true;
             const [top, right = top, bottom = top, left = right] =
               values.length === 3
                 ? [values[0], values[1], values[2], values[1]]
@@ -308,8 +309,9 @@ export async function validateRenderedSourceVisibility(manifest) {
               resolveInset(bottom, bounds.height),
               resolveInset(left, bounds.width),
             ];
-            return resolved.every(Number.isFinite) &&
-              (resolved[0] + resolved[2] >= bounds.height || resolved[1] + resolved[3] >= bounds.width);
+            return !resolved.every(Number.isFinite) ||
+              resolved[0] + resolved[2] >= bounds.height ||
+              resolved[1] + resolved[3] >= bounds.width;
           };
           const describe = (element) => {
             const id = element.id ? `#${element.id}` : "";
@@ -331,7 +333,7 @@ export async function validateRenderedSourceVisibility(manifest) {
             if (Number.parseFloat(style.fontSize) <= 0.01) reasons.push("zero font size");
             if (isTransparent(style.color)) reasons.push("transparent text color");
             if (hasZeroOpacityFilter(style.filter)) reasons.push("zero opacity filter");
-            if (isFullyClippedInset(style.clipPath, element)) reasons.push("fully clipped inset");
+            if (hasUnsafeClipPath(style.clipPath, element)) reasons.push("unsafe clip path");
 
             if ((state.isHook || state.isContent) && style.display !== "contents") {
               const bounds = element.getBoundingClientRect();
