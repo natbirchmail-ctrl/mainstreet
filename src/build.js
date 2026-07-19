@@ -10,6 +10,7 @@ import {
   createOwnedMotionStyles,
   motionSlugsFor,
 } from "./motion.js";
+import { EVIDENCE_VIEWPORTS } from "./viewports.js";
 
 export { createOwnedMotionRuntime, createOwnedMotionStyles } from "./motion.js";
 
@@ -237,11 +238,6 @@ function selectorCouldMatchTag(selector, tag) {
 }
 
 export async function validateRenderedSourceVisibility(manifest) {
-  const viewports = [
-    { name: "desktop", width: 1440, height: 900 },
-    { name: "tablet", width: 768, height: 1024 },
-    { name: "phone", width: 390, height: 844 },
-  ];
   const sourceSelector = "[data-first-beat], [data-motion-root], [data-motion-target], [data-motion-panel], [data-motion-control]";
   const stylesheetUrl = `data:text/css;base64,${Buffer.from(manifest.stylesCss, "utf8").toString("base64")}`;
   const browserHtml = manifest.indexHtml
@@ -257,15 +253,19 @@ export async function validateRenderedSourceVisibility(manifest) {
     const context = await browser.newContext({ javaScriptEnabled: false });
     try {
       const page = await context.newPage();
-      for (const viewport of viewports) {
+      for (const [name, dimensions] of Object.entries(EVIDENCE_VIEWPORTS)) {
+        const viewport = { name, width: dimensions.width, height: dimensions.height };
         await page.setViewportSize({ width: viewport.width, height: viewport.height });
         await page.setContent(browserHtml, { waitUntil: "load" });
         const failures = await page.locator(sourceSelector).evaluateAll((hooks, currentViewport) => {
+          const containsSourceContent = (element) =>
+            element.textContent.trim().length > 0 ||
+            element.matches("button, canvas, img, input, meter, progress, select, svg, textarea");
           const protectedElements = new Map();
           for (const hook of hooks) {
             for (const descendant of hook.querySelectorAll("*")) {
               const state = protectedElements.get(descendant) ?? { isHook: false, isContent: false };
-              state.isContent = true;
+              if (containsSourceContent(descendant)) state.isContent = true;
               protectedElements.set(descendant, state);
             }
             let current = hook;

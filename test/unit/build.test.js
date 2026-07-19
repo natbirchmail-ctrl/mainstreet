@@ -400,7 +400,7 @@ test("buildSite rejects rendered no JavaScript visibility bypasses at every view
     ],
     [
       "tablet section selector zero font size",
-      "@media (min-width: 600px) and (max-width: 900px) { [data-section] { font-size: 0 !important; } }",
+      "@media (min-width: 900px) and (max-width: 1100px) { [data-section] { font-size: 0 !important; } }",
     ],
     [
       "phone first child positioned offscreen",
@@ -421,6 +421,19 @@ test("buildSite rejects rendered no JavaScript visibility bypasses at every view
   }
 });
 
+test("buildSite rejects visibility bypasses at the canonical landscape tablet viewport", async () => {
+  const attack = '@media (min-width: 900px) and (max-width: 1100px) { [class="motion-copy"] h1 { display: none !important; } }';
+  const candidate = modelManifest();
+  candidate.indexHtml = candidate.indexHtml.replace(
+    "<div data-first-beat data-motion-target>",
+    '<div class="motion-copy" data-first-beat data-motion-target>',
+  );
+  candidate.stylesCss += `\n${attack}`;
+  const result = await buildSite({ brief: brief(), structuredRequester: async () => candidate });
+  assert.equal(result.source, "deterministic-fallback");
+  assert.equal(result.stylesCss.includes(attack), false);
+});
+
 test("buildSite rejects hidden motion content descendants at every viewport", async (t) => {
   const attacks = [
     [
@@ -429,7 +442,7 @@ test("buildSite rejects hidden motion content descendants at every viewport", as
     ],
     [
       "tablet invisible headline descendant",
-      '@media (min-width: 600px) and (max-width: 900px) { [class="motion-copy"] h1 { visibility: hidden !important; } }',
+      '@media (min-width: 900px) and (max-width: 1100px) { [class="motion-copy"] h1 { visibility: hidden !important; } }',
     ],
     [
       "phone transparent headline descendant",
@@ -459,7 +472,7 @@ test("buildSite rejects offscreen or zero-bound motion content descendants at ev
     ],
     [
       "tablet headline descendant with zero bounds",
-      '@media (min-width: 600px) and (max-width: 900px) { [class="motion-copy"] h1 { inline-size: 0 !important; block-size: 0 !important; overflow: hidden !important; } }',
+      '@media (min-width: 900px) and (max-width: 1100px) { [class="motion-copy"] h1 { inline-size: 0 !important; block-size: 0 !important; overflow: hidden !important; } }',
     ],
     [
       "phone headline descendant above the canvas",
@@ -489,7 +502,7 @@ test("buildSite rejects legacy clipping, far edge positioning, and displaced tex
     ],
     [
       "tablet headline descendant fixed beyond the right edge",
-      '@media (min-width: 600px) and (max-width: 900px) { [class="motion-copy"] h1 { position: fixed !important; left: calc(100vw + 10px) !important; top: 10px !important; } }',
+      '@media (min-width: 900px) and (max-width: 1100px) { [class="motion-copy"] h1 { position: fixed !important; left: calc(100vw + 10px) !important; top: 10px !important; } }',
     ],
     [
       "phone headline descendant fixed below the viewport",
@@ -523,7 +536,7 @@ test("buildSite rejects protected descendants fully clipped by overflow ancestor
     ],
     [
       "tablet headline outside an auto overflow scrollport",
-      '@media (min-width: 600px) and (max-width: 900px) { [class="clip-window"] { position: relative; block-size: 2rem; overflow: auto; } [class="clip-window"] h1 { position: absolute; inset-block-start: 4rem; } }',
+      '@media (min-width: 900px) and (max-width: 1100px) { [class="clip-window"] { position: relative; block-size: 2rem; overflow: auto; } [class="clip-window"] h1 { position: absolute; inset-block-start: 4rem; } }',
     ],
   ];
   for (const [name, attack] of attacks) {
@@ -573,7 +586,7 @@ test("buildSite accepts ordinary positioning, legacy clips, and text indentation
   );
   candidate.stylesCss += `
 @media (min-width: 1200px) { [class="motion-copy"] h1 { position: relative; left: 1px; top: 1px; clip: auto; } }
-@media (min-width: 600px) and (max-width: 900px) { [class="motion-copy"] h1 { position: absolute; left: 1rem; top: 1rem; clip: rect(0px, 1000px, 200px, 0px); } }
+@media (min-width: 900px) and (max-width: 1100px) { [class="motion-copy"] h1 { position: absolute; left: 1rem; top: 1rem; clip: rect(0px, 1000px, 200px, 0px); } }
 @media (max-width: 500px) { [class="motion-copy"] h1 { text-indent: 1rem; overflow: hidden; } }`;
   const result = await buildSite({ brief: brief(), structuredRequester: async () => candidate });
   assert.equal(result.source, "openai");
@@ -591,11 +604,11 @@ test("buildSite rejects fully transparent filters and fully clipped motion sourc
     ],
     [
       "tablet hook fully clipped",
-      '@media (min-width: 600px) and (max-width: 900px) { [class="motion-copy"] { clip-path: inset(100%) !important; } }',
+      '@media (min-width: 900px) and (max-width: 1100px) { [class="motion-copy"] { clip-path: inset(100%) !important; } }',
     ],
     [
       "tablet content zero opacity filter",
-      '@media (min-width: 600px) and (max-width: 900px) { [class="motion-copy"] h1 { filter: opacity(0) !important; } }',
+      '@media (min-width: 900px) and (max-width: 1100px) { [class="motion-copy"] h1 { filter: opacity(0) !important; } }',
     ],
     [
       "phone hook zero opacity filter",
@@ -629,7 +642,7 @@ test("buildSite rejects filter opacity at or below the visible opacity threshold
     ],
     [
       "tablet content percentage filter opacity below threshold",
-      '@media (min-width: 600px) and (max-width: 900px) { [class="motion-copy"] h1 { filter: opacity(.5%) !important; } }',
+      '@media (min-width: 900px) and (max-width: 1100px) { [class="motion-copy"] h1 { filter: opacity(.5%) !important; } }',
     ],
     [
       "phone hook filter opacity on threshold",
@@ -659,7 +672,7 @@ test("buildSite accepts filter opacity above the visible opacity threshold", asy
   );
   candidate.stylesCss += `
 @media (min-width: 1200px) { [class="motion-copy"] { filter: opacity(.02); } }
-@media (min-width: 600px) and (max-width: 900px) { [class="motion-copy"] h1 { filter: opacity(2%); } }
+@media (min-width: 900px) and (max-width: 1100px) { [class="motion-copy"] h1 { filter: opacity(2%); } }
 @media (max-width: 500px) { [class="motion-copy"] { filter: opacity(.5); } }`;
   const result = await buildSite({ brief: brief(), structuredRequester: async () => candidate });
   assert.equal(result.source, "openai");
@@ -673,7 +686,7 @@ test("buildSite rejects unsupported clip path shapes through indirect selectors"
     ],
     [
       "tablet content zero area polygon",
-      '@media (min-width: 600px) and (max-width: 900px) { [class="motion-copy"] h1 { clip-path: polygon(0 0, 0 0, 0 0) !important; } }',
+      '@media (min-width: 900px) and (max-width: 1100px) { [class="motion-copy"] h1 { clip-path: polygon(0 0, 0 0, 0 0) !important; } }',
     ],
     [
       "phone hook unsupported ellipse",
@@ -703,7 +716,7 @@ test("buildSite rejects computed masks on protected motion source", async (t) =>
     ],
     [
       "tablet content transparent prefixed mask image",
-      '@media (min-width: 600px) and (max-width: 900px) { [class="motion-copy"] h1 { -webkit-mask-image: linear-gradient(transparent, transparent) !important; } }',
+      '@media (min-width: 900px) and (max-width: 1100px) { [class="motion-copy"] h1 { -webkit-mask-image: linear-gradient(transparent, transparent) !important; } }',
     ],
     [
       "phone hook transparent mask shorthand",
@@ -733,7 +746,7 @@ test("buildSite accepts explicit none masks through the rendered gate", async ()
   );
   candidate.stylesCss += `
 @media (min-width: 1200px) { [class="motion-copy"] { mask-image: none; } }
-@media (min-width: 600px) and (max-width: 900px) { [class="motion-copy"] h1 { -webkit-mask-image: none; } }
+@media (min-width: 900px) and (max-width: 1100px) { [class="motion-copy"] h1 { -webkit-mask-image: none; } }
 @media (max-width: 500px) { [class="motion-copy"] { mask: none; } }`;
   const result = await buildSite({ brief: brief(), structuredRequester: async () => candidate });
   assert.equal(result.source, "openai");
@@ -747,7 +760,7 @@ test("buildSite accepts visible filters and partial clipping through the rendere
   );
   candidate.stylesCss += `
 @media (min-width: 1200px) { [class="motion-copy"] { filter: blur(1px); clip-path: none; } [class="motion-copy"] h1 { clip-path: inset(5%); } }
-@media (min-width: 600px) and (max-width: 900px) { [class="motion-copy"] { filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.25)); clip-path: none; } [class="motion-copy"] h1 { clip-path: inset(5% 10%); } }
+@media (min-width: 900px) and (max-width: 1100px) { [class="motion-copy"] { filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.25)); clip-path: none; } [class="motion-copy"] h1 { clip-path: inset(5% 10%); } }
 @media (max-width: 500px) { [class="motion-copy"] { filter: opacity(0.75); clip-path: none; } [class="motion-copy"] h1 { clip-path: inset(0 5%); } }`;
   const result = await buildSite({ brief: brief(), structuredRequester: async () => candidate });
   assert.equal(result.source, "openai");
@@ -760,7 +773,7 @@ test("buildSite accepts visible responsive CSS through the rendered no JavaScrip
     .replace('<section id="hero"', '<section class="hero-shell" id="hero"');
   candidate.stylesCss += `
 @media (min-width: 1200px) { [class="motion-copy"] { color: #252820; } [class="motion-copy"] h1 { position: relative; left: 0; } }
-@media (min-width: 600px) and (max-width: 900px) { [data-section] { font-size: 1rem; padding: 2rem; } [class="motion-copy"] h1 { inline-size: auto; block-size: auto; } }
+@media (min-width: 900px) and (max-width: 1100px) { [data-section] { font-size: 1rem; padding: 2rem; } [class="motion-copy"] h1 { inline-size: auto; block-size: auto; } }
 @media (max-width: 500px) { :first-child { position: relative; left: 0; } [class="motion-copy"] h1 { position: relative; top: 0; } }`;
   const result = await buildSite({ brief: brief(), structuredRequester: async () => candidate });
   assert.equal(result.source, "openai");
