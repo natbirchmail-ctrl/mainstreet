@@ -512,6 +512,20 @@ test("missing and invalid cycle evidence report artifact rules", async (t) => {
     });
     assert.ok(result.findings.some((finding) => finding.rule === "ARTIFACT_INVALID"));
   });
+
+  await t.test("invalid critic full page digest", async () => {
+    const fixture = await makeFixture();
+    const manifestPath =
+      "runs/example-run/cycle-01/screenshots/critic/manifest.json";
+    await rewriteJson(fixture.root, manifestPath, (manifest) => {
+      manifest.viewports.desktop.sha256 = "0".repeat(64);
+    });
+    const result = await checkRelease({
+      repoRoot: fixture.root,
+      expectedSlugs: fixture.expectedSlugs,
+    });
+    assertFinding(result, "ARTIFACT_INVALID", manifestPath);
+  });
 });
 
 test("cycle directories and run report references must agree", async () => {
@@ -1442,6 +1456,32 @@ async function writeCompleteRun(
       pageErrorCount: 0,
     },
   });
+  const criticScreenshotPaths = {
+    desktop: "screenshots/critic/desktop-full-page.png",
+    tablet: "screenshots/critic/tablet-full-page.png",
+    phone: "screenshots/critic/mobile-full-page.png",
+  };
+  const criticViewports = {};
+  for (const [index, [viewport, relative]] of Object.entries(criticScreenshotPaths).entries()) {
+    const bytes = png(index + 20);
+    await writeOwnedFile(root, `${cycleRoot}/${relative}`, bytes);
+    criticViewports[viewport] = {
+      width: { desktop: 1440, tablet: 1024, phone: 390 }[viewport],
+      renderedWidth: { desktop: 1440, tablet: 1024, phone: 390 }[viewport],
+      height: { desktop: 3600, tablet: 3072, phone: 3376 }[viewport],
+      path: relative,
+      bytes: bytes.length,
+      sha256: digest(bytes),
+    };
+  }
+  await writeJson(root, `${cycleRoot}/screenshots/critic/manifest.json`, {
+    schemaVersion: "1.0",
+    cycle,
+    capturedAt: "2026-07-18T00:00:00.000Z",
+    capture: "full-page",
+    motionMode: "reducedMotion",
+    viewports: criticViewports,
+  });
   await writeJson(root, `${cycleRoot}/mechanical.json`, {
     schemaVersion: "2.0",
     cycle,
@@ -1554,6 +1594,13 @@ async function addSecondCycle(root, slug, { includeRevise = true } = {}) {
   await rewriteJson(
     root,
     `${secondCycle}/screenshots/manifest.json`,
+    (manifest) => {
+      manifest.cycle = 2;
+    },
+  );
+  await rewriteJson(
+    root,
+    `${secondCycle}/screenshots/critic/manifest.json`,
     (manifest) => {
       manifest.cycle = 2;
     },

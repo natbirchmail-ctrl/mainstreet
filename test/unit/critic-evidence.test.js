@@ -125,6 +125,9 @@ test("every motion move proves normal activation, reduced fallback, and no JavaS
         evidence.desktopPath,
         evidence.tabletPath,
         evidence.mobilePath,
+        evidence.fullPagePaths.desktop,
+        evidence.fullPagePaths.tablet,
+        evidence.fullPagePaths.phone,
       ]) {
         assert.deepEqual([...(await readFile(target)).subarray(0, 8)], [
           137, 80, 78, 71, 13, 10, 26, 10,
@@ -151,10 +154,30 @@ test("every motion move proves normal activation, reduced fallback, and no JavaS
         },
       });
       assert.equal("previewUrl" in evidence.screenshotManifest, false);
+      assert.equal(evidence.criticManifest.schemaVersion, "1.0");
+      assert.equal(evidence.criticManifest.cycle, 1);
+      assert.equal(evidence.criticManifest.capture, "full-page");
+      assert.equal(evidence.criticManifest.motionMode, "reducedMotion");
+      assert.equal(evidence.criticManifest.capturedAt, "2026-07-17T20:00:00.000Z");
+      for (const viewportName of ["desktop", "tablet", "phone"]) {
+        const record = evidence.criticManifest.viewports[viewportName];
+        const bytes = await readFile(evidence.fullPagePaths[viewportName]);
+        assert.equal(record.width, EVIDENCE_VIEWPORTS[viewportName].width);
+        assert.equal(record.renderedWidth, bytes.readUInt32BE(16));
+        assert.ok(record.height > EVIDENCE_VIEWPORTS[viewportName].height);
+        assert.equal(record.height, bytes.readUInt32BE(20));
+        assert.equal(record.bytes, bytes.length);
+        assert.equal(record.sha256, sha256Hex(bytes));
+        assert.equal(
+          record.path,
+          `screenshots/critic/${viewportName === "phone" ? "mobile" : viewportName}-full-page.png`,
+        );
+      }
 
       const stored = [
         await readFile(path.join(fixture.cycleDir, "mechanical.json"), "utf8"),
         await readFile(path.join(fixture.cycleDir, "screenshots", "manifest.json"), "utf8"),
+        await readFile(path.join(fixture.cycleDir, "screenshots", "critic", "manifest.json"), "utf8"),
       ].join("\n");
       assert.doesNotMatch(stored, /https?:\/\//i);
       assert.doesNotMatch(stored, /[A-Z]:\\/i);
@@ -173,6 +196,8 @@ test("every motion move proves normal activation, reduced fallback, and no JavaS
       });
       assert.deepEqual(reused.mechanical, evidence.mechanical);
       assert.deepEqual(reused.screenshotManifest, evidence.screenshotManifest);
+      assert.deepEqual(reused.criticManifest, evidence.criticManifest);
+      assert.deepEqual(reused.fullPagePaths, evidence.fullPagePaths);
       assert.equal(reused.assetsResolved, evidence.assetsResolved);
     });
   }
@@ -223,6 +248,10 @@ test("missing asset evidence and browser failures fail mechanics with stable cod
   assert.ok(codes.includes("broken-image"));
   assert.ok(codes.includes("horizontal-overflow"));
   assert.ok(codes.includes("touch-target-too-small"));
+  assert.ok(
+    evidence.criticManifest.viewports.desktop.renderedWidth >
+      evidence.criticManifest.viewports.desktop.width,
+  );
   for (const failure of evidence.mechanical.failures) {
     assert.deepEqual(
       Object.keys(failure).every((key) =>
@@ -447,6 +476,46 @@ test("partial and corrupt completed packets are rejected before recapture", asyn
           port: 4601,
           startServer: async () => {
             throw new Error("invalid packets must not be recaptured");
+          },
+        }),
+        (error) => error?.code === "EVIDENCE_PACKET_INVALID",
+      );
+    });
+  }
+});
+
+test("completed packets reject tampered full page bytes and critic manifest digests", async (t) => {
+  for (const tamper of ["bytes", "digest"]) {
+    await t.test(tamper, async () => {
+      const fixture = await writeFixture({ move: "staged hero entrance" });
+      const evidence = await captureRenderedEvidence({
+        siteDir: fixture.siteDir,
+        cycleDir: fixture.cycleDir,
+        port: 4601,
+      });
+      if (tamper === "bytes") {
+        const altered = Buffer.from(await readFile(evidence.fullPagePaths.desktop));
+        altered[altered.length - 16] ^= 1;
+        await writeFile(evidence.fullPagePaths.desktop, altered);
+      } else {
+        const manifestPath = path.join(
+          fixture.cycleDir,
+          "screenshots",
+          "critic",
+          "manifest.json",
+        );
+        const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+        manifest.viewports.desktop.sha256 = "0".repeat(64);
+        await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
+      }
+
+      await assert.rejects(
+        captureRenderedEvidence({
+          siteDir: fixture.siteDir,
+          cycleDir: fixture.cycleDir,
+          port: 4601,
+          startServer: async () => {
+            throw new Error("tampered completed evidence must not be recaptured");
           },
         }),
         (error) => error?.code === "EVIDENCE_PACKET_INVALID",

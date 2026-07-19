@@ -18,6 +18,11 @@ export { EVIDENCE_VIEWPORTS };
 
 const VISUAL_VIEWPORTS = Object.freeze(["desktop", "tablet", "phone"]);
 const VISUAL_MODES = Object.freeze(["normal", "reducedMotion", "javascriptDisabled"]);
+export const CRITIC_FULL_PAGE_FILES = Object.freeze({
+  desktop: "desktop-full-page.png",
+  tablet: "tablet-full-page.png",
+  phone: "mobile-full-page.png",
+});
 const INTERACTIVE_SLUGS = new Set(["horizontal-click-reel", "numbered-story-stepper"]);
 const FAILURE_VIEWPORT_ORDER = Object.freeze({
   none: 0,
@@ -282,6 +287,7 @@ export async function captureRenderedEvidence({
     siteDir: trustedSiteDir,
     screenshotsDir,
   } = paths;
+  const criticScreenshotsDir = resolveInside(screenshotsDir, "critic");
   const cycle = cycleNumberFromPath(trustedCycleDir);
   const desktopPath = resolveInside(
     screenshotsDir,
@@ -298,6 +304,13 @@ export async function captureRenderedEvidence({
   const visibleTextPath = resolveInside(trustedCycleDir, "visible-text.txt");
   const mechanicalPath = resolveInside(trustedCycleDir, "mechanical.json");
   const screenshotManifestPath = resolveInside(screenshotsDir, "manifest.json");
+  const fullPagePaths = Object.fromEntries(
+    VISUAL_VIEWPORTS.map((viewportName) => [
+      viewportName,
+      resolveInside(criticScreenshotsDir, CRITIC_FULL_PAGE_FILES[viewportName]),
+    ]),
+  );
+  const criticManifestPath = resolveInside(criticScreenshotsDir, "manifest.json");
   const outputPaths = [
     desktopPath,
     tabletPath,
@@ -305,11 +318,14 @@ export async function captureRenderedEvidence({
     visibleTextPath,
     mechanicalPath,
     screenshotManifestPath,
+    ...Object.values(fullPagePaths),
+    criticManifestPath,
   ];
 
   await assertNoLinkedPath(runRoot, trustedCycleDir);
   await assertNoLinkedPath(runRoot, trustedSiteDir);
   await assertNoLinkedPath(runRoot, screenshotsDir);
+  await assertNoLinkedPath(runRoot, criticScreenshotsDir);
   const buildGate = await readBuildGate(resolveInside(trustedCycleDir, "build.json"));
   const assetGate = await readAssetGate({
     target: resolveInside(trustedCycleDir, "assets.json"),
@@ -327,6 +343,8 @@ export async function captureRenderedEvidence({
     visibleTextPath,
     mechanicalPath,
     screenshotManifestPath,
+    fullPagePaths,
+    criticManifestPath,
     assetGate,
     buildGate,
   });
@@ -335,8 +353,10 @@ export async function captureRenderedEvidence({
   await Promise.all(outputPaths.map(assertAbsent));
   await assertNoLinkedPath(runRoot, screenshotsDir);
   await mkdir(screenshotsDir, { recursive: true });
+  await mkdir(criticScreenshotsDir, { recursive: true });
   await assertNoLinkedPath(runRoot, trustedCycleDir);
   await assertNoLinkedPath(runRoot, screenshotsDir);
+  await assertNoLinkedPath(runRoot, criticScreenshotsDir);
 
   let preview;
   try {
@@ -357,6 +377,7 @@ export async function captureRenderedEvidence({
     }
     const contexts = {};
     const screenshotBuffers = {};
+    const fullPageBuffers = {};
     let visibleText = "";
     const contextFailures = [];
 
@@ -370,11 +391,15 @@ export async function captureRenderedEvidence({
           mode,
           motionMoveSlugs: buildGate.motionMoveSlugs,
           captureScreenshot: mode === "normal",
+          captureFullPage: mode === "reducedMotion",
         });
         contexts[viewportName][mode] = result.evidence;
         contextFailures.push(...result.failures);
         if (result.screenshot) {
           screenshotBuffers[viewportName] = result.screenshot;
+        }
+        if (result.fullPageScreenshot) {
+          fullPageBuffers[viewportName] = result.fullPageScreenshot;
         }
         if (viewportName === "desktop" && mode === "normal") {
           visibleText = result.visibleText;
@@ -389,6 +414,7 @@ export async function captureRenderedEvidence({
       mode: "normal",
       motionMoveSlugs: buildGate.motionMoveSlugs,
       captureScreenshot: false,
+      captureFullPage: false,
       narrowOnly: true,
     });
     contexts.narrow = { normal: narrowResult.evidence };
@@ -410,10 +436,11 @@ export async function captureRenderedEvidence({
       failures,
       totals: summarizeContexts(contexts),
     };
+    const capturedAt = now().toISOString();
     const screenshotManifest = {
       schemaVersion: "2.0",
       cycle,
-      capturedAt: now().toISOString(),
+      capturedAt,
       viewports: Object.fromEntries(
         VISUAL_VIEWPORTS.map((viewportName) => {
           const viewport = EVIDENCE_VIEWPORTS[viewportName];
@@ -434,6 +461,11 @@ export async function captureRenderedEvidence({
         pageErrorCount: mechanical.totals.pageErrorCount,
       },
     };
+    const criticManifest = createCriticManifest({
+      cycle,
+      capturedAt,
+      buffers: fullPageBuffers,
+    });
 
     await Promise.all([
       writeBinaryNew(desktopPath, screenshotBuffers.desktop, runRoot),
@@ -442,6 +474,10 @@ export async function captureRenderedEvidence({
       writeTextNew(visibleTextPath, visibleText, runRoot),
       writeJsonNew(mechanicalPath, mechanical, runRoot),
       writeJsonNew(screenshotManifestPath, screenshotManifest, runRoot),
+      ...VISUAL_VIEWPORTS.map((viewportName) =>
+        writeBinaryNew(fullPagePaths[viewportName], fullPageBuffers[viewportName], runRoot),
+      ),
+      writeJsonNew(criticManifestPath, criticManifest, runRoot),
     ]);
 
     return {
@@ -450,10 +486,12 @@ export async function captureRenderedEvidence({
       tabletPath,
       mobilePath,
       phonePath: mobilePath,
+      fullPagePaths,
       visibleTextPath,
       mechanical,
       assetsResolved: assetGate.assetsResolved,
       screenshotManifest,
+      criticManifest,
     };
   } finally {
     await browser?.close().catch(() => {});
@@ -463,6 +501,92 @@ export async function captureRenderedEvidence({
 
 export const captureCycleEvidence = captureRenderedEvidence;
 
+export async function readCriticVisualEvidence({ cycleDir, mechanical }) {
+  const normalizedCycleDir = path.resolve(cycleDir);
+  const paths = validateEvidencePaths({
+    cycleDir: normalizedCycleDir,
+    siteDir: path.join(normalizedCycleDir, "site"),
+  });
+  const { runRoot, screenshotsDir } = paths;
+  const criticScreenshotsDir = resolveInside(screenshotsDir, "critic");
+  const cycle = cycleNumberFromPath(normalizedCycleDir);
+  const initialPaths = Object.fromEntries(
+    VISUAL_VIEWPORTS.map((viewportName) => [
+      viewportName,
+      resolveInside(screenshotsDir, EVIDENCE_VIEWPORTS[viewportName].filename),
+    ]),
+  );
+  const fullPagePaths = Object.fromEntries(
+    VISUAL_VIEWPORTS.map((viewportName) => [
+      viewportName,
+      resolveInside(criticScreenshotsDir, CRITIC_FULL_PAGE_FILES[viewportName]),
+    ]),
+  );
+  const screenshotManifestPath = resolveInside(screenshotsDir, "manifest.json");
+  const criticManifestPath = resolveInside(criticScreenshotsDir, "manifest.json");
+
+  await assertNoLinkedPath(runRoot, normalizedCycleDir);
+  await assertNoLinkedPath(runRoot, screenshotsDir);
+  await assertNoLinkedPath(runRoot, criticScreenshotsDir);
+  await Promise.all(
+    [
+      ...Object.values(initialPaths),
+      ...Object.values(fullPagePaths),
+      screenshotManifestPath,
+      criticManifestPath,
+    ].map((target) => assertNoLinkedPath(runRoot, target)),
+  );
+  try {
+    const [initialEntries, fullPageEntries, screenshotManifestText, criticManifestText] =
+      await Promise.all([
+        Promise.all(
+          VISUAL_VIEWPORTS.map(async (viewportName) => [
+            viewportName,
+            await readFile(initialPaths[viewportName]),
+          ]),
+        ),
+        Promise.all(
+          VISUAL_VIEWPORTS.map(async (viewportName) => [
+            viewportName,
+            await readFile(fullPagePaths[viewportName]),
+          ]),
+        ),
+        readFile(screenshotManifestPath, "utf8"),
+        readFile(criticManifestPath, "utf8"),
+      ]);
+    const initial = Object.fromEntries(initialEntries);
+    const fullPage = Object.fromEntries(fullPageEntries);
+    const screenshotManifest = JSON.parse(screenshotManifestText);
+    const criticManifest = JSON.parse(criticManifestText);
+    if (
+      !VISUAL_VIEWPORTS.every((viewportName) =>
+        isReusableScreenshot(initial[viewportName], EVIDENCE_VIEWPORTS[viewportName]),
+      ) ||
+      !isReusableScreenshotManifest(screenshotManifest, { cycle, mechanical }) ||
+      !isReusableCriticManifest(criticManifest, { cycle, buffers: fullPage })
+    ) {
+      throw invalidEvidencePacket();
+    }
+    return {
+      viewports: Object.fromEntries(
+        VISUAL_VIEWPORTS.map((viewportName) => [
+          viewportName,
+          {
+            initial: initial[viewportName],
+            fullPage: fullPage[viewportName],
+          },
+        ]),
+      ),
+      criticManifest,
+    };
+  } catch (error) {
+    if (error?.code === UNTRUSTED_PATH_ERROR || error?.code === EVIDENCE_PACKET_ERROR) {
+      throw error;
+    }
+    throw invalidEvidencePacket(error);
+  }
+}
+
 async function captureContext({
   browser,
   previewUrl,
@@ -470,6 +594,7 @@ async function captureContext({
   mode,
   motionMoveSlugs,
   captureScreenshot,
+  captureFullPage,
   narrowOnly = false,
 }) {
   const viewport = EVIDENCE_VIEWPORTS[viewportName];
@@ -520,11 +645,14 @@ async function captureContext({
     await navigateAndSettle(page, previewUrl, {
       javascriptEnabled: mode !== "javascriptDisabled",
     });
-    if (captureScreenshot) {
+    if (captureScreenshot || captureFullPage) {
       await page.waitForTimeout(450);
     }
     const screenshot = captureScreenshot
       ? await page.screenshot({ fullPage: false, type: "png" })
+      : null;
+    const fullPageScreenshot = captureFullPage
+      ? await page.screenshot({ fullPage: true, type: "png" })
       : null;
     const visibleText =
       captureScreenshot && viewportName === "desktop"
@@ -597,6 +725,7 @@ async function captureContext({
     };
     return {
       screenshot,
+      fullPageScreenshot,
       visibleText,
       evidence: {
         ...coreEvidence,
@@ -1923,6 +2052,8 @@ async function readReusableEvidencePacket({
   visibleTextPath,
   mechanicalPath,
   screenshotManifestPath,
+  fullPagePaths,
+  criticManifestPath,
   assetGate,
   buildGate,
 }) {
@@ -1933,24 +2064,46 @@ async function readReusableEvidencePacket({
   if (!present.every(Boolean)) throw invalidEvidencePacket();
 
   try {
-    const [desktop, tablet, phone, visibleText, mechanicalText, manifestText] =
+    const [
+      desktop,
+      tablet,
+      phone,
+      fullPageDesktop,
+      fullPageTablet,
+      fullPagePhone,
+      visibleText,
+      mechanicalText,
+      manifestText,
+      criticManifestText,
+    ] =
       await Promise.all([
         readFile(desktopPath),
         readFile(tabletPath),
         readFile(mobilePath),
+        readFile(fullPagePaths.desktop),
+        readFile(fullPagePaths.tablet),
+        readFile(fullPagePaths.phone),
         readFile(visibleTextPath, "utf8"),
         readFile(mechanicalPath, "utf8"),
         readFile(screenshotManifestPath, "utf8"),
+        readFile(criticManifestPath, "utf8"),
       ]);
     const mechanical = JSON.parse(mechanicalText);
     const screenshotManifest = JSON.parse(manifestText);
+    const criticManifest = JSON.parse(criticManifestText);
+    const fullPageBuffers = {
+      desktop: fullPageDesktop,
+      tablet: fullPageTablet,
+      phone: fullPagePhone,
+    };
     if (
       !isReusableScreenshot(desktop, EVIDENCE_VIEWPORTS.desktop) ||
       !isReusableScreenshot(tablet, EVIDENCE_VIEWPORTS.tablet) ||
       !isReusableScreenshot(phone, EVIDENCE_VIEWPORTS.phone) ||
       !visibleText.trim() ||
       !isReusableMechanical(mechanical, { cycle, assetGate, buildGate }) ||
-      !isReusableScreenshotManifest(screenshotManifest, { cycle, mechanical })
+      !isReusableScreenshotManifest(screenshotManifest, { cycle, mechanical }) ||
+      !isReusableCriticManifest(criticManifest, { cycle, buffers: fullPageBuffers })
     ) {
       throw invalidEvidencePacket();
     }
@@ -1960,10 +2113,12 @@ async function readReusableEvidencePacket({
       tabletPath,
       mobilePath,
       phonePath: mobilePath,
+      fullPagePaths,
       visibleTextPath,
       mechanical,
       assetsResolved: assetGate.assetsResolved,
       screenshotManifest,
+      criticManifest,
     };
   } catch (error) {
     if (error?.code === UNTRUSTED_PATH_ERROR || error?.code === EVIDENCE_PACKET_ERROR) {
@@ -1993,6 +2148,26 @@ function isReusableScreenshot(buffer, viewport) {
     buffer.readUInt32BE(8) !== 13 ||
     buffer.subarray(12, 16).toString("ascii") !== "IHDR" ||
     buffer.readUInt32BE(16) !== viewport.width ||
+    buffer.readUInt32BE(20) < viewport.height
+  ) {
+    return false;
+  }
+  const end = buffer.length - 12;
+  return (
+    end > 24 &&
+    buffer.readUInt32BE(end) === 0 &&
+    buffer.subarray(end + 4, end + 8).toString("ascii") === "IEND"
+  );
+}
+
+function isReusableFullPageScreenshot(buffer, viewport) {
+  if (
+    !Buffer.isBuffer(buffer) ||
+    buffer.length < 33 ||
+    !buffer.subarray(0, PNG_SIGNATURE.length).equals(PNG_SIGNATURE) ||
+    buffer.readUInt32BE(8) !== 13 ||
+    buffer.subarray(12, 16).toString("ascii") !== "IHDR" ||
+    buffer.readUInt32BE(16) < viewport.width ||
     buffer.readUInt32BE(20) < viewport.height
   ) {
     return false;
@@ -2565,6 +2740,77 @@ function isNonnegativeInteger(value) {
 
 function recordsEqual(left, right, fields) {
   return fields.every((field) => JSON.stringify(left[field]) === JSON.stringify(right[field]));
+}
+
+function createCriticManifest({ cycle, capturedAt, buffers }) {
+  const manifest = {
+    schemaVersion: "1.0",
+    cycle,
+    capturedAt,
+    capture: "full-page",
+    motionMode: "reducedMotion",
+    viewports: Object.fromEntries(
+      VISUAL_VIEWPORTS.map((viewportName) => {
+        const buffer = buffers[viewportName];
+        const viewport = EVIDENCE_VIEWPORTS[viewportName];
+        if (!isReusableFullPageScreenshot(buffer, viewport)) {
+          throw new Error("Rendered full page screenshot bytes are invalid.");
+        }
+        return [
+          viewportName,
+          {
+            width: viewport.width,
+            renderedWidth: buffer.readUInt32BE(16),
+            height: buffer.readUInt32BE(20),
+            path: `screenshots/critic/${CRITIC_FULL_PAGE_FILES[viewportName]}`,
+            bytes: buffer.length,
+            sha256: sha256Hex(buffer),
+          },
+        ];
+      }),
+    ),
+  };
+  return manifest;
+}
+
+function isReusableCriticManifest(candidate, { cycle, buffers }) {
+  if (
+    !isPlainObject(candidate) ||
+    !hasExactKeys(candidate, ["schemaVersion", "cycle", "capturedAt", "capture", "motionMode", "viewports"]) ||
+    candidate.schemaVersion !== "1.0" ||
+    candidate.cycle !== cycle ||
+    typeof candidate.capturedAt !== "string" ||
+    !Number.isFinite(Date.parse(candidate.capturedAt)) ||
+    candidate.capture !== "full-page" ||
+    candidate.motionMode !== "reducedMotion" ||
+    !isPlainObject(candidate.viewports) ||
+    !hasExactKeys(candidate.viewports, VISUAL_VIEWPORTS)
+  ) {
+    return false;
+  }
+  return VISUAL_VIEWPORTS.every((viewportName) => {
+    const record = candidate.viewports[viewportName];
+    const viewport = EVIDENCE_VIEWPORTS[viewportName];
+    const buffer = buffers[viewportName];
+    return (
+      isPlainObject(record) &&
+      hasExactKeys(record, ["width", "renderedWidth", "height", "path", "bytes", "sha256"]) &&
+      record.width === viewport.width &&
+      Number.isSafeInteger(record.renderedWidth) &&
+      record.renderedWidth >= record.width &&
+      Number.isSafeInteger(record.height) &&
+      record.height >= viewport.height &&
+      record.path === `screenshots/critic/${CRITIC_FULL_PAGE_FILES[viewportName]}` &&
+      Number.isSafeInteger(record.bytes) &&
+      record.bytes > 0 &&
+      SHA256_HEX.test(record.sha256) &&
+      isReusableFullPageScreenshot(buffer, viewport) &&
+      buffer.readUInt32BE(16) === record.renderedWidth &&
+      buffer.readUInt32BE(20) === record.height &&
+      buffer.length === record.bytes &&
+      sha256Hex(buffer) === record.sha256
+    );
+  });
 }
 
 function isReusableScreenshotManifest(candidate, { cycle, mechanical }) {

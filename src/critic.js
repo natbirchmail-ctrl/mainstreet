@@ -1,7 +1,10 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 
-import { captureRenderedEvidence } from "./critic-evidence.js";
+import {
+  captureRenderedEvidence,
+  readCriticVisualEvidence,
+} from "./critic-evidence.js";
 import {
   deriveCritiqueOutcome,
   normalizeModelCritique,
@@ -22,19 +25,72 @@ export { EVIDENCE_VIEWPORTS };
 export async function critiqueCycle({
   brief,
   cycleDir,
+  mechanical,
   model = process.env.OPENAI_MODEL || "gpt-5.6",
   client,
   structuredRequester = requestStructured,
+  visualEvidenceReader = readCriticVisualEvidence,
 }) {
-  const screenshotsDir = resolveInside(cycleDir, "screenshots");
-  const [systemPrompt, schema, desktop, tablet, phone, visibleText] = await Promise.all([
+  const [systemPrompt, schema, visibleText, visualEvidence] = await Promise.all([
     readFile(promptUrl, "utf8"),
     readFile(schemaUrl, "utf8").then(JSON.parse),
-    readFile(resolveInside(screenshotsDir, EVIDENCE_VIEWPORTS.desktop.filename)),
-    readFile(resolveInside(screenshotsDir, EVIDENCE_VIEWPORTS.tablet.filename)),
-    readFile(resolveInside(screenshotsDir, EVIDENCE_VIEWPORTS.phone.filename)),
     readFile(resolveInside(cycleDir, "visible-text.txt"), "utf8"),
+    visualEvidenceReader({ cycleDir, mechanical }),
   ]);
+  const renderedMechanics = summarizeRenderedMechanics(mechanical);
+  const inputContent = [
+    {
+      type: "input_text",
+      text: JSON.stringify({
+        rubricVersion: "1.0",
+        cycle: cycleNumberFromPath(cycleDir),
+        brief,
+        visibleText,
+        renderedMechanics,
+        viewports: Object.fromEntries(
+          CRITIC_VIEWPORT_NAMES.map((name) => [
+            name,
+            {
+              width: EVIDENCE_VIEWPORTS[name].width,
+              height: EVIDENCE_VIEWPORTS[name].height,
+            },
+          ]),
+        ),
+      }),
+    },
+  ];
+  for (const name of CRITIC_VIEWPORT_NAMES) {
+    const viewport = EVIDENCE_VIEWPORTS[name];
+    const images = visualEvidence?.viewports?.[name];
+    if (!Buffer.isBuffer(images?.initial) || !Buffer.isBuffer(images?.fullPage)) {
+      throw new TypeError("Critic visual evidence is incomplete.");
+    }
+    const renderedWidth = visualEvidence?.criticManifest?.viewports?.[name]?.renderedWidth;
+    const fullPageLabel =
+      Number.isSafeInteger(renderedWidth) && renderedWidth > viewport.width
+        ? `Evidence image: ${name} full page from a ${viewport.width} px viewport under reduced motion; the ${renderedWidth} px canvas exposes horizontal overflow; all rendered sections are included.`
+        : `Evidence image: ${name} full page (${viewport.width} px wide; reduced motion; all rendered sections).`;
+    inputContent.push(
+      {
+        type: "input_text",
+        text: `Evidence image: ${name} initial viewport (${viewport.width} x ${viewport.height}).`,
+      },
+      {
+        type: "input_image",
+        image_url: `data:image/png;base64,${images.initial.toString("base64")}`,
+        detail: "high",
+      },
+      {
+        type: "input_text",
+        text: fullPageLabel,
+      },
+      {
+        type: "input_image",
+        image_url: `data:image/png;base64,${images.fullPage.toString("base64")}`,
+        detail: "high",
+      },
+    );
+  }
 
   const candidate = await structuredRequester({
     client,
@@ -42,41 +98,7 @@ export async function critiqueCycle({
     schema,
     schemaName: "mainstreet_critique",
     systemPrompt,
-    inputContent: [
-      {
-        type: "input_text",
-        text: JSON.stringify({
-          rubricVersion: "1.0",
-          cycle: cycleNumberFromPath(cycleDir),
-          brief,
-          visibleText,
-          viewports: Object.fromEntries(
-            CRITIC_VIEWPORT_NAMES.map((name) => [
-              name,
-              {
-                width: EVIDENCE_VIEWPORTS[name].width,
-                height: EVIDENCE_VIEWPORTS[name].height,
-              },
-            ]),
-          ),
-        }),
-      },
-      {
-        type: "input_image",
-        image_url: `data:image/png;base64,${desktop.toString("base64")}`,
-        detail: "high",
-      },
-      {
-        type: "input_image",
-        image_url: `data:image/png;base64,${tablet.toString("base64")}`,
-        detail: "high",
-      },
-      {
-        type: "input_image",
-        image_url: `data:image/png;base64,${phone.toString("base64")}`,
-        detail: "high",
-      },
-    ],
+    inputContent,
     maxOutputTokens: 10_000,
   });
 
@@ -153,7 +175,7 @@ export async function runCriticCycle({
   }
 
   if (mode === "vision") {
-    critique = await critiqueCycleFn({ brief, cycleDir });
+    critique = await critiqueCycleFn({ brief, cycleDir, mechanical });
   } else {
     critique = await critiqueSourceFn({ brief, cycleDir, siteDir });
   }
@@ -175,4 +197,95 @@ export async function runCriticCycle({
 function cycleNumberFromPath(cycleDir) {
   const match = path.basename(path.resolve(cycleDir)).match(/^cycle-(\d{2})$/);
   return match ? Number(match[1]) : 0;
+}
+
+function summarizeRenderedMechanics(mechanical) {
+  if (
+    !mechanical ||
+    typeof mechanical !== "object" ||
+    !Array.isArray(mechanical.motionMoveSlugs) ||
+    !Array.isArray(mechanical.failures) ||
+    !mechanical.contexts ||
+    typeof mechanical.contexts !== "object"
+  ) {
+    throw new TypeError("Rendered mechanical evidence is incomplete.");
+  }
+  return {
+    motionMoveSlugs: [...mechanical.motionMoveSlugs],
+    failures: mechanical.failures.map((failure) =>
+      pickExisting(failure, [
+        "code",
+        "viewport",
+        "mode",
+        "count",
+        "subjectIndex",
+      ]),
+    ),
+    viewports: Object.fromEntries(
+      CRITIC_VIEWPORT_NAMES.map((viewportName) => {
+        const contexts = mechanical.contexts[viewportName];
+        if (!contexts || typeof contexts !== "object") {
+          throw new TypeError("Rendered mechanical viewport evidence is incomplete.");
+        }
+        return [
+          viewportName,
+          Object.fromEntries(
+            ["normal", "reducedMotion", "javascriptDisabled"].map((mode) => {
+              const context = contexts[mode];
+              if (!context || typeof context !== "object") {
+                throw new TypeError("Rendered mechanical mode evidence is incomplete.");
+              }
+              return [
+                mode,
+                {
+                  firstBeats: pickExisting(context.firstBeats, [
+                    "sectionCount",
+                    "exactFirstBeatCount",
+                    "visibleFirstBeatCount",
+                  ]),
+                  touchTargets: pickExisting(context.touchTargets, [
+                    "checkedCount",
+                    "passingCount",
+                  ]),
+                  controls: pickExisting(context.controls, [
+                    "controlCount",
+                    "ariaLinkedCount",
+                    "enterPassed",
+                    "spacePassed",
+                    "tapChecked",
+                    "tapPassed",
+                  ]),
+                  motion: pickExisting(context.motion, [
+                    "declaredRootCount",
+                    "foundRootCount",
+                    "activeRootCount",
+                    "disabledRootCount",
+                    "targetCount",
+                    "visibleTargetCount",
+                    "panelCount",
+                    "visiblePanelCount",
+                    "maxDurationMs",
+                    "progressChangedCount",
+                    "selectionChangedCount",
+                    "contractPassed",
+                    "reducedFallbackPassed",
+                    "noJavaScriptFallbackPassed",
+                  ]),
+                },
+              ];
+            }),
+          ),
+        ];
+      }),
+    ),
+  };
+}
+
+function pickExisting(value, fields) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new TypeError("Rendered mechanical evidence field is incomplete.");
+  }
+  return Object.fromEntries(
+    fields.filter((field) => Object.hasOwn(value, field)).map((field) => [field, value[field]]),
+  );
 }

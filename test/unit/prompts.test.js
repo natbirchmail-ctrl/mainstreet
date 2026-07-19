@@ -97,8 +97,16 @@ test("vision critic judges every hard law with three viewport evidence", async (
     [
       /desktop, tablet, and phone/i,
       /viewport tagged evidence/i,
+      /full page/i,
+      /full page[^.]*reduced motion/i,
+      /rendered mechanical/i,
+      /reduced motion/i,
+      /no JavaScript/i,
       /missing[^.]*unverified/i,
       /score[^.]*cannot override/i,
+      /do not require[^.]*forms/i,
+      /absent from the brief/i,
+      /available on page content/i,
     ],
     "vision critic",
   );

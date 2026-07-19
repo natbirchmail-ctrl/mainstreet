@@ -49,6 +49,16 @@ const SCREENSHOTS = Object.freeze({
   tablet: "screenshots/tablet-home.png",
   phone: "screenshots/mobile-home.png",
 });
+const CRITIC_FULL_PAGE_SCREENSHOTS = Object.freeze({
+  desktop: "screenshots/critic/desktop-full-page.png",
+  tablet: "screenshots/critic/tablet-full-page.png",
+  phone: "screenshots/critic/mobile-full-page.png",
+});
+const VIEWPORT_DIMENSIONS = Object.freeze({
+  desktop: Object.freeze({ width: 1440, height: 900 }),
+  tablet: Object.freeze({ width: 1024, height: 768 }),
+  phone: Object.freeze({ width: 390, height: 844 }),
+});
 const ENV_FILE = [".", "env"].join("");
 const ENV_EXAMPLE_FILE = [ENV_FILE, "example"].join(".");
 const FORBIDDEN_SEGMENTS = new Set([
@@ -508,6 +518,7 @@ async function validateCycle({
   const mechanicalPath = `${cycleRoot}/mechanical.json`;
   const critiquePath = `${cycleRoot}/critique.json`;
   const screenshotManifestPath = `${cycleRoot}/screenshots/manifest.json`;
+  const criticManifestPath = `${cycleRoot}/screenshots/critic/manifest.json`;
   const build = readJsonArtifact({
     findings,
     relativePath: buildPath,
@@ -535,6 +546,12 @@ async function validateCycle({
   const screenshotManifest = readJsonArtifact({
     findings,
     relativePath: screenshotManifestPath,
+    currentPaths,
+    currentBuffers,
+  });
+  const criticManifest = readJsonArtifact({
+    findings,
+    relativePath: criticManifestPath,
     currentPaths,
     currentBuffers,
   });
@@ -604,6 +621,15 @@ async function validateCycle({
     cycleRoot,
     manifest: screenshotManifest,
     manifestPath: screenshotManifestPath,
+    currentPaths,
+    currentBuffers,
+  });
+  validateCriticScreenshots({
+    findings,
+    cycle,
+    cycleRoot,
+    manifest: criticManifest,
+    manifestPath: criticManifestPath,
     currentPaths,
     currentBuffers,
   });
@@ -788,6 +814,68 @@ function validateScreenshots({
       findings.add("ARTIFACT_MISSING", relativePath);
     } else if (!hasPngSignature(currentBuffers.get(relativePath))) {
       findings.add("ARTIFACT_INVALID", relativePath);
+    }
+  }
+  if (invalid) findings.add("ARTIFACT_INVALID", manifestPath);
+}
+
+function validateCriticScreenshots({
+  findings,
+  cycle,
+  cycleRoot,
+  manifest,
+  manifestPath,
+  currentPaths,
+  currentBuffers,
+}) {
+  if (!isPlainObject(manifest)) return;
+  let invalid =
+    !sameStringArray(
+      Object.keys(manifest).sort(),
+      ["schemaVersion", "cycle", "capturedAt", "capture", "motionMode", "viewports"].sort(),
+    ) ||
+    manifest.schemaVersion !== "1.0" ||
+    manifest.cycle !== cycle ||
+    typeof manifest.capturedAt !== "string" ||
+    !Number.isFinite(Date.parse(manifest.capturedAt)) ||
+    manifest.capture !== "full-page" ||
+    manifest.motionMode !== "reducedMotion" ||
+    !isPlainObject(manifest.viewports) ||
+    !sameStringArray(Object.keys(manifest.viewports || {}).sort(), [...EVIDENCE_VIEWPORTS].sort());
+
+  for (const [viewport, expectedPath] of Object.entries(CRITIC_FULL_PAGE_SCREENSHOTS)) {
+    const record = manifest.viewports?.[viewport];
+    const dimensions = VIEWPORT_DIMENSIONS[viewport];
+    if (
+      !isPlainObject(record) ||
+      !sameStringArray(
+        Object.keys(record || {}).sort(),
+        ["width", "renderedWidth", "height", "path", "bytes", "sha256"].sort(),
+      ) ||
+      record.width !== dimensions.width ||
+      !Number.isSafeInteger(record.renderedWidth) ||
+      record.renderedWidth < record.width ||
+      !Number.isSafeInteger(record.height) ||
+      record.height < dimensions.height ||
+      record.path !== expectedPath ||
+      !Number.isSafeInteger(record.bytes) ||
+      record.bytes <= 0 ||
+      !/^[a-f0-9]{64}$/.test(record.sha256 || "")
+    ) {
+      invalid = true;
+    }
+    const relativePath = `${cycleRoot}/${expectedPath}`;
+    const value = currentBuffers.get(relativePath);
+    if (!currentPaths.has(relativePath)) {
+      findings.add("ARTIFACT_MISSING", relativePath);
+    } else if (
+      !value ||
+      !hasPngSignature(value) ||
+      value.length !== record?.bytes ||
+      sha256(value) !== record?.sha256
+    ) {
+      findings.add("ARTIFACT_INVALID", relativePath);
+      invalid = true;
     }
   }
   if (invalid) findings.add("ARTIFACT_INVALID", manifestPath);

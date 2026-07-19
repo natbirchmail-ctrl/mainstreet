@@ -54,7 +54,7 @@ test("critic integrates the exact canonical evidence viewport object", () => {
   assert.equal(CRITIC_VIEWPORTS, CANONICAL_VIEWPORTS);
 });
 
-test("critiqueCycle sends text desktop tablet and phone in exact order", async () => {
+test("critiqueCycle sends labeled initial and full page evidence plus bounded mechanics", async () => {
   const cycleDir = path.join(process.cwd(), "tmp", randomUUID(), "cycle-01");
   const screenshotsDir = path.join(cycleDir, "screenshots");
   await mkdir(screenshotsDir, { recursive: true });
@@ -71,9 +71,24 @@ test("critiqueCycle sends text desktop tablet and phone in exact order", async (
   ]);
 
   let request;
+  const mechanical = renderedMechanicalEvidence();
   const result = await critiqueCycle({
     brief: { business: { name: "Juniper Oven", category: "Bakery" } },
     cycleDir,
+    mechanical,
+    visualEvidenceReader: async () => ({
+      viewports: Object.fromEntries(
+        COMPLETE_VIEWPORTS.map((name) => [
+          name,
+          {
+            initial: screenshots[name],
+            fullPage: Buffer.from(`${name}-full-page`),
+            initialLabel: `${name} initial viewport`,
+            fullPageLabel: `${name} full page`,
+          },
+        ]),
+      ),
+    }),
     structuredRequester: async (value) => {
       request = value;
       return rawCritique();
@@ -84,19 +99,48 @@ test("critiqueCycle sends text desktop tablet and phone in exact order", async (
   assert.equal(request.schemaName, "mainstreet_critique");
   assert.deepEqual(request.inputContent.map((item) => item.type), [
     "input_text",
+    "input_text",
     "input_image",
+    "input_text",
     "input_image",
+    "input_text",
+    "input_image",
+    "input_text",
+    "input_image",
+    "input_text",
+    "input_image",
+    "input_text",
     "input_image",
   ]);
   assert.deepEqual(
-    request.inputContent.slice(1).map((item) =>
+    request.inputContent.filter((item) => item.type === "input_image").map((item) =>
       Buffer.from(item.image_url.split(",")[1], "base64").toString("utf8"),
     ),
-    ["desktop", "tablet", "phone"],
+    [
+      "desktop",
+      "desktop-full-page",
+      "tablet",
+      "tablet-full-page",
+      "phone",
+      "phone-full-page",
+    ],
   );
   assert.deepEqual(
-    request.inputContent.slice(1).map((item) => item.detail),
-    ["high", "high", "high"],
+    request.inputContent.filter((item) => item.type === "input_image").map((item) => item.detail),
+    ["high", "high", "high", "high", "high", "high"],
+  );
+  assert.deepEqual(
+    request.inputContent
+      .filter((item, index) => index > 0 && item.type === "input_text")
+      .map((item) => item.text),
+    [
+      "Evidence image: desktop initial viewport (1440 x 900).",
+      "Evidence image: desktop full page (1440 px wide; reduced motion; all rendered sections).",
+      "Evidence image: tablet initial viewport (1024 x 768).",
+      "Evidence image: tablet full page (1024 px wide; reduced motion; all rendered sections).",
+      "Evidence image: phone initial viewport (390 x 844).",
+      "Evidence image: phone full page (390 px wide; reduced motion; all rendered sections).",
+    ],
   );
   const packet = JSON.parse(request.inputContent[0].text);
   assert.equal(packet.visibleText, "Fresh from the oven");
@@ -113,8 +157,18 @@ test("critiqueCycle sends text desktop tablet and phone in exact order", async (
       ]),
     ),
   );
+  assert.deepEqual(packet.renderedMechanics, {
+    motionMoveSlugs: ["staged-hero-entrance"],
+    failures: [],
+    viewports: {
+      desktop: expectedMechanicalViewport(),
+      tablet: expectedMechanicalViewport(),
+      phone: expectedMechanicalViewport(),
+    },
+  });
   assert.equal("priorCritique" in packet, false);
   assert.equal("sourceCode" in packet, false);
+  assert.equal("contexts" in packet.renderedMechanics, false);
 });
 
 test("runCriticCycle derives an uncapped vision outcome from explicit gates", async () => {
@@ -123,14 +177,19 @@ test("runCriticCycle derives an uncapped vision outcome from explicit gates", as
   await mkdir(path.join(cycleDir, "site"), { recursive: true });
   await writeFile(path.join(runDir, "brief.json"), JSON.stringify({ business: { name: "Juniper Oven" } }), "utf8");
 
+  let receivedMechanical;
+  const mechanical = renderedMechanicalEvidence();
   const result = await runCriticCycle({
     runDir,
     cycle: 1,
     captureCycleFn: async () => ({
-      mechanical: { passed: true, assetsResolved: false, failures: [] },
+      mechanical,
       assetsResolved: true,
     }),
-    critiqueCycleFn: async () => normalizeModelCritique(rawCritique()),
+    critiqueCycleFn: async (input) => {
+      receivedMechanical = input.mechanical;
+      return normalizeModelCritique(rawCritique());
+    },
     now: () => new Date("2026-07-17T14:00:00.000Z"),
   });
 
@@ -139,6 +198,7 @@ test("runCriticCycle derives an uncapped vision outcome from explicit gates", as
   assert.equal(result.assetsResolved, true);
   assert.equal(result.shipEligible, true);
   assert.equal(result.verdict, "ship");
+  assert.equal(receivedMechanical, mechanical);
   assert.equal("visionScore" in result, false);
   const saved = JSON.parse(await readFile(path.join(cycleDir, "critique.json"), "utf8"));
   assert.equal(saved.createdAt, "2026-07-17T14:00:00.000Z");
@@ -272,5 +332,67 @@ function law(status) {
       observation: `${viewport} provides concrete evidence for this law.`,
     })),
     fix: "Make the smallest concrete revision needed to satisfy this law.",
+  };
+}
+
+function renderedMechanicalEvidence() {
+  return {
+    schemaVersion: "2.0",
+    cycle: 1,
+    passed: true,
+    assetsResolved: true,
+    assetManifestPresent: true,
+    motionMoveSlugs: ["staged-hero-entrance"],
+    contexts: Object.fromEntries(
+      COMPLETE_VIEWPORTS.map((viewport) => [
+        viewport,
+        {
+          normal: mechanicalContext("normal"),
+          reducedMotion: mechanicalContext("reducedMotion"),
+          javascriptDisabled: mechanicalContext("javascriptDisabled"),
+        },
+      ]),
+    ),
+    failures: [],
+    totals: {
+      contextCount: 9,
+      externalRequestCount: 0,
+      requestFailureCount: 0,
+      consoleErrorCount: 0,
+      pageErrorCount: 0,
+      brokenImageCount: 0,
+    },
+  };
+}
+
+function mechanicalContext(mode) {
+  return {
+    firstBeats: {
+      sectionCount: 4,
+      exactFirstBeatCount: 4,
+      visibleFirstBeatCount: 4,
+    },
+    touchTargets: { checkedCount: 2, passingCount: 2 },
+    controls: {
+      controlCount: 0,
+      ariaLinkedCount: 0,
+      enterPassed: true,
+      spacePassed: true,
+      tapChecked: false,
+      tapPassed: true,
+    },
+    motion: {
+      contractPassed: true,
+      ...(mode === "reducedMotion" ? { reducedFallbackPassed: true } : {}),
+      ...(mode === "javascriptDisabled" ? { noJavaScriptFallbackPassed: true } : {}),
+    },
+  };
+}
+
+function expectedMechanicalViewport() {
+  return {
+    normal: mechanicalContext("normal"),
+    reducedMotion: mechanicalContext("reducedMotion"),
+    javascriptDisabled: mechanicalContext("javascriptDisabled"),
   };
 }
