@@ -1,5 +1,6 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { lstat, mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { chromium } from "playwright";
 
 import { requestStructured } from "./lib/openai.js";
 import { resolveInside, writeJsonNew } from "./lib/runs.js";
@@ -57,6 +58,7 @@ export async function buildSite({
 
     try {
       const hydrated = hydrateSiteManifest(candidate);
+      await validateRenderedSourceVisibility(hydrated);
       return { ...hydrated, source: "openai" };
     } catch (error) {
       lastValidationError = error;
@@ -65,6 +67,7 @@ export async function buildSite({
 
   const fallback = createDeterministicSite(brief);
   validateSiteManifest(fallback);
+  await validateRenderedSourceVisibility(fallback);
   return {
     ...fallback,
     source: "deterministic-fallback",
@@ -87,7 +90,7 @@ export async function buildRun({
   const cycleDir = resolveInside(runDir, "cycle-01");
   const siteDir = resolveInside(cycleDir, "site");
 
-  await writeSiteFiles(siteDir, manifest);
+  await writeSiteFiles(siteDir, manifest, runDir);
   const assets = await materializeAssetsFn({
     cycleDir,
     siteDir,
@@ -231,6 +234,86 @@ function selectorCouldMatchTag(selector, tag) {
   const classes = (singleAttribute(tag.raw, "class") ?? "").split(/\s+/).filter(Boolean);
   if (classes.some((className) => normalized.includes(`.${className}`))) return true;
   return new RegExp(`(?:^|[\\s>+~,(])${tag.tagName}(?=$|[\\s>+~,:.)\\[])`, "i").test(normalized);
+}
+
+export async function validateRenderedSourceVisibility(manifest) {
+  const viewports = [
+    { name: "desktop", width: 1440, height: 900 },
+    { name: "tablet", width: 768, height: 1024 },
+    { name: "phone", width: 390, height: 844 },
+  ];
+  const sourceSelector = "[data-first-beat], [data-motion-root], [data-motion-target], [data-motion-panel], [data-motion-control]";
+  const stylesheetUrl = `data:text/css;base64,${Buffer.from(manifest.stylesCss, "utf8").toString("base64")}`;
+  const browserHtml = manifest.indexHtml
+    .replace(/<meta\b(?=[^>]*\bhttp-equiv\s*=\s*["']Content-Security-Policy["'])[^>]*>/gi, "")
+    .replace(
+      /<link\b(?=[^>]*\bhref\s*=\s*["']styles\.css["'])[^>]*>/gi,
+      `<link rel="stylesheet" href="${stylesheetUrl}">`,
+    )
+    .replace(/<script\b(?=[^>]*\bsrc\s*=\s*["']script\.js["'])[^>]*>\s*<\/script>/gi, "");
+
+  const browser = await chromium.launch({ headless: true });
+  try {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    try {
+      const page = await context.newPage();
+      for (const viewport of viewports) {
+        await page.setViewportSize({ width: viewport.width, height: viewport.height });
+        await page.setContent(browserHtml, { waitUntil: "load" });
+        const failures = await page.locator(sourceSelector).evaluateAll((hooks, currentViewport) => {
+          const protectedElements = new Map();
+          for (const hook of hooks) {
+            let current = hook;
+            while (current) {
+              const state = protectedElements.get(current) ?? { isHook: false };
+              if (current === hook) state.isHook = true;
+              protectedElements.set(current, state);
+              current = current.parentElement;
+            }
+          }
+
+          const isTransparent = (color) =>
+            color === "transparent" || /rgba\([^)]*,\s*0(?:\.0+)?\s*\)$/i.test(color);
+          const describe = (element) => {
+            const id = element.id ? `#${element.id}` : "";
+            const classes = element.classList.length > 0 ? `.${[...element.classList].join(".")}` : "";
+            return `${element.tagName.toLowerCase()}${id}${classes}`;
+          };
+          const failures = [];
+          for (const [element, state] of protectedElements) {
+            const style = getComputedStyle(element);
+            const reasons = [];
+            if (
+              typeof element.checkVisibility === "function" &&
+              !element.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })
+            ) reasons.push("not visible");
+            if (style.display === "none") reasons.push("display none");
+            if (style.visibility === "hidden" || style.visibility === "collapse") reasons.push(`visibility ${style.visibility}`);
+            if (Number.parseFloat(style.opacity) <= 0.01) reasons.push("zero opacity");
+            if (style.contentVisibility === "hidden") reasons.push("content visibility hidden");
+            if (Number.parseFloat(style.fontSize) <= 0.01) reasons.push("zero font size");
+            if (isTransparent(style.color)) reasons.push("transparent text color");
+
+            if (state.isHook && style.display !== "contents") {
+              const bounds = element.getBoundingClientRect();
+              if (bounds.width <= 0 || bounds.height <= 0) reasons.push("zero rendered bounds");
+              if (bounds.right <= 0 || bounds.left >= currentViewport.width) reasons.push("horizontally offscreen");
+              if (bounds.bottom <= 0) reasons.push("above the rendered canvas");
+            }
+            if (reasons.length > 0) failures.push({ element: describe(element), reasons });
+          }
+          return failures;
+        }, viewport);
+        if (failures.length > 0) {
+          throw new Error(`Rendered no JavaScript source visibility failed at ${viewport.name}: ${JSON.stringify(failures)}`);
+        }
+      }
+    } finally {
+      await context.close();
+    }
+  } finally {
+    await browser.close();
+  }
 }
 
 function sanitizeAssetSummary(assets) {
@@ -665,14 +748,16 @@ function isUnitNumber(value) {
   return typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 1;
 }
 
-export async function writeSiteFiles(siteDir, manifest) {
+export async function writeSiteFiles(siteDir, manifest, trustedRunRoot) {
   validateSiteManifest(manifest);
-  await mkdir(siteDir, { recursive: true });
-  await Promise.all([
-    writeNew(path.join(siteDir, "index.html"), manifest.indexHtml),
-    writeNew(path.join(siteDir, "styles.css"), manifest.stylesCss),
-    writeNew(path.join(siteDir, "script.js"), manifest.scriptJs),
-  ]);
+  await validateRenderedSourceVisibility(manifest);
+  const normalizedSiteDir = path.resolve(siteDir);
+  await assertNoLinkedSitePath(trustedRunRoot, normalizedSiteDir);
+  await mkdir(normalizedSiteDir, { recursive: true });
+  await assertNoLinkedSitePath(trustedRunRoot, normalizedSiteDir);
+  await writeNew(path.join(normalizedSiteDir, "index.html"), manifest.indexHtml, trustedRunRoot);
+  await writeNew(path.join(normalizedSiteDir, "styles.css"), manifest.stylesCss, trustedRunRoot);
+  await writeNew(path.join(normalizedSiteDir, "script.js"), manifest.scriptJs, trustedRunRoot);
 }
 
 function extractVisibleText(html) {
@@ -755,9 +840,11 @@ function decodeNumericHtmlEntity(value) {
   return String.fromCodePoint(codePoint);
 }
 
-async function writeNew(target, value) {
+async function writeNew(target, value, trustedRunRoot) {
+  const contents = value.endsWith("\n") ? value : `${value}\n`;
+  await assertNoLinkedSitePath(trustedRunRoot, target);
   try {
-    await writeFile(target, value.endsWith("\n") ? value : `${value}\n`, {
+    await writeFile(target, contents, {
       encoding: "utf8",
       flag: "wx",
     });
@@ -766,6 +853,35 @@ async function writeNew(target, value) {
       throw new Error(`Site file already exists: ${target}`);
     }
     throw error;
+  }
+}
+
+async function assertNoLinkedSitePath(trustedRunRoot, target) {
+  if (typeof trustedRunRoot !== "string" || !trustedRunRoot.trim()) {
+    throw new TypeError("A trusted run root is required for site writes.");
+  }
+  const root = path.resolve(trustedRunRoot);
+  const resolvedTarget = path.resolve(target);
+  const relative = path.relative(root, resolvedTarget);
+  if (!relative || relative.startsWith("..") || path.isAbsolute(relative)) {
+    throw new Error("Site path escapes the trusted run root.");
+  }
+
+  const candidates = [root];
+  let current = root;
+  for (const segment of relative.split(path.sep)) {
+    current = path.join(current, segment);
+    candidates.push(current);
+  }
+  for (const candidate of candidates) {
+    try {
+      if ((await lstat(candidate)).isSymbolicLink()) {
+        throw new Error("Symlink, junction, or linked site path ancestors are not allowed.");
+      }
+    } catch (error) {
+      if (error?.code === "ENOENT") return;
+      throw error;
+    }
   }
 }
 

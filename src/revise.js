@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import {
   createOwnedMotionStyles,
   hydrateSiteManifest,
+  validateRenderedSourceVisibility,
   validateSiteManifest,
   writeSiteFiles,
 } from "./build.js";
@@ -65,6 +66,7 @@ export async function reviseSite({
 
     try {
       const hydrated = hydrateSiteManifest(candidate);
+      await validateRenderedSourceVisibility(hydrated);
       return { ...hydrated, source: "openai-revision" };
     } catch (error) {
       lastValidationError = error;
@@ -148,7 +150,7 @@ export async function reviseRun({
   };
 
   const siteDir = resolveInside(toCycleDir, "site");
-  await writeSiteFiles(siteDir, revisedManifest);
+  await writeSiteFiles(siteDir, revisedManifest, runDir);
   const assets = await assetMaterializerFn({
     cycleDir: toCycleDir,
     siteDir,

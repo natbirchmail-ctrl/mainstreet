@@ -361,6 +361,10 @@ function validatePriorAssetEvidence(evidence, plan, shootDirection) {
       file.role !== planned.role || file.alt !== planned.alt ||
       file.focalPoint.x !== planned.focalPoint.x || file.focalPoint.y !== planned.focalPoint.y
     )) fail();
+    if (
+      planned && (file.source === "openai" || file.source === "carried-forward") &&
+      file.sha256 === sha256Hex(createDeterministicPng({ ...planned, shootDirection }))
+    ) fail();
     if (planned && file.promptHash === sha256Hex(`${shootDirection}\n\n${planned.prompt}`) && file.resolved !== true && file.source !== "deterministic-fallback") fail();
   }
   if (

@@ -414,6 +414,61 @@ test("materializeAssets strictly rejects malformed or laundered prior evidence b
   }
 });
 
+test("materializeAssets rejects deterministic fallback bytes relabeled as resolved provenance", async (t) => {
+  const previous = await fixtureDirectories();
+  let priorRequests = 0;
+  const prior = await materializeAssets({
+    cycleDir: previous.cycleDir,
+    siteDir: previous.siteDir,
+    plan: plan(),
+    shootDirection: "Direction",
+    requestImage: async ({ prompt }) => {
+      priorRequests += 1;
+      const item = plan().find((candidate) => prompt.endsWith(candidate.prompt));
+      if (item.filename === plan()[0].filename) throw new Error("force deterministic fallback");
+      return createDeterministicPng({ ...item, prompt });
+    },
+  });
+  assert.equal(priorRequests, 3);
+  assert.equal(prior.files[0].source, "deterministic-fallback");
+
+  const cases = [
+    ["openai", { requestCount: 3, successCount: 3 }],
+    ["carried-forward", { requestCount: 2, successCount: 2 }],
+  ];
+  for (const [source, counts] of cases) {
+    await t.test(source, async () => {
+      const relabeled = structuredClone(prior);
+      relabeled.files[0] = {
+        ...relabeled.files[0],
+        source,
+        resolved: true,
+        errorCode: null,
+      };
+      relabeled.allResolved = true;
+      relabeled.requestCount = counts.requestCount;
+      relabeled.successCount = counts.successCount;
+      relabeled.fallbackCount = 0;
+      const next = await fixtureDirectories();
+      let requests = 0;
+      await assert.rejects(
+        materializeAssets({
+          cycleDir: next.cycleDir,
+          siteDir: next.siteDir,
+          plan: plan(),
+          shootDirection: "Direction",
+          priorAssets: relabeled,
+          priorSiteDir: previous.siteDir,
+          requestImage: async () => { requests += 1; throw new Error("must not request"); },
+        }),
+        /prior asset evidence/i,
+      );
+      assert.equal(requests, 0);
+      await assert.rejects(readFile(path.join(next.cycleDir, "assets.json.pending")), { code: "ENOENT" });
+    });
+  }
+});
+
 test("materializeAssets requires the exact safe plan item shape before writes", async () => {
   const current = await fixtureDirectories();
   const malformedPlan = plan();
@@ -458,6 +513,20 @@ test("materializeAssets carries verified resolved assets forward and retries unr
   assert.equal(result.files[0].source, "carried-forward");
   assert.equal(result.files[1].source, "openai");
   assert.deepEqual(await readFile(path.join(previous.siteDir, "assets", "hero.png")), await readFile(path.join(next.siteDir, "assets", "hero.png")));
+
+  const third = await fixtureDirectories();
+  let repeatedCarryRequests = 0;
+  const carriedAgain = await materializeAssets({
+    cycleDir: third.cycleDir,
+    siteDir: third.siteDir,
+    plan: plan(),
+    shootDirection: "Direction",
+    priorAssets: result,
+    priorSiteDir: next.siteDir,
+    requestImage: async () => { repeatedCarryRequests += 1; throw new Error("must not request"); },
+  });
+  assert.equal(repeatedCarryRequests, 0);
+  assert.deepEqual(carriedAgain.files.map((file) => file.source), ["carried-forward", "carried-forward", "carried-forward"]);
 });
 
 test("materializeAssets fails closed when a prior resolved digest does not match", async () => {

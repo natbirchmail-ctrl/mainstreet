@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createHash, randomUUID } from "node:crypto";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, symlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 import { chromium } from "playwright";
@@ -390,6 +390,48 @@ test("buildSite rejects indirect CSS that can hide or override hooked source DOM
       assert.equal(result.stylesCss.includes(attack), false);
     });
   }
+});
+
+test("buildSite rejects rendered no JavaScript visibility bypasses at every viewport", async (t) => {
+  const attacks = [
+    [
+      "desktop exact class selector transparent color",
+      '@media (min-width: 1200px) { [class="motion-copy"] { color: transparent !important; } }',
+    ],
+    [
+      "tablet section selector zero font size",
+      "@media (min-width: 600px) and (max-width: 900px) { [data-section] { font-size: 0 !important; } }",
+    ],
+    [
+      "phone first child positioned offscreen",
+      "@media (max-width: 500px) { :first-child { position: absolute !important; left: -9999px !important; } }",
+    ],
+  ];
+  for (const [name, attack] of attacks) {
+    await t.test(name, async () => {
+      const candidate = modelManifest();
+      candidate.indexHtml = candidate.indexHtml
+        .replace("<div data-first-beat data-motion-target>", '<div class="motion-copy" data-first-beat data-motion-target>')
+        .replace('<section id="hero"', '<section class="hero-shell" id="hero"');
+      candidate.stylesCss += `\n${attack}`;
+      const result = await buildSite({ brief: brief(), structuredRequester: async () => candidate });
+      assert.equal(result.source, "deterministic-fallback");
+      assert.equal(result.stylesCss.includes(attack), false);
+    });
+  }
+});
+
+test("buildSite accepts visible responsive CSS through the rendered no JavaScript gate", async () => {
+  const candidate = modelManifest();
+  candidate.indexHtml = candidate.indexHtml
+    .replace("<div data-first-beat data-motion-target>", '<div class="motion-copy" data-first-beat data-motion-target>')
+    .replace('<section id="hero"', '<section class="hero-shell" id="hero"');
+  candidate.stylesCss += `
+@media (min-width: 1200px) { [class="motion-copy"] { color: #252820; } }
+@media (min-width: 600px) and (max-width: 900px) { [data-section] { font-size: 1rem; padding: 2rem; } }
+@media (max-width: 500px) { :first-child { position: relative; left: 0; } }`;
+  const result = await buildSite({ brief: brief(), structuredRequester: async () => candidate });
+  assert.equal(result.source, "openai");
 });
 
 test("owned styles keep every hooked element visibly rendered when JavaScript is disabled", async () => {
@@ -913,13 +955,46 @@ test("deterministic fallback remains valid for an HTML significant business name
 });
 
 test("writeSiteFiles writes the fixed public file set without overwrite", async () => {
-  const siteDir = path.join(process.cwd(), "tmp", randomUUID(), "site");
-  await writeSiteFiles(siteDir, safeManifest());
+  const trustedRunRoot = path.join(process.cwd(), "tmp", randomUUID());
+  const siteDir = path.join(trustedRunRoot, "site");
+  await writeSiteFiles(siteDir, safeManifest(), trustedRunRoot);
 
   assert.match(await readFile(path.join(siteDir, "index.html"), "utf8"), /<!doctype html>/i);
   assert.match(await readFile(path.join(siteDir, "styles.css"), "utf8"), /color-scheme/);
   assert.equal(await readFile(path.join(siteDir, "script.js"), "utf8"), safeManifest().scriptJs);
-  await assert.rejects(writeSiteFiles(siteDir, safeManifest()), /already exists/i);
+  await assert.rejects(writeSiteFiles(siteDir, safeManifest(), trustedRunRoot), /already exists/i);
+});
+
+test("buildRun rejects a cycle junction before site source bytes can escape", async (t) => {
+  const fixtureRoot = path.join(process.cwd(), "tmp", randomUUID());
+  const runDir = path.join(fixtureRoot, "run");
+  const externalCycleDir = path.join(fixtureRoot, "external-cycle");
+  await Promise.all([
+    mkdir(runDir, { recursive: true }),
+    mkdir(externalCycleDir, { recursive: true }),
+  ]);
+  await writeFile(path.join(runDir, "brief.json"), JSON.stringify(brief()), "utf8");
+  try {
+    await symlink(externalCycleDir, path.join(runDir, "cycle-01"), "junction");
+  } catch (error) {
+    if (["EPERM", "EACCES", "ENOTSUP"].includes(error?.code)) {
+      t.skip("junction creation is unavailable on this Windows host");
+      return;
+    }
+    throw error;
+  }
+
+  await assert.rejects(
+    buildRun({
+      runDir,
+      buildSiteFn: async () => ({ ...safeManifest(), source: "openai" }),
+      requestImage: async () => { throw new Error("must not request"); },
+    }),
+    /symlink|junction|linked path/i,
+  );
+  for (const filename of ["index.html", "styles.css", "script.js"]) {
+    await assert.rejects(readFile(path.join(externalCycleDir, "site", filename)), { code: "ENOENT" });
+  }
 });
 
 test("buildRun materializes assets before immutable sanitized build provenance", async () => {

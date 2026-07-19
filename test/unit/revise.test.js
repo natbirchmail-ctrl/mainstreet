@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createHash, randomUUID } from "node:crypto";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, symlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 
@@ -223,6 +223,40 @@ test("reviseRun writes a new immutable cycle and a revision handoff", async () =
   assert.ok(handoff.mustKeep.includes("Owned local assets and owned motion with visible source without JavaScript"));
   assert.equal(handoff.toCycle, 2);
   assert.match(await readFile(path.join(firstCycle, "site", "index.html"), "utf8"), /Bread for the day ahead/);
+});
+
+test("reviseRun rejects a next site junction before source bytes can escape", async (t) => {
+  const fixtureRoot = path.join(process.cwd(), "tmp", randomUUID());
+  const runDir = path.join(fixtureRoot, "run");
+  await makeResolvedFirstCycle(runDir);
+  const toCycleDir = path.join(runDir, "cycle-02");
+  const externalSiteDir = path.join(fixtureRoot, "external-site");
+  await Promise.all([
+    mkdir(toCycleDir, { recursive: true }),
+    mkdir(externalSiteDir, { recursive: true }),
+  ]);
+  try {
+    await symlink(externalSiteDir, path.join(toCycleDir, "site"), "junction");
+  } catch (error) {
+    if (["EPERM", "EACCES", "ENOTSUP"].includes(error?.code)) {
+      t.skip("junction creation is unavailable on this Windows host");
+      return;
+    }
+    throw error;
+  }
+
+  await assert.rejects(
+    reviseRun({
+      runDir,
+      fromCycle: 1,
+      reviseSiteFn: async () => ({ ...manifest("A clearer second cycle"), source: "openai-revision" }),
+      imageRequesterFn: async () => { throw new Error("must not request"); },
+    }),
+    /symlink|junction|linked path/i,
+  );
+  for (const filename of ["index.html", "styles.css", "script.js"]) {
+    await assert.rejects(readFile(path.join(externalSiteDir, filename)), { code: "ENOENT" });
+  }
 });
 
 test("reviseRun carries verified unchanged assets byte for byte without requesting replacements", async () => {
