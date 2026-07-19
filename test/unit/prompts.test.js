@@ -159,6 +159,24 @@ test("generation and critique prompts enforce the deterministic claim policy", a
   }
 });
 
+test("claim prompts trust only bounded user clauses and forbid topic wide authorization", async () => {
+  for (const name of promptNames) {
+    const prompt = await readPrompt(name);
+    assertIncludesAll(
+      prompt,
+      [
+        /user.confirmed|confirmed user/i,
+        /offering[^.]*confidence[^.]*not[^.]*confirm/i,
+        /same[^.]*clause/i,
+        /polarity/i,
+        /scope/i,
+      ],
+      name,
+    );
+    assert.doesNotMatch(prompt, /allowedTransactionalTopics/);
+  }
+});
+
 test("each public prompt is business agnostic and free of source provenance", async () => {
   const privateSourceTerms = [
     ["BSC", "Workspace"].join("-"),

@@ -16,9 +16,9 @@ export async function createBrief({
   client,
   structuredRequester = requestStructured,
 }) {
-  const cleanName = requireText(businessName, "Business name is required.");
-  const cleanCity = optionalText(city);
-  const cleanDetails = optionalText(details);
+  const cleanName = requireText(businessName, "Business name is required.", 120, "Business name");
+  const cleanCity = optionalText(city, 120, "City");
+  const cleanDetails = optionalText(details, 2_000, "Owner details");
 
   const [systemPrompt, schema] = await Promise.all([
     readFile(promptUrl, "utf8"),
@@ -158,15 +158,21 @@ function assertBriefShape(brief) {
   }
 }
 
-function requireText(value, message) {
+function requireText(value, message, maxLength, label) {
   const text = String(value ?? "").trim();
   if (!text) {
     throw new TypeError(message);
   }
+  if (text.length > maxLength) {
+    throw new TypeError(`${label} must be bounded to ${maxLength} characters.`);
+  }
   return text;
 }
 
-function optionalText(value) {
+function optionalText(value, maxLength, label) {
   const text = String(value ?? "").trim();
+  if (text.length > maxLength) {
+    throw new TypeError(`${label} must be bounded to ${maxLength} characters.`);
+  }
   return text || null;
 }

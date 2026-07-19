@@ -173,3 +173,27 @@ test("intake rejects a blank business name before making an API call", async () 
   );
   assert.equal(called, false);
 });
+
+test("intake bounds user supplied identity and owner details before the API", async (t) => {
+  for (const [name, input] of [
+    ["business name", { businessName: "N".repeat(121) }],
+    ["city", { businessName: "Paper Petal", city: "C".repeat(121) }],
+    ["owner details", { businessName: "Paper Petal", details: "D".repeat(2001) }],
+  ]) {
+    await t.test(name, async () => {
+      let calls = 0;
+      await assert.rejects(
+        createBrief({
+          ...input,
+          fast: true,
+          structuredRequester: async () => {
+            calls += 1;
+            return modelBrief();
+          },
+        }),
+        /bounded|too long|characters/i,
+      );
+      assert.equal(calls, 0);
+    });
+  }
+});

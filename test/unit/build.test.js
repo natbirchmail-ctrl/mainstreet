@@ -234,7 +234,15 @@ function brief() {
       contactPrompt: "Ask about the daily selection.",
     },
     contact: { phone: null, email: null, address: null, hours: null },
-    facts: { confirmed: [], inferred: [], needed: ["Hours"] },
+    facts: {
+      confirmed: [
+        { label: "Business name", value: "Juniper Oven", source: "user" },
+        { label: "City", value: "Flagstaff, AZ", source: "user" },
+        { label: "Owner details", value: "Daily bread. Fresh loaves made with care.", source: "user" },
+      ],
+      inferred: [],
+      needed: ["Hours"],
+    },
   };
 }
 
@@ -412,6 +420,24 @@ test("buildSite rejects model CSS that targets Mainstreet owned motion hooks", a
   });
   assert.equal(result.source, "deterministic-fallback");
   assert.doesNotMatch(result.stylesCss, /opacity: 0.123 !important/);
+});
+
+test("generated CSS cannot publish nonempty pseudo element copy", () => {
+  const manifest = safeManifest();
+  appendModelCss(manifest, '.offering::before { content: "Buy Now"; }');
+  assert.throws(() => validateSiteManifest(manifest), /generated CSS text|content/i);
+});
+
+test("generated CSS cannot publish quote or list marker copy", () => {
+  for (const css of [
+    'q { quotes: "Buy Now" ""; }',
+    'li { list-style-type: "Purchase"; }',
+    '@counter-style claims { system: cyclic; symbols: "Reserve"; suffix: " "; } li { list-style-type: claims; }',
+  ]) {
+    const manifest = safeManifest();
+    appendModelCss(manifest, css);
+    assert.throws(() => validateSiteManifest(manifest), /generated CSS text|generated copy|content/i, css);
+  }
 });
 
 test("buildSite rejects indirect CSS that can hide or override hooked source DOM", async (t) => {
@@ -1398,6 +1424,38 @@ test("deterministic fallback remains valid for an HTML significant business name
     },
   });
   assert.equal(result.source, "deterministic-fallback");
+  validateSiteManifest(result);
+});
+
+test("deterministic fallback preserves an ampersand joined business identity", async () => {
+  const specialBrief = brief();
+  specialBrief.business.name = "Rock&Roll Records";
+  specialBrief.facts.confirmed[0].value = specialBrief.business.name;
+  const result = await buildSite({
+    brief: specialBrief,
+    structuredRequester: async () => {
+      throw new Error("network unavailable");
+    },
+  });
+  assert.equal(result.source, "deterministic-fallback");
+  assert.match(result.indexHtml, /Rock&amp;Roll Records/);
+  validateSiteManifest(result);
+});
+
+test("deterministic fallback accepts transactional words used only as identity", async () => {
+  const collisionBrief = inferredOnlyBrief();
+  collisionBrief.business.name = "Book Order Delivery Pickup";
+  collisionBrief.business.category = "Book store";
+  collisionBrief.facts.confirmed[0].value = collisionBrief.business.name;
+  const result = await buildSite({
+    brief: collisionBrief,
+    structuredRequester: async () => {
+      throw new Error("network unavailable");
+    },
+  });
+
+  assert.equal(result.source, "deterministic-fallback");
+  assert.match(result.indexHtml, /Book Order Delivery Pickup/);
   validateSiteManifest(result);
 });
 

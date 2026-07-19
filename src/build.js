@@ -791,8 +791,28 @@ function validateCss(css) {
   if (/\\/.test(css)) {
     throw new Error("Generated CSS must not contain escape backslashes.");
   }
+  const withoutComments = css.replace(/\/\*[\s\S]*?\*\//g, " ");
+  if (/@counter-style\b/i.test(withoutComments)) {
+    throw new Error("Generated copy through CSS custom counters is forbidden.");
+  }
+  for (const match of withoutComments.matchAll(/(?:^|[;{])\s*content\s*:\s*([^;}]+)/gim)) {
+    const value = match[1].trim().toLowerCase();
+    if (!["\"\"", "''", "none", "normal"].includes(value)) {
+      throw new Error("Generated CSS text is forbidden; content may only be empty.");
+    }
+  }
+  for (const match of withoutComments.matchAll(/(?:^|[;{])\s*(quotes|list-style(?:-type)?)\s*:\s*([^;}]+)/gim)) {
+    const property = match[1].toLowerCase();
+    const value = match[2].trim().toLowerCase();
+    if (
+      (property === "quotes" && !/^(?:auto|none)(?:\s*!important)?$/.test(value)) ||
+      (property !== "quotes" && /["']|\b(?:symbols|var)\s*\(/i.test(value))
+    ) {
+      throw new Error("Generated CSS text through quotes or list markers is forbidden.");
+    }
+  }
   if (
-    /@import\b|url\s*\(|expression\s*\(|(?:^|[;{]\s*)behavior\s*:|(?:https?:|data\s*:|blob\s*:)/im.test(css)
+    /@import\b|url\s*\(|expression\s*\(|(?:^|[;{]\s*)behavior\s*:|(?:https?:|data\s*:|blob\s*:)/im.test(withoutComments)
   ) {
     throw new Error("Generated site contains remote or embedded CSS assets.");
   }
