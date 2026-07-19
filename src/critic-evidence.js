@@ -949,61 +949,86 @@ async function addMechanicsSpacer(page) {
   });
 }
 
+async function withInstantDocumentScrolling(page, operation) {
+  const previous = await page.evaluate(() => {
+    const root = document.documentElement;
+    const value = root.style.getPropertyValue("scroll-behavior");
+    const priority = root.style.getPropertyPriority("scroll-behavior");
+    root.style.setProperty("scroll-behavior", "auto", "important");
+    return { value, priority };
+  });
+
+  try {
+    return await operation();
+  } finally {
+    await page.evaluate(({ value, priority }) => {
+      const root = document.documentElement;
+      if (value) {
+        root.style.setProperty("scroll-behavior", value, priority);
+      } else {
+        root.style.removeProperty("scroll-behavior");
+      }
+    }, previous);
+  }
+}
+
 async function probeFirstBeats(page, { animationFrames = true } = {}) {
-  const results = animationFrames
-    ? await page.evaluate(async () => {
-    const waitTwoFrames = () =>
-      new Promise((resolve) =>
-        requestAnimationFrame(() => requestAnimationFrame(resolve)),
-      );
-    const sections = [...document.querySelectorAll("[data-section]")];
-    const probes = [];
-    for (let subjectIndex = 0; subjectIndex < sections.length; subjectIndex += 1) {
-      const section = sections[subjectIndex];
-      const beats = [...section.querySelectorAll("[data-first-beat]")];
-      if (beats.length !== 1) {
-        probes.push({
-          subjectIndex,
-          beatCount: beats.length,
-          nonzeroBox: false,
-          ancestorsVisible: false,
-          effectiveOpacity: 0,
-          intersectsUpperTwoThirds: false,
-        });
-        continue;
-      }
-      const sectionTop = section.getBoundingClientRect().top + window.scrollY;
-      window.scrollTo({ top: sectionTop, left: 0, behavior: "auto" });
-      await waitTwoFrames();
-      const beat = beats[0];
-      const rect = beat.getBoundingClientRect();
-      let ancestorsVisible = true;
-      let effectiveOpacity = 1;
-      for (let current = beat; current; current = current.parentElement) {
-        const style = getComputedStyle(current);
-        if (
-          style.display === "none" ||
-          style.visibility === "hidden" ||
-          style.visibility === "collapse"
-        ) {
-          ancestorsVisible = false;
-        }
-        const opacity = Number.parseFloat(style.opacity);
-        if (Number.isFinite(opacity)) effectiveOpacity *= opacity;
-      }
-      probes.push({
-        subjectIndex,
-        beatCount: 1,
-        nonzeroBox: rect.width > 0 && rect.height > 0,
-        ancestorsVisible,
-        effectiveOpacity,
-        intersectsUpperTwoThirds:
-          rect.bottom > 0 && rect.top < window.innerHeight * (2 / 3),
-      });
-    }
-        return probes;
-      })
-    : await probeFirstBeatsWithoutFrames(page);
+  const results = await withInstantDocumentScrolling(page, () =>
+    animationFrames
+      ? page.evaluate(async () => {
+          const waitTwoFrames = () =>
+            new Promise((resolve) =>
+              requestAnimationFrame(() => requestAnimationFrame(resolve)),
+            );
+          const sections = [...document.querySelectorAll("[data-section]")];
+          const probes = [];
+          for (let subjectIndex = 0; subjectIndex < sections.length; subjectIndex += 1) {
+            const section = sections[subjectIndex];
+            const beats = [...section.querySelectorAll("[data-first-beat]")];
+            if (beats.length !== 1) {
+              probes.push({
+                subjectIndex,
+                beatCount: beats.length,
+                nonzeroBox: false,
+                ancestorsVisible: false,
+                effectiveOpacity: 0,
+                intersectsUpperTwoThirds: false,
+              });
+              continue;
+            }
+            const sectionTop = section.getBoundingClientRect().top + window.scrollY;
+            window.scrollTo({ top: sectionTop, left: 0, behavior: "auto" });
+            await waitTwoFrames();
+            const beat = beats[0];
+            const rect = beat.getBoundingClientRect();
+            let ancestorsVisible = true;
+            let effectiveOpacity = 1;
+            for (let current = beat; current; current = current.parentElement) {
+              const style = getComputedStyle(current);
+              if (
+                style.display === "none" ||
+                style.visibility === "hidden" ||
+                style.visibility === "collapse"
+              ) {
+                ancestorsVisible = false;
+              }
+              const opacity = Number.parseFloat(style.opacity);
+              if (Number.isFinite(opacity)) effectiveOpacity *= opacity;
+            }
+            probes.push({
+              subjectIndex,
+              beatCount: 1,
+              nonzeroBox: rect.width > 0 && rect.height > 0,
+              ancestorsVisible,
+              effectiveOpacity,
+              intersectsUpperTwoThirds:
+                rect.bottom > 0 && rect.top < window.innerHeight * (2 / 3),
+            });
+          }
+          return probes;
+        })
+      : probeFirstBeatsWithoutFrames(page),
+  );
 
   const failures = [];
   for (const result of results) {

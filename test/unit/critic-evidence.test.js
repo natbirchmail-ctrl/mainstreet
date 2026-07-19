@@ -243,6 +243,54 @@ test("every motion move proves normal activation, reduced fallback, and no JavaS
   }
 });
 
+test("first beat probing ignores authored smooth scrolling without weakening the fold threshold", async (t) => {
+  await t.test("samples every section at its intended scroll position", async () => {
+    const fixture = await writeFixture({
+      move: "staged hero entrance",
+      extraStyles: "html { scroll-behavior: smooth !important; }",
+    });
+    const evidence = await captureRenderedEvidence({
+      siteDir: fixture.siteDir,
+      cycleDir: fixture.cycleDir,
+      port: 4600,
+    });
+
+    assert.deepEqual(
+      evidence.mechanical.failures.filter(
+        (failure) => failure.code === "first-beat-outside-upper-fold",
+      ),
+      [],
+    );
+  });
+
+  await t.test("still rejects a first beat positioned below the upper fold", async () => {
+    const fixture = await writeFixture({
+      move: "staged hero entrance",
+      extraStyles: `
+html { scroll-behavior: smooth !important; }
+#details { padding-top: 75vh; }`,
+    });
+    const evidence = await captureRenderedEvidence({
+      siteDir: fixture.siteDir,
+      cycleDir: fixture.cycleDir,
+      port: 4600,
+    });
+
+    for (const mode of ["normal", "reducedMotion", "javascriptDisabled"]) {
+      assert.ok(
+        evidence.mechanical.failures.some(
+          (failure) =>
+            failure.code === "first-beat-outside-upper-fold" &&
+            failure.viewport === "desktop" &&
+            failure.mode === mode &&
+            failure.subjectIndex === 1,
+        ),
+        `${mode}: ${JSON.stringify(evidence.mechanical.failures)}`,
+      );
+    }
+  });
+});
+
 test("every motion move has a failing normal and reduced motion fixture", async (t) => {
   for (const move of MOTION_MOVES) {
     await t.test(move, async () => {
