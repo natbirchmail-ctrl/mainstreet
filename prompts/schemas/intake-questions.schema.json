@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "services": { "type": "string", "minLength": 1, "maxLength": 240 },
+    "hours": { "type": "string", "minLength": 1, "maxLength": 240 },
+    "vibe": { "type": "string", "minLength": 1, "maxLength": 240 },
+    "photos": { "type": "string", "minLength": 1, "maxLength": 240 },
+    "contact": { "type": "string", "minLength": 1, "maxLength": 240 },
+    "customerValue": { "type": "string", "minLength": 1, "maxLength": 240 }
+  },
+  "required": [
+    "services",
+    "hours",
+    "vibe",
+    "photos",
+    "contact",
+    "customerValue"
+  ],
+  "additionalProperties": false
+}

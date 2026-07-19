@@ -3,12 +3,13 @@
 import "dotenv/config";
 
 import path from "node:path";
+import { createInterface } from "node:readline/promises";
 import { pathToFileURL } from "node:url";
 
 import { buildRun } from "../src/build.js";
 import { runCriticCycle } from "../src/critic.js";
 import { deployRun, findSelectedSite } from "../src/deploy.js";
-import { createBrief } from "../src/intake.js";
+import { conductOwnerInterview, createBrief } from "../src/intake.js";
 import { initializeRun, resolveInside, writeJsonNew } from "../src/lib/runs.js";
 import { executePipeline } from "../src/pipeline.js";
 import { reviseRun } from "../src/revise.js";
@@ -50,11 +51,20 @@ export function parseCli(argv) {
   return { command, positionals, flags };
 }
 
-export async function main(argv = process.argv.slice(2)) {
+export async function main(argv = process.argv.slice(2), dependencies = {}) {
+  const {
+    conductOwnerInterviewFn = conductOwnerInterview,
+    createBriefFn = createBrief,
+    executePipelineFn = executePipeline,
+    initializeRunFn = initializeRun,
+    promptInterfaceFactory = createTerminalPromptInterface,
+    stdout = process.stdout,
+    writeJsonNewFn = writeJsonNew,
+  } = dependencies;
   const parsed = parseCli(argv);
 
   if (parsed.command === "help" || parsed.flags.help) {
-    process.stdout.write(helpText());
+    stdout.write(helpText());
     return;
   }
 
@@ -72,19 +82,31 @@ export async function main(argv = process.argv.slice(2)) {
       throw new TypeError("The intake command requires a business name.");
     }
 
+    const fast = Boolean(parsed.flags.fast);
+    const interviewAnswers = fast
+      ? undefined
+      : await collectOwnerInterview({
+          businessName,
+          city: parsed.flags.city,
+          details: parsed.flags.details,
+          conductOwnerInterviewFn,
+          promptInterfaceFactory,
+          stdout,
+        });
     const slug = slugify(businessName);
-    const { runDir } = await initializeRun({ slug, runsRoot, trashRoot });
+    const { runDir } = await initializeRunFn({ slug, runsRoot, trashRoot });
 
-    const brief = await createBrief({
+    const brief = await createBriefFn({
       businessName,
       city: parsed.flags.city,
       details: parsed.flags.details,
-      fast: Boolean(parsed.flags.fast),
+      ...(fast ? {} : { interviewAnswers }),
+      fast,
     });
     const briefPath = resolveInside(runDir, "brief.json");
-    await writeJsonNew(briefPath, brief);
+    await writeJsonNewFn(briefPath, brief);
 
-    process.stdout.write(`Brief saved: ${briefPath}\n`);
+    stdout.write(`Brief saved: ${briefPath}\n`);
     return;
   }
 
@@ -92,7 +114,7 @@ export async function main(argv = process.argv.slice(2)) {
     const slug = slugify(parsed.positionals.join(" "));
     const runDir = resolveInside(runsRoot, slug);
     const result = await buildRun({ runDir });
-    process.stdout.write(`Site built: ${result.siteDir}\n`);
+    stdout.write(`Site built: ${result.siteDir}\n`);
     return;
   }
 
@@ -102,7 +124,7 @@ export async function main(argv = process.argv.slice(2)) {
     const siteDir = await findLatestSite(runDir);
     const port = parsed.flags.port ? Number(parsed.flags.port) : 4601;
     const preview = await startStaticServer({ root: siteDir, port });
-    process.stdout.write(`Serving ${slug}: ${preview.url}\n`);
+    stdout.write(`Serving ${slug}: ${preview.url}\n`);
     await new Promise(() => {});
   }
 
@@ -113,7 +135,7 @@ export async function main(argv = process.argv.slice(2)) {
     const inferredCycle = Number(path.basename(path.dirname(latestSite)).slice("cycle-".length));
     const cycle = parsed.flags.cycle ? Number(parsed.flags.cycle) : inferredCycle;
     const critique = await runCriticCycle({ runDir, cycle });
-    process.stdout.write(
+    stdout.write(
       `Critique complete: ${critique.score}/100 (${critique.verdict})\n`,
     );
     return;
@@ -126,7 +148,7 @@ export async function main(argv = process.argv.slice(2)) {
     const inferredCycle = Number(path.basename(path.dirname(latestSite)).slice("cycle-".length));
     const fromCycle = parsed.flags.cycle ? Number(parsed.flags.cycle) : inferredCycle;
     const revision = await reviseRun({ runDir, fromCycle });
-    process.stdout.write(`Revision built: cycle ${revision.toCycle}\n`);
+    stdout.write(`Revision built: cycle ${revision.toCycle}\n`);
     return;
   }
 
@@ -148,7 +170,7 @@ export async function main(argv = process.argv.slice(2)) {
         return localPreview;
       },
     });
-    process.stdout.write(`Site URL: ${deployment.url}\n`);
+    stdout.write(`Site URL: ${deployment.url}\n`);
     if (localPreview) {
       await new Promise(() => {});
     }
@@ -161,12 +183,23 @@ export async function main(argv = process.argv.slice(2)) {
       throw new TypeError("The run command requires a business name.");
     }
     const maxCycles = parsed.flags.maxCycles ? Number(parsed.flags.maxCycles) : 3;
+    const fast = Boolean(parsed.flags.fast);
+    const interviewAnswers = fast
+      ? undefined
+      : await collectOwnerInterview({
+          businessName,
+          city: parsed.flags.city,
+          details: parsed.flags.details,
+          conductOwnerInterviewFn,
+          promptInterfaceFactory,
+          stdout,
+        });
     let localPreview = null;
-    const result = await executePipeline({
+    const pipelineInput = {
       businessName,
       city: parsed.flags.city,
       details: parsed.flags.details,
-      fast: Boolean(parsed.flags.fast),
+      fast,
       maxCycles,
       runsRoot,
       trashRoot,
@@ -178,17 +211,80 @@ export async function main(argv = process.argv.slice(2)) {
             return localPreview;
           },
         }),
-      onProgress: printProgress,
-    });
-    process.stdout.write(`Site URL: ${result.delivery.url}\n`);
+      onProgress: (event) => printProgress(event, stdout),
+    };
+    if (!fast) {
+      pipelineInput.createBriefFn = (input) =>
+        createBriefFn({ ...input, interviewAnswers });
+    }
+    const result = await executePipelineFn(pipelineInput);
+    stdout.write(`Site URL: ${result.delivery.url}\n`);
     if (localPreview) {
-      process.stdout.write(`Local preview running: ${localPreview.url}\n`);
+      stdout.write(`Local preview running: ${localPreview.url}\n`);
       await new Promise(() => {});
     }
     return;
   }
 
   throw new TypeError(`Unknown command: ${parsed.command}`);
+}
+
+export function createTerminalPromptInterface({
+  input = process.stdin,
+  output = process.stdout,
+} = {}) {
+  const terminal = createInterface({ input, output });
+  let activeQuestion = null;
+  let closed = false;
+  terminal.once("close", () => {
+    closed = true;
+    activeQuestion?.abort();
+  });
+  terminal.on("SIGINT", () => activeQuestion?.abort());
+  return {
+    ask: async ({ index, total, label, question }) => {
+      if (closed) {
+        throw new Error("Terminal input closed.");
+      }
+      const controller = new AbortController();
+      activeQuestion = controller;
+      try {
+        return await terminal.question(
+          `\nQuestion ${index} of ${total}: ${label}\n${question}\n> `,
+          { signal: controller.signal },
+        );
+      } finally {
+        if (activeQuestion === controller) {
+          activeQuestion = null;
+        }
+      }
+    },
+    close: () => terminal.close(),
+  };
+}
+
+async function collectOwnerInterview({
+  businessName,
+  city,
+  details,
+  conductOwnerInterviewFn,
+  promptInterfaceFactory,
+  stdout,
+}) {
+  const promptInterface = promptInterfaceFactory({
+    input: process.stdin,
+    output: stdout,
+  });
+  try {
+    return await conductOwnerInterviewFn({
+      businessName,
+      city,
+      details,
+      promptInterface,
+    });
+  } finally {
+    promptInterface?.close?.();
+  }
 }
 
 function toCamelCase(value) {
@@ -199,27 +295,27 @@ function helpText() {
   return `Mainstreet\n\nUsage:\n  mainstreet run "Business Name" [--city "City, ST"] [--details "Known facts"] [--fast] [--max-cycles 3]\n  mainstreet intake "Business Name" [--city "City, ST"] [--details "Known facts"] [--fast]\n  mainstreet build <slug>\n  mainstreet critique <slug> [--cycle 1]\n  mainstreet revise <slug> [--cycle 1]\n  mainstreet deploy <slug>\n  mainstreet serve <slug> [--port 4601]\n`;
 }
 
-function printProgress(event) {
+function printProgress(event, output = process.stdout) {
   switch (event.type) {
     case "run_started":
-      process.stdout.write(`Run started: ${event.slug}\n`);
+      output.write(`Run started: ${event.slug}\n`);
       break;
     case "intake_complete":
-      process.stdout.write("Intake brief complete.\n");
+      output.write("Intake brief complete.\n");
       break;
     case "build_complete":
-      process.stdout.write(`Build complete: cycle ${event.cycle}.\n`);
+      output.write(`Build complete: cycle ${event.cycle}.\n`);
       break;
     case "critique_complete":
-      process.stdout.write(
+      output.write(
         `Critic cycle ${event.cycle}: ${event.score}/100 (${event.verdict}).\n`,
       );
       break;
     case "revision_complete":
-      process.stdout.write(`Revision complete: cycle ${event.toCycle}.\n`);
+      output.write(`Revision complete: cycle ${event.toCycle}.\n`);
       break;
     case "delivery_complete":
-      process.stdout.write(`Delivery selected: ${event.delivery.mode}.\n`);
+      output.write(`Delivery selected: ${event.delivery.mode}.\n`);
       break;
     default:
       break;

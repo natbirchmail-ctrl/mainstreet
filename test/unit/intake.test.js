@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import * as intakeModule from "../../src/intake.js";
 import { createBrief, sanitizeVisibleCopy } from "../../src/intake.js";
 
 function modelBrief(overrides = {}) {
@@ -70,6 +71,154 @@ function modelBrief(overrides = {}) {
     ...overrides,
   };
 }
+
+function modelQuestions(overrides = {}) {
+  return {
+    services: "Which services are available today?",
+    hours: "What hours should customers rely on?",
+    vibe: "How should the business feel to a new customer?",
+    photos: "What real photos are available for the site?",
+    contact: "Which phone, address, or contact details may be published?",
+    customerValue: "What do customers value most about the business?",
+    ...overrides,
+  };
+}
+
+function confirmedInterviewAnswers() {
+  return [
+    { label: "Available services", value: "Bread and pastries", source: "user" },
+    { label: "Hours", value: "Tuesday through Saturday", source: "user" },
+    { label: "Vibe", value: "Warm and practical", source: "user" },
+    { label: "Photos", value: "Storefront and product photos", source: "user" },
+    { label: "Contact facts", value: "Call 928 555 0100", source: "user" },
+    { label: "Customer value", value: "Consistent quality", source: "user" },
+  ];
+}
+
+test("interactive intake asks exactly six model generated questions", async () => {
+  assert.equal(typeof intakeModule.conductOwnerInterview, "function");
+
+  let request;
+  const prompts = [];
+  const answers = await intakeModule.conductOwnerInterview({
+    businessName: "Juniper Oven",
+    city: "Flagstaff, AZ",
+    details: "Known for naturally leavened bread",
+    structuredRequester: async (options) => {
+      request = options;
+      return modelQuestions();
+    },
+    promptInterface: {
+      ask: async (prompt) => {
+        prompts.push(prompt);
+        return `Confirmed answer ${prompt.index}`;
+      },
+    },
+  });
+
+  assert.equal(request.model, "gpt-5.6");
+  assert.equal(request.schemaName, "mainstreet_intake_questions");
+  assert.deepEqual(request.userPayload, {
+    businessName: "Juniper Oven",
+    city: "Flagstaff, AZ",
+    ownerDetails: "Known for naturally leavened bread",
+    safety: {
+      askOnlyBusinessFacts: true,
+      neverRequestSecrets: true,
+    },
+  });
+  assert.deepEqual(request.schema.required, [
+    "services",
+    "hours",
+    "vibe",
+    "photos",
+    "contact",
+    "customerValue",
+  ]);
+  assert.equal(prompts.length, 6);
+  assert.deepEqual(
+    prompts.map(({ index, total, label, question }) => ({ index, total, label, question })),
+    [
+      { index: 1, total: 6, label: "Available services", question: modelQuestions().services },
+      { index: 2, total: 6, label: "Hours", question: modelQuestions().hours },
+      { index: 3, total: 6, label: "Vibe", question: modelQuestions().vibe },
+      { index: 4, total: 6, label: "Photos", question: modelQuestions().photos },
+      { index: 5, total: 6, label: "Contact facts", question: modelQuestions().contact },
+      { index: 6, total: 6, label: "Customer value", question: modelQuestions().customerValue },
+    ],
+  );
+  assert.deepEqual(
+    answers.map(({ label, value, source }) => ({ label, value, source })),
+    [
+      { label: "Available services", value: "Confirmed answer 1", source: "user" },
+      { label: "Hours", value: "Confirmed answer 2", source: "user" },
+      { label: "Vibe", value: "Confirmed answer 3", source: "user" },
+      { label: "Photos", value: "Confirmed answer 4", source: "user" },
+      { label: "Contact facts", value: "Confirmed answer 5", source: "user" },
+      { label: "Customer value", value: "Confirmed answer 6", source: "user" },
+    ],
+  );
+});
+
+test("interactive intake fails closed on EOF or cancellation", async (t) => {
+  for (const [name, ask] of [
+    ["EOF", async () => null],
+    ["cancel", async () => {
+      throw new Error("terminal closed");
+    }],
+  ]) {
+    await t.test(name, async () => {
+      await assert.rejects(
+        intakeModule.conductOwnerInterview({
+          businessName: "Juniper Oven",
+          structuredRequester: async () => modelQuestions(),
+          promptInterface: { ask },
+        }),
+        /interview cancelled before all six answers were confirmed/i,
+      );
+    });
+  }
+});
+
+test("interactive intake rejects oversized or secret seeking model input", async (t) => {
+  for (const [name, questions, ask, pattern] of [
+    ["oversized question", modelQuestions({ services: "Q".repeat(241) }), async () => "Answer", /question.*240/i],
+    ["secret seeking question", modelQuestions({ contact: "What is your API key?" }), async () => "Answer", /unsafe interview question/i],
+    ["oversized answer", modelQuestions(), async () => "A".repeat(301), /answer.*300/i],
+  ]) {
+    await t.test(name, async () => {
+      await assert.rejects(
+        intakeModule.conductOwnerInterview({
+          businessName: "Juniper Oven",
+          structuredRequester: async () => questions,
+          promptInterface: { ask },
+        }),
+        pattern,
+      );
+    });
+  }
+});
+
+test("strict brief generation records interview answers as confirmed owner facts", async () => {
+  let request;
+  const interviewAnswers = confirmedInterviewAnswers();
+  const brief = await createBrief({
+    businessName: "Juniper Oven",
+    details: "Known for naturally leavened bread",
+    interviewAnswers,
+    structuredRequester: async (options) => {
+      request = options;
+      return modelBrief({ mode: "interview" });
+    },
+  });
+
+  assert.deepEqual(request.userPayload.ownerInterview, interviewAnswers);
+  assert.deepEqual(brief.facts.confirmed, [
+    { label: "Business name", value: "Juniper Oven", source: "user" },
+    { label: "Owner details", value: "Known for naturally leavened bread", source: "user" },
+    ...interviewAnswers,
+  ]);
+});
 
 test("fast intake preserves user facts and strips invented contact details", async () => {
   let request;
