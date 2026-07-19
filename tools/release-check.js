@@ -81,12 +81,13 @@ const SECRET_NAME_PATTERN = [
 ].join("|");
 const PREFIXED_SECRET_NAME_PATTERN =
   `(?:[a-z0-9]+[_-])*?(?:${SECRET_NAME_PATTERN})`;
+const SECRET_ENV_NAME = new RegExp(`^(?:${PREFIXED_SECRET_NAME_PATTERN})$`, "i");
 const QUOTED_SECRET_ASSIGNMENT = new RegExp(
-  `["']?\\b${PREFIXED_SECRET_NAME_PATTERN}\\b["']?\\s*(?:=|:)\\s*(["'\\x60])([^"'\\x60\\r\\n]+)\\1`,
+  `["']?\\b${PREFIXED_SECRET_NAME_PATTERN}\\b["']?[^\\S\\r\\n]*(?:=|:)[^\\S\\r\\n]*(["'\\x60])([^"'\\x60\\r\\n]+)\\1`,
   "gi",
 );
 const UNQUOTED_SECRET_ASSIGNMENT = new RegExp(
-  `(?:^|\\n)\\s*(?:export\\s+)?${PREFIXED_SECRET_NAME_PATTERN}\\s*(?:=|:)\\s*([^\\s#;\\r\\n]+)`,
+  `(?:^|\\r?\\n)[^\\S\\r\\n]*(?:export[^\\S\\r\\n]+)?${PREFIXED_SECRET_NAME_PATTERN}[^\\S\\r\\n]*(?:=|:)[^\\S\\r\\n]*([^\\s#;\\r\\n]+)`,
   "gi",
 );
 const RAW_SECRET_PATTERNS = Object.freeze([
@@ -1072,7 +1073,9 @@ function validateDeploymentEvidence({
   return (
     deployment.verified === false &&
     deployment.status === null &&
-    deployment.files.every((file) => file.verified === false)
+    deployment.files.every(
+      (file) => file.verified === false && file.status === null,
+    )
   );
 }
 
@@ -1347,7 +1350,13 @@ function invalidEnvironmentExample(value) {
   return text.split(/\r?\n/).some((line) => {
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith("#")) return false;
-    return !/^(?:export\s+)?[A-Za-z_][A-Za-z0-9_]*\s*=\s*$/.test(trimmed);
+    const assignment = /^(?:export[^\S\r\n]+)?([A-Za-z_][A-Za-z0-9_]*)[^\S\r\n]*=[^\S\r\n]*(.*)$/.exec(
+      trimmed,
+    );
+    if (!assignment) return true;
+    const [, name, candidate] = assignment;
+    if (!SECRET_ENV_NAME.test(name)) return false;
+    return candidate.trim().length > 0 && !candidate.trim().startsWith("#");
   });
 }
 
@@ -1583,19 +1592,20 @@ function selectExpectedCycle(cycles) {
   );
   const eligible = scored.filter((cycle) => cycle.shipEligible === true);
   const mechanicallySafe = scored.filter(
-    (cycle) =>
-      cycle.mechanicalPassed === true && cycle.assetsResolved === true,
+    (cycle) => cycle.mechanicalPassed === true,
   );
   const candidates =
     eligible.length > 0
       ? eligible
       : mechanicallySafe.length > 0
         ? mechanicallySafe
-        : scored;
-  candidates.sort(
-    (left, right) => right.score - left.score || right.cycle - left.cycle,
-  );
-  return candidates[0]?.cycle ?? null;
+        : scored.length > 0
+          ? scored
+          : cycles;
+  return [...candidates].sort((left, right) => {
+    const scoreDifference = (right.score ?? -1) - (left.score ?? -1);
+    return scoreDifference || right.cycle - left.cycle;
+  })[0]?.cycle ?? null;
 }
 
 function isPlainObject(value) {

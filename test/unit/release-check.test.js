@@ -95,7 +95,7 @@ test("a complete fixture is clean even when ignored forbidden directories exist 
   );
 });
 
-test("tracked environment files and nonempty example values report ENV_TRACKED", async (t) => {
+test("tracked environment files enforce secret placeholders without blocking config defaults", async (t) => {
   await t.test("tracked environment file", async () => {
     const fixture = await makeFixture();
     await writeOwnedFile(fixture.root, envFile, `${secretKey()}=\n`);
@@ -109,7 +109,29 @@ test("tracked environment files and nonempty example values report ENV_TRACKED",
     assertFinding(result, "ENV_TRACKED", envFile);
   });
 
-  await t.test("nonempty example assignment", async () => {
+  await t.test("documented nonsecret defaults", async () => {
+    const fixture = await makeFixture();
+    await writeOwnedFile(
+      fixture.root,
+      envExampleFile,
+      [
+        `${secretKey()}=`,
+        `${modelKey()}=gpt-5.6`,
+        `${imageModelKey()}=gpt-image-1`,
+        "",
+      ].join("\n"),
+    );
+
+    assert.deepEqual(
+      await checkRelease({
+        repoRoot: fixture.root,
+        expectedSlugs: fixture.expectedSlugs,
+      }),
+      { ok: true, findings: [] },
+    );
+  });
+
+  await t.test("nonempty secret example assignment", async () => {
     const fixture = await makeFixture({
       envExampleValue: ["configured", "value"].join("-"),
     });
@@ -118,6 +140,40 @@ test("tracked environment files and nonempty example values report ENV_TRACKED",
       expectedSlugs: fixture.expectedSlugs,
     });
     assertFinding(result, "ENV_TRACKED", envExampleFile);
+  });
+});
+
+test("empty secret placeholders cannot consume an adjacent config line", async (t) => {
+  await t.test("unquoted assignment", async () => {
+    const fixture = await makeFixture();
+    await writeOwnedFile(
+      fixture.root,
+      "notes/config.env",
+      `${secretKey()}=\n${modelKey()}=gpt-5.6\n`,
+    );
+    assert.deepEqual(
+      await checkRelease({
+        repoRoot: fixture.root,
+        expectedSlugs: fixture.expectedSlugs,
+      }),
+      { ok: true, findings: [] },
+    );
+  });
+
+  await t.test("quoted key", async () => {
+    const fixture = await makeFixture();
+    await writeOwnedFile(
+      fixture.root,
+      "notes/config.yml",
+      `"${secretKey().toLowerCase()}":\n"${modelKey().toLowerCase()}": "gpt-5.6"\n`,
+    );
+    assert.deepEqual(
+      await checkRelease({
+        repoRoot: fixture.root,
+        expectedSlugs: fixture.expectedSlugs,
+      }),
+      { ok: true, findings: [] },
+    );
   });
 });
 
@@ -686,6 +742,113 @@ test("selected cycle follows the deterministic best cycle policy", async () => {
   );
 });
 
+test("mechanical fallback selection does not require resolved assets", async () => {
+  const fixture = await makeFixture();
+  await addSecondCycle(fixture.root, "example-run");
+
+  await rewriteJson(
+    fixture.root,
+    "runs/example-run/cycle-01/assets.json",
+    (assets) => {
+      assets.allResolved = false;
+      assets.successCount = 2;
+      assets.fallbackCount = 1;
+      assets.files[0].source = "deterministic-fallback";
+      assets.files[0].resolved = false;
+      assets.files[0].errorCode = "FIXTURE_FALLBACK";
+    },
+  );
+  await rewriteJson(
+    fixture.root,
+    "runs/example-run/cycle-01/build.json",
+    (build) => {
+      build.assetSummary.allResolved = false;
+      build.assetSummary.successCount = 2;
+      build.assetSummary.fallbackCount = 1;
+    },
+  );
+  await rewriteJson(
+    fixture.root,
+    "runs/example-run/cycle-01/mechanical.json",
+    (mechanical) => {
+      mechanical.assetsResolved = false;
+    },
+  );
+  await rewriteJson(
+    fixture.root,
+    "runs/example-run/cycle-01/critique.json",
+    (critique) => {
+      critique.assetsResolved = false;
+      critique.hardGateFailures = ["assets:not-resolved"];
+      critique.shipEligible = false;
+      critique.verdict = "revise";
+    },
+  );
+  await mirrorCritiqueSummary(fixture.root, "example-run", 1);
+
+  await rewriteJson(
+    fixture.root,
+    "runs/example-run/cycle-02/mechanical.json",
+    (mechanical) => {
+      mechanical.passed = false;
+      mechanical.failures = [{ code: "fixture-failure" }];
+    },
+  );
+  await rewriteJson(
+    fixture.root,
+    "runs/example-run/cycle-02/critique.json",
+    (critique) => {
+      critique.dimensions.specificity.score = 10;
+      critique.score = 95;
+      critique.mechanicalPassed = false;
+      critique.hardGateFailures = ["mechanical:not-passed"];
+      critique.shipEligible = false;
+      critique.verdict = "revise";
+    },
+  );
+  await mirrorCritiqueSummary(fixture.root, "example-run", 2);
+
+  await rewriteJson(
+    fixture.root,
+    "runs/example-run/run-report.json",
+    (report) => {
+      report.selectedCycle = 1;
+      report.scoresImproved = false;
+      report.delivery.selectedCycle = 1;
+    },
+  );
+  await rewriteJson(
+    fixture.root,
+    "runs/example-run/deployment.json",
+    (deployment) => {
+      deployment.selectedCycle = 1;
+    },
+  );
+  await writeOwnedFile(
+    fixture.root,
+    "README.md",
+    [
+      "| Business | Score path | Selected cycle | Final verdict | Evidence |",
+      "| --- | --- | ---: | --- | --- |",
+      "| example-run | 90 to 95 | 1 | revise | [Run report](runs/example-run/RUN-REPORT.md) |",
+      "",
+    ].join("\n"),
+  );
+  await writeOwnedFile(
+    fixture.root,
+    "DEMO.md",
+    "Evidence: `runs/example-run/` Scores: 90 to 95. Selected cycle: 1. Verdict: revise.\n",
+  );
+
+  assert.deepEqual(
+    await checkRelease({
+      repoRoot: fixture.root,
+      expectedSlugs: fixture.expectedSlugs,
+    }),
+    { ok: true, findings: [] },
+  );
+});
+
 test("deployment evidence binds to selected site bytes and disposition", async (t) => {
   await t.test("site digest mismatch", async () => {
     const fixture = await makeFixture();
@@ -737,6 +900,29 @@ test("deployment evidence binds to selected site bytes and disposition", async (
     const fixture = await makeFixture();
     await mutateDeployment(fixture.root, "example-run", (deployment) => {
       deployment.url = ["https:", "", "public.example.invalid", ""].join("/");
+    });
+
+    const result = await checkRelease({
+      repoRoot: fixture.root,
+      expectedSlugs: fixture.expectedSlugs,
+    });
+    assertFinding(
+      result,
+      "REFERENCE_MISMATCH",
+      "runs/example-run/deployment.json",
+    );
+  });
+
+  await t.test("unverified local files require null statuses", async () => {
+    const fixture = await makeFixture();
+    await mutateDeployment(fixture.root, "example-run", (deployment) => {
+      deployment.verified = false;
+      deployment.status = null;
+      for (const file of deployment.files) {
+        file.verified = false;
+        file.status = null;
+      }
+      deployment.files[0].status = 200;
     });
 
     const result = await checkRelease({
@@ -1356,6 +1542,14 @@ function assertFinding(result, rule, relativePath) {
 
 function secretKey() {
   return ["OPEN", "AI", "API", "KEY"].join("_");
+}
+
+function modelKey() {
+  return ["OPEN", "AI", "MODEL"].join("_");
+}
+
+function imageModelKey() {
+  return ["OPEN", "AI", "IMAGE", "MODEL"].join("_");
 }
 
 function png(marker) {
