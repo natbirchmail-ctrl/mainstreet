@@ -12,7 +12,13 @@ Use GitHub's private security advisory flow for this repository. Do not place cr
 
 Mainstreet sends the supplied business name, optional owner facts, generated source, and fresh screenshots to the configured OpenAI account. It sends only the selected static site directory to Cloudflare Pages. Do not provide private customer data unless you are authorized to send it to both services.
 
-Generated sites contain only HTML and CSS. Mainstreet rejects scripts, inline event handlers, forms, remote assets, unsafe protocols, and unapproved file types before writing a site cycle.
+Generated sites contain semantic HTML, CSS, Mainstreet's deterministic local motion script, and three to five local PNG images. The model must return an empty script sentinel. Mainstreet rejects model supplied JavaScript, inline event handlers, forms, remote assets, unsafe protocols, linked write paths, unplanned files, and invalid image bytes before completing a site cycle.
+
+Every cycle is immutable. Asset evidence binds each local image to its byte count and SHA 256 digest. Carry forward is allowed only when the prior record, prompt, metadata, source state, and on disk digest agree. Deterministic fallback images keep a run complete but make that cycle ineligible for public promotion.
+
+Cloudflare promotion requires explicit vision, mechanical, asset, and quality law approval for the selected cycle. Deployment verification compares the canonical response for every generated HTML, CSS, JavaScript, and PNG file with a deterministic digest manifest.
+
+A failed gate, source only critique, unresolved image, unavailable commit, or Cloudflare failure keeps delivery local. The loopback preview preserves access to the selected site, but it never updates or substitutes for the public alias.
 
 ## Secret handling
 
