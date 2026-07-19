@@ -492,8 +492,8 @@ test("buildSite rejects legacy clipping, far edge positioning, and displaced tex
       '@media (min-width: 600px) and (max-width: 900px) { [class="motion-copy"] h1 { position: fixed !important; left: calc(100vw + 10px) !important; top: 10px !important; } }',
     ],
     [
-      "phone headline descendant positioned below the viewport",
-      '@media (max-width: 500px) { [class="motion-copy"] h1 { position: absolute !important; top: calc(100vh + 10px) !important; } }',
+      "phone headline descendant fixed below the viewport",
+      '@media (max-width: 500px) { [class="motion-copy"] h1 { position: fixed !important; top: calc(100vh + 10px) !important; } }',
     ],
     [
       "desktop headline text displaced into clipped overflow",
@@ -513,6 +513,56 @@ test("buildSite rejects legacy clipping, far edge positioning, and displaced tex
       assert.equal(result.stylesCss.includes(attack), false);
     });
   }
+});
+
+test("buildSite rejects protected descendants fully clipped by overflow ancestors", async (t) => {
+  const attacks = [
+    [
+      "desktop headline outside a hidden overflow ancestor",
+      '@media (min-width: 1200px) { [class="clip-window"] { position: relative; block-size: 2rem; overflow: hidden; } [class="clip-window"] h1 { position: absolute; inset-block-start: 4rem; } }',
+    ],
+    [
+      "tablet headline outside an auto overflow scrollport",
+      '@media (min-width: 600px) and (max-width: 900px) { [class="clip-window"] { position: relative; block-size: 2rem; overflow: auto; } [class="clip-window"] h1 { position: absolute; inset-block-start: 4rem; } }',
+    ],
+  ];
+  for (const [name, attack] of attacks) {
+    await t.test(name, async () => {
+      const candidate = modelManifest();
+      candidate.indexHtml = candidate.indexHtml.replace(
+        "<h1>Bread for the day ahead</h1>",
+        '<div class="clip-window"><h1>Bread for the day ahead</h1></div>',
+      );
+      candidate.stylesCss += `\n${attack}`;
+      const result = await buildSite({ brief: brief(), structuredRequester: async () => candidate });
+      assert.equal(result.source, "deterministic-fallback");
+      assert.equal(result.stylesCss.includes(attack), false);
+    });
+  }
+});
+
+test("buildSite accepts protected content partially visible through an overflow ancestor", async () => {
+  const candidate = modelManifest();
+  candidate.indexHtml = candidate.indexHtml.replace(
+    "<h1>Bread for the day ahead</h1>",
+    '<div class="clip-window"><h1>Bread for the day ahead</h1></div>',
+  );
+  candidate.stylesCss += `
+@media (min-width: 1200px) { [class="clip-window"] { position: relative; block-size: 4rem; overflow: hidden; } [class="clip-window"] h1 { position: absolute; inset-block-start: 1rem; } }`;
+  const result = await buildSite({ brief: brief(), structuredRequester: async () => candidate });
+  assert.equal(result.source, "openai");
+});
+
+test("buildSite accepts later absolute content reachable by document scrolling", async () => {
+  const candidate = modelManifest();
+  candidate.indexHtml = candidate.indexHtml.replace(
+    '<section id="story" data-section="story">',
+    '<section class="late-section" id="story" data-section="story">',
+  );
+  candidate.stylesCss += `
+@media (max-width: 500px) { [class="late-section"] { position: relative; min-block-size: 1200px; } [class="late-section"] h2 { position: absolute; inset-block-start: 900px; inset-inline-start: 1rem; } }`;
+  const result = await buildSite({ brief: brief(), structuredRequester: async () => candidate });
+  assert.equal(result.source, "openai");
 });
 
 test("buildSite accepts ordinary positioning, legacy clips, and text indentation", async () => {

@@ -318,6 +318,49 @@ export async function validateRenderedSourceVisibility(manifest) {
             const indentPixels = indent[2] === "%" ? (amount / 100) * bounds.width : amount;
             return indentPixels <= -bounds.width || indentPixels >= bounds.width;
           };
+          const isFullyClippedByOverflowAncestor = (element) => {
+            const clippingValues = new Set(["auto", "clip", "hidden", "scroll"]);
+            const visible = element.getBoundingClientRect().toJSON();
+            for (let ancestor = element.parentElement; ancestor; ancestor = ancestor.parentElement) {
+              if (ancestor === document.scrollingElement) continue;
+              const ancestorStyle = getComputedStyle(ancestor);
+              const clipsX = clippingValues.has(ancestorStyle.overflowX);
+              const clipsY = clippingValues.has(ancestorStyle.overflowY);
+              if (!clipsX && !clipsY) continue;
+              const bounds = ancestor.getBoundingClientRect();
+              const scaleX = ancestor instanceof HTMLElement && ancestor.offsetWidth > 0
+                ? bounds.width / ancestor.offsetWidth
+                : 1;
+              const scaleY = ancestor instanceof HTMLElement && ancestor.offsetHeight > 0
+                ? bounds.height / ancestor.offsetHeight
+                : 1;
+              const clipLeft = bounds.left + ancestor.clientLeft * scaleX;
+              const clipTop = bounds.top + ancestor.clientTop * scaleY;
+              const clipRight = clipLeft + ancestor.clientWidth * scaleX;
+              const clipBottom = clipTop + ancestor.clientHeight * scaleY;
+              if (clipsX) {
+                visible.left = Math.max(visible.left, clipLeft);
+                visible.right = Math.min(visible.right, clipRight);
+              }
+              if (clipsY) {
+                visible.top = Math.max(visible.top, clipTop);
+                visible.bottom = Math.min(visible.bottom, clipBottom);
+              }
+              if (visible.right <= visible.left || visible.bottom <= visible.top) return true;
+            }
+            return false;
+          };
+          const isBelowDocumentReach = (style, bounds) => {
+            if (style.position === "fixed") return true;
+            const scroller = document.scrollingElement;
+            if (!scroller) return true;
+            const blocksScroll = [scroller, document.body]
+              .filter(Boolean)
+              .some((element) => ["clip", "hidden"].includes(getComputedStyle(element).overflowY));
+            if (blocksScroll) return true;
+            const documentTop = bounds.top + window.scrollY;
+            return documentTop >= scroller.scrollHeight;
+          };
           const hasUnsafeClipPath = (clipPath, element) => {
             if (clipPath === "none") return false;
             const inset = /^inset\((.*)\)$/i.exec(clipPath);
@@ -378,16 +421,19 @@ export async function validateRenderedSourceVisibility(manifest) {
             if (hasUnsafeClipPath(style.clipPath, element)) reasons.push("unsafe clip path");
             if (hasUnsafeMaskImage(style)) reasons.push("unsafe mask image");
             if (hasClippedDisplacedText(style, element)) reasons.push("clipped displaced text");
+            if (
+              (state.isHook || state.isContent) &&
+              isFullyClippedByOverflowAncestor(element)
+            ) reasons.push("fully clipped by overflow ancestor");
 
             if ((state.isHook || state.isContent) && style.display !== "contents") {
               const bounds = element.getBoundingClientRect();
               if (bounds.width <= 0 || bounds.height <= 0) reasons.push("zero rendered bounds");
               if (bounds.right <= 0 || bounds.left >= currentViewport.width) reasons.push("horizontally offscreen");
               if (bounds.bottom <= 0) reasons.push("above the rendered canvas");
-              if (
-                (style.position === "absolute" || style.position === "fixed") &&
-                bounds.top >= currentViewport.height
-              ) reasons.push("below the rendered canvas");
+              if (bounds.top >= currentViewport.height && isBelowDocumentReach(style, bounds)) {
+                reasons.push("below document reach");
+              }
             }
             if (reasons.length > 0) failures.push({ element: describe(element), reasons });
           }
