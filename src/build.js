@@ -279,6 +279,38 @@ export async function validateRenderedSourceVisibility(manifest) {
 
           const isTransparent = (color) =>
             color === "transparent" || /rgba\([^)]*,\s*0(?:\.0+)?\s*\)$/i.test(color);
+          const hasZeroOpacityFilter = (filter) =>
+            [...filter.matchAll(/\bopacity\(\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+))(%?)\s*\)/gi)]
+              .some((match) => Number.parseFloat(match[1]) <= 0);
+          const isFullyClippedInset = (clipPath, element) => {
+            const inset = /^inset\((.*)\)$/i.exec(clipPath);
+            if (!inset) return false;
+            const values = inset[1].split(/\s+round\s+/i, 1)[0].trim().split(/\s+/);
+            if (values.length < 1 || values.length > 4) return false;
+            const [top, right = top, bottom = top, left = right] =
+              values.length === 3
+                ? [values[0], values[1], values[2], values[1]]
+                : values.length === 4
+                  ? values
+                  : [values[0], values[1] ?? values[0], values[0], values[1] ?? values[0]];
+            const bounds = element.getBoundingClientRect();
+            const resolveInset = (value, size) => {
+              const length = /^(-?(?:\d+(?:\.\d*)?|\.\d+))(px|%)?$/.exec(value);
+              if (!length) return Number.NaN;
+              const amount = Number.parseFloat(length[1]);
+              if (length[2] === "%") return (amount / 100) * size;
+              if (length[2] === "px" || amount === 0) return amount;
+              return Number.NaN;
+            };
+            const resolved = [
+              resolveInset(top, bounds.height),
+              resolveInset(right, bounds.width),
+              resolveInset(bottom, bounds.height),
+              resolveInset(left, bounds.width),
+            ];
+            return resolved.every(Number.isFinite) &&
+              (resolved[0] + resolved[2] >= bounds.height || resolved[1] + resolved[3] >= bounds.width);
+          };
           const describe = (element) => {
             const id = element.id ? `#${element.id}` : "";
             const classes = element.classList.length > 0 ? `.${[...element.classList].join(".")}` : "";
@@ -298,6 +330,8 @@ export async function validateRenderedSourceVisibility(manifest) {
             if (style.contentVisibility === "hidden") reasons.push("content visibility hidden");
             if (Number.parseFloat(style.fontSize) <= 0.01) reasons.push("zero font size");
             if (isTransparent(style.color)) reasons.push("transparent text color");
+            if (hasZeroOpacityFilter(style.filter)) reasons.push("zero opacity filter");
+            if (isFullyClippedInset(style.clipPath, element)) reasons.push("fully clipped inset");
 
             if ((state.isHook || state.isContent) && style.display !== "contents") {
               const bounds = element.getBoundingClientRect();
