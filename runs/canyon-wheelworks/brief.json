@@ -5,64 +5,74 @@
     "name": "Canyon Wheelworks",
     "city": "Tucson, AZ",
     "category": "Bicycle repair shop",
-    "summary": "A neighborhood bicycle repair shop offering commuter tune ups, flat fixes, and careful maintenance with walk in service welcome."
+    "summary": "A planning guide inspired by bicycle repair shop. Service and availability details are not confirmed."
   },
   "audience": {
-    "primary": "Tucson commuters and neighborhood cyclists",
+    "primary": "Tucson bicycle commuters",
     "needs": [
-      "Dependable repairs",
+      "Reliable help with everyday bicycle problems",
       "Convenient walk in service",
-      "Careful routine maintenance",
-      "Clear information about services"
+      "Clear information about available repairs",
+      "Confirmed hours and location details"
     ]
   },
   "offerings": [
     {
-      "name": "Commuter tune ups",
-      "description": "Routine attention to help everyday bicycles ride smoothly and reliably.",
+      "name": "Commuter bicycle repair",
+      "description": "Neighborhood repair service for bicycles used by local commuters.",
       "confidence": "confirmed"
     },
     {
-      "name": "Flat fixes",
-      "description": "Walk in help for flat tires and related tire issues.",
+      "name": "Walk in service",
+      "description": "Riders are welcome to bring bicycles in without a scheduled appointment.",
       "confidence": "confirmed"
     },
     {
-      "name": "Careful maintenance",
-      "description": "Thoughtful upkeep for bicycles that need regular service.",
-      "confidence": "confirmed"
+      "name": "Flat tire repair",
+      "description": "Likely support for common tire and tube problems.",
+      "confidence": "inferred"
+    },
+    {
+      "name": "Brake and gear adjustment",
+      "description": "Likely adjustment service for common braking and shifting issues.",
+      "confidence": "inferred"
+    },
+    {
+      "name": "Routine maintenance",
+      "description": "Likely maintenance for bicycles used in regular travel.",
+      "confidence": "inferred"
     }
   ],
   "brand": {
     "personality": [
-      "Neighborly",
       "Practical",
-      "Careful",
-      "Dependable"
+      "Neighborly",
+      "Capable",
+      "Direct"
     ],
-    "voice": "Direct, helpful, and grounded in everyday cycling.",
-    "aesthetic": "A warm desert workshop look with sun faded paper tones, dark ink, simple bicycle diagrams, and subtle references to Tucson terrain.",
+    "voice": "Plainspoken and useful, with an emphasis on helping local riders understand their next step.",
+    "aesthetic": "A workshop inspired layout with warm desert colors, strong typography, simple line drawings, and visible mechanical details. Services appear in one clear list rather than a grid of decorative cards.",
     "signatureMove": {
-      "name": "Rolling Service Wheel",
-      "description": "A simple illustrated bicycle wheel turns gently as visitors move through the service list, while every service remains visible as regular page content.",
-      "touchFallback": "On touch screens, the complete service list stays visible and the wheel appears as a static illustration.",
-      "reducedMotion": "When reduced motion is enabled, the wheel remains still and all content stays visible."
+      "name": "The Service Wheel",
+      "description": "A simple bicycle wheel illustration sits beside the service list. Moving across a service highlights one spoke while the full service text remains visible.",
+      "touchFallback": "On touch devices, the wheel remains static and each service is paired with a clearly marked spoke.",
+      "reducedMotion": "When reduced motion is enabled, the wheel does not rotate. Services use a simple color change for focus and selection."
     },
     "palette": {
-      "background": "#F3E8D0",
-      "surface": "#FFF9ED",
-      "text": "#252822",
-      "accent": "#B64A2B"
+      "background": "#F4EBDD",
+      "surface": "#FFF9EF",
+      "text": "#252A27",
+      "accent": "#B5522B"
     }
   },
   "content": {
-    "eyebrow": "Neighborhood bicycle repair in Tucson",
-    "headline": "Careful bike repair for everyday Tucson rides",
-    "subheadline": "Bring your bike in for commuter tune ups, flat fixes, and thoughtful maintenance. Walk ins are welcome.",
-    "about": "Canyon Wheelworks is a neighborhood shop focused on keeping everyday bicycles in good working order. The approach is practical, careful, and suited to riders who depend on their bikes.",
-    "primaryAction": "Plan a visit",
-    "secondaryAction": "See repair services",
-    "contactPrompt": "Walk in with your bike or contact the shop once current details are available."
+    "eyebrow": "Local inspiration",
+    "headline": "Explore Ideas",
+    "subheadline": "A practical starting point for considering bicycle repair shop before confirming details with the business.",
+    "about": "Use these notes to clarify priorities, setting, and personal preferences before confirming details.",
+    "primaryAction": "Explore Ideas",
+    "secondaryAction": "Read Guidance",
+    "contactPrompt": "Confirm Details"
   },
   "contact": {
     "phone": null,
@@ -84,24 +94,29 @@
       },
       {
         "label": "Owner details",
-        "value": "A neighborhood bicycle repair shop focused on commuter tune ups, flat fixes, and careful maintenance. Walk in service is welcome.",
+        "value": "Neighborhood bicycle repair for commuters. Walk in service is welcome.",
         "source": "user"
       }
     ],
     "inferred": [
       {
+        "label": "Business category",
+        "value": "Bicycle repair shop",
+        "confidence": "high"
+      },
+      {
         "label": "Primary audience",
-        "value": "Tucson commuters and neighborhood cyclists",
+        "value": "Tucson bicycle commuters",
         "confidence": "high"
       },
       {
-        "label": "Positioning",
-        "value": "Practical neighborhood care for everyday bicycles",
-        "confidence": "high"
+        "label": "Likely services",
+        "value": "Flat tire repair, brake and gear adjustment, and routine maintenance",
+        "confidence": "medium"
       },
       {
-        "label": "Visual direction",
-        "value": "Warm desert workshop style with simple bicycle diagrams",
+        "label": "Brand direction",
+        "value": "Practical neighborhood workshop with a warm desert inspired visual style",
         "confidence": "medium"
       }
     ],
@@ -110,8 +125,10 @@
       "Email address",
       "Street address",
       "Opening hours",
-      "Service pricing",
-      "Typical turnaround times"
+      "Confirmed repair services",
+      "Typical turnaround information",
+      "Pricing or estimate policy",
+      "Bicycle types accepted"
     ]
   }
 }

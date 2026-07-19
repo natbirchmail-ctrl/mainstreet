@@ -1,13 +1,57 @@
 {
-  "schemaVersion": "1.0",
+  "schemaVersion": "2.0",
+  "mode": "cloudflare",
   "slug": "canyon-wheelworks",
   "selectedCycle": 2,
-  "createdAt": "2026-07-18T00:15:42.480Z",
-  "mode": "cloudflare",
-  "projectName": "mainstreet-hackathon",
+  "commit": "26e6714c571ab07f25a7a230b8fa73674fa9a6ce",
   "url": "https://mainstreet-hackathon.pages.dev/",
-  "deploymentUrl": "https://5e81fe26.mainstreet-hackathon.pages.dev/",
-  "verified": true,
+  "immutableUrl": "https://f3a57ad6.mainstreet-hackathon.pages.dev/",
+  "createdAt": "2026-07-19T21:08:40.065Z",
   "status": 200,
-  "reason": null
+  "verified": true,
+  "aggregateSha256": "e9af70db174e2ac1a3be49fb6519513c5098f61ad377e6900bb5e1e56c9140e9",
+  "files": [
+    {
+      "path": "assets/offerings-detail.png",
+      "bytes": 2331380,
+      "sha256": "782d7188d567c0c086d7ea98c67bc45a06c3a0ef3ad1af828f5bb6f5b61f2e15",
+      "status": 200,
+      "verified": true
+    },
+    {
+      "path": "assets/tucson-route-detail.png",
+      "bytes": 2747876,
+      "sha256": "aa67a8a132672157bcc6b073e190bfc527910a76698454bf03e35cb98de06454",
+      "status": 200,
+      "verified": true
+    },
+    {
+      "path": "assets/workbench-hero.png",
+      "bytes": 2432633,
+      "sha256": "549e7cef747298d4158c8d8410a1643c6bc154546a60ff76ab231ffe698fb9ee",
+      "status": 200,
+      "verified": true
+    },
+    {
+      "path": "index.html",
+      "bytes": 4116,
+      "sha256": "c2b3a8fdd0b483bd6cef302bee605f8e1777acb638fc76d91f29b37dfcd8186d",
+      "status": 200,
+      "verified": true
+    },
+    {
+      "path": "script.js",
+      "bytes": 931,
+      "sha256": "8338c7eca7f263025e8db69bc5b8892d974ddca5d1915ca652de1ded12989de6",
+      "status": 200,
+      "verified": true
+    },
+    {
+      "path": "styles.css",
+      "bytes": 9501,
+      "sha256": "7f65035b6c1d0085a4feebb1579f4c0e90031391eebab2d0c26ac974381c69d7",
+      "status": 200,
+      "verified": true
+    }
+  ]
 }

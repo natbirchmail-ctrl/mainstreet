@@ -2,8 +2,8 @@
   "schemaVersion": "1.0",
   "slug": "canyon-wheelworks",
   "businessName": "Canyon Wheelworks",
-  "startedAt": "2026-07-18T00:10:19.983Z",
-  "completedAt": "2026-07-18T00:15:42.482Z",
+  "startedAt": "2026-07-19T20:56:26.688Z",
+  "completedAt": "2026-07-19T21:08:40.067Z",
   "status": "completed",
   "stopReason": "threshold_reached",
   "selectedCycle": 2,
@@ -11,11 +11,276 @@
   "cycles": [
     {
       "cycle": 1,
-      "score": 84,
+      "score": 71,
       "visionScore": null,
       "verdict": "revise",
       "mode": "vision",
-      "mechanicalPassed": true
+      "evidencePacketSha256": "de93727464d77ef2651ee11570e4498ce7a2984f2765de4bbf4ecaaef0efba1b",
+      "mechanicalPassed": false,
+      "assetsResolved": true,
+      "lawGatePassed": false,
+      "lawGateFailures": [
+        "law:foldComposition:fail",
+        "law:imageryCoherence:fail",
+        "law:factualRestraint:fail"
+      ],
+      "shipEligible": false,
+      "hardGateFailures": [
+        "score:below-threshold",
+        "issues:major",
+        "mechanical:not-passed",
+        "law:foldComposition:fail",
+        "law:imageryCoherence:fail",
+        "law:factualRestraint:fail"
+      ],
+      "laws": {
+        "headlineDiscipline": {
+          "status": "pass",
+          "evidence": [
+            {
+              "viewport": "desktop",
+              "observation": "Primary editorial headings are the exact business name or two-word phrases: Useful Directions, Local Context, and Confirm Details; body copy explains and Explore Ideas directs."
+            },
+            {
+              "viewport": "tablet",
+              "observation": "The same disciplined heading and body/action roles remain intact without extra headline clauses."
+            },
+            {
+              "viewport": "phone",
+              "observation": "Headings wrap but retain their concise wording and distinct roles."
+            }
+          ],
+          "fix": "No required correction; preserve the concise heading system."
+        },
+        "foldComposition": {
+          "status": "fail",
+          "evidence": [
+            {
+              "viewport": "desktop",
+              "observation": "The Planning Notes opening distributes its eyebrow and image at left while Useful Directions sits separately to the right; Local Context similarly separates the large “C” from its heading block."
+            },
+            {
+              "viewport": "tablet",
+              "observation": "The context emblem and textual heading remain separate columns rather than reading as one opening unit."
+            },
+            {
+              "viewport": "phone",
+              "observation": "Local Context opens with a large isolated “C,” while the label and heading appear substantially farther down the section."
+            }
+          ],
+          "fix": "Group each section’s emblem or image, eyebrow, heading, and introductory copy into one compact opening composition before the section detail."
+        },
+        "completeLayouts": {
+          "status": "pass",
+          "evidence": [
+            {
+              "viewport": "desktop",
+              "observation": "All three numbered guidance rows are present with a title and description; no empty columns or orphan cards are visible."
+            },
+            {
+              "viewport": "tablet",
+              "observation": "The repeating list remains complete as three evenly separated rows."
+            },
+            {
+              "viewport": "phone",
+              "observation": "All three items stack completely with matching numbers, titles, and descriptions."
+            }
+          ],
+          "fix": "Preserve the complete three-row list structure."
+        },
+        "firstBeatVisibility": {
+          "status": "pass",
+          "evidence": [
+            {
+              "viewport": "desktop",
+              "observation": "Rendered mechanics report 4 of 4 exact first beats visible in normal, reduced-motion, and no-JavaScript modes."
+            },
+            {
+              "viewport": "tablet",
+              "observation": "Rendered mechanics report 4 of 4 exact first beats visible in all three modes."
+            },
+            {
+              "viewport": "phone",
+              "observation": "Rendered mechanics report 4 of 4 exact first beats visible in all three modes, despite the weak visual ordering of the context opening."
+            }
+          ],
+          "fix": "Preserve unconditional rendering while improving the visual grouping of the context first beat."
+        },
+        "imageContrast": {
+          "status": "pass",
+          "evidence": [
+            {
+              "viewport": "desktop",
+              "observation": "Hero and guidance text sits on solid cream, while Local Context text sits on solid charcoal rather than across the photographs."
+            },
+            {
+              "viewport": "tablet",
+              "observation": "Text remains separated from detailed image regions and has strong cream/charcoal contrast."
+            },
+            {
+              "viewport": "phone",
+              "observation": "No essential copy overlays the busy wheel or street photographs; dark-section copy remains readable on a solid background."
+            }
+          ],
+          "fix": "Preserve the solid text fields and avoid moving copy over the detailed workshop imagery."
+        },
+        "motionRestraint": {
+          "status": "pass",
+          "evidence": [
+            {
+              "viewport": "desktop",
+              "observation": "Only staged-hero-entrance is declared; normal mode has one visible target, reduced motion disables it at 0.01ms, and no-JavaScript retains visible content."
+            },
+            {
+              "viewport": "tablet",
+              "observation": "One restrained hero target is present; reduced-motion and no-JavaScript fallbacks pass with all first beats visible."
+            },
+            {
+              "viewport": "phone",
+              "observation": "The same single movement contract passes, reduced motion disables it, and no content depends on JavaScript."
+            }
+          ],
+          "fix": "Keep motion limited to the existing hero entrance and do not animate the large decorative rings simultaneously."
+        },
+        "imageryCoherence": {
+          "status": "fail",
+          "evidence": [
+            {
+              "viewport": "desktop",
+              "observation": "The hero and planning photographs share a warm, tactile workshop treatment, but the Local Context image switches to a clean, lush modern residential street with a different visual character."
+            },
+            {
+              "viewport": "tablet",
+              "observation": "The contrast between sepia mechanical still life and polished residential streetscape remains conspicuous at full-page scale."
+            },
+            {
+              "viewport": "phone",
+              "observation": "The workshop photographs feel materially connected, while the street image reads as a separate generic stock or rendered scene and does not clearly evoke Tucson."
+            }
+          ],
+          "fix": "Use a contemporary Tucson commuter or neighborhood photograph graded to match the warm workshop images, with an intentional bicycle-related focal detail."
+        },
+        "factualRestraint": {
+          "status": "fail",
+          "evidence": [
+            {
+              "viewport": "desktop",
+              "observation": "The full-page footer visibly states “Built for the neighborhood,” a business-attributed predicate not supported verbatim or in full by one confirmed clause."
+            },
+            {
+              "viewport": "tablet",
+              "observation": "The same unsupported tagline appears in the footer; the Confirm Details disclaimer itself is appropriately restrained."
+            },
+            {
+              "viewport": "phone",
+              "observation": "The unsupported tagline remains visible at the end of the page."
+            },
+            {
+              "viewport": "source",
+              "observation": "The claim policy authorizes only “Neighborhood bicycle repair for commuters” and “Walk in service is welcome”; it requires one clause to support the full predicate and prohibits assembling broader claims."
+            }
+          ],
+          "fix": "Replace “Built for the neighborhood” with verbatim confirmed wording or a non-attributed editorial label."
+        }
+      },
+      "lawCoverage": {
+        "headlineDiscipline": {
+          "requiredViewports": [],
+          "observedViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "missingViewports": [],
+          "complete": true
+        },
+        "foldComposition": {
+          "requiredViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "observedViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "missingViewports": [],
+          "complete": true
+        },
+        "completeLayouts": {
+          "requiredViewports": [],
+          "observedViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "missingViewports": [],
+          "complete": true
+        },
+        "firstBeatVisibility": {
+          "requiredViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "observedViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "missingViewports": [],
+          "complete": true
+        },
+        "imageContrast": {
+          "requiredViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "observedViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "missingViewports": [],
+          "complete": true
+        },
+        "motionRestraint": {
+          "requiredViewports": [],
+          "observedViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "missingViewports": [],
+          "complete": true
+        },
+        "imageryCoherence": {
+          "requiredViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "observedViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "missingViewports": [],
+          "complete": true
+        },
+        "factualRestraint": {
+          "requiredViewports": [],
+          "observedViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "missingViewports": [],
+          "complete": true
+        }
+      }
     },
     {
       "cycle": 2,
@@ -23,20 +288,318 @@
       "visionScore": null,
       "verdict": "ship",
       "mode": "vision",
-      "mechanicalPassed": true
+      "evidencePacketSha256": "01a3d12edb8f8ca87aace509c751fef0379a0b939474dcf0055fedf082a4422f",
+      "mechanicalPassed": true,
+      "assetsResolved": true,
+      "lawGatePassed": true,
+      "lawGateFailures": [],
+      "shipEligible": true,
+      "hardGateFailures": [],
+      "laws": {
+        "headlineDiscipline": {
+          "status": "pass",
+          "evidence": [
+            {
+              "viewport": "desktop",
+              "observation": "Primary editorial headings are Canyon Wheelworks, Useful Directions, Local Context, and Confirm Details; all non-business headings contain no more than two meaningful words."
+            },
+            {
+              "viewport": "tablet",
+              "observation": "The same concise headings retain clean, controlled wraps."
+            },
+            {
+              "viewport": "phone",
+              "observation": "Canyon Wheelworks uses the exact business-name exception, while all other primary headings remain at two words."
+            }
+          ],
+          "fix": "Preserve the concise two-word heading system."
+        },
+        "foldComposition": {
+          "status": "pass",
+          "evidence": [
+            {
+              "viewport": "desktop",
+              "observation": "The initial viewport presents location, business name, explanation, action, and workshop image as one complete hero thought."
+            },
+            {
+              "viewport": "tablet",
+              "observation": "The hero remains a balanced text-and-image unit, with the action visible and no detached content."
+            },
+            {
+              "viewport": "phone",
+              "observation": "The text block is complete before the photograph begins, and full-page evidence shows each lower section opening with its label, heading, and supporting beat together."
+            }
+          ],
+          "fix": "Preserve the current section-opening order and keep headings attached to their explanatory copy."
+        },
+        "completeLayouts": {
+          "status": "pass",
+          "evidence": [
+            {
+              "viewport": "desktop",
+              "observation": "All three numbered planning rows are populated, and every image/text composition is complete without phantom columns."
+            },
+            {
+              "viewport": "tablet",
+              "observation": "The planning list, dark context composition, and final confirmation section retain complete counts and alignment."
+            },
+            {
+              "viewport": "phone",
+              "observation": "All repeated rows stack consistently with numbers, titles, and descriptions; no empty slot or orphan card appears."
+            }
+          ],
+          "fix": "Preserve the three-row list and complete responsive stacking."
+        },
+        "firstBeatVisibility": {
+          "status": "pass",
+          "evidence": [
+            {
+              "viewport": "desktop",
+              "observation": "Mechanical evidence reports 4 of 4 section first beats visible in normal, reduced-motion, and JavaScript-disabled states."
+            },
+            {
+              "viewport": "tablet",
+              "observation": "Mechanical evidence reports 4 of 4 section first beats visible in all three rendering states."
+            },
+            {
+              "viewport": "phone",
+              "observation": "Mechanical evidence reports 4 of 4 section first beats visible in all three rendering states, and the screenshots show each lower section beginning with visible meaningful content."
+            }
+          ],
+          "fix": "Preserve immediate rendering of every section's first beat."
+        },
+        "imageContrast": {
+          "status": "pass",
+          "evidence": [
+            {
+              "viewport": "desktop",
+              "observation": "Hero and lower-section text sits on solid cream or charcoal fields rather than over the photographs; image-adjacent copy remains readable."
+            },
+            {
+              "viewport": "tablet",
+              "observation": "Text remains separated from all photographic crops, including the dark Local Context composition."
+            },
+            {
+              "viewport": "phone",
+              "observation": "Photographs stack independently below or beside solid-background text, so difficult workshop and sunset crops do not reduce text contrast."
+            }
+          ],
+          "fix": "Continue keeping informational text on solid color fields rather than over photography."
+        },
+        "motionRestraint": {
+          "status": "pass",
+          "evidence": [
+            {
+              "viewport": "desktop",
+              "observation": "Only one staged hero entrance is declared; the normal initial composition is readable, reduced motion disables it at 0.01ms, and the JavaScript-disabled target remains visible."
+            },
+            {
+              "viewport": "tablet",
+              "observation": "The single motion root passes normal, reduced-motion, and no-JavaScript contracts without delaying any first beat."
+            },
+            {
+              "viewport": "phone",
+              "observation": "The same single entrance remains restrained, with all content visible under normal, reduced-motion, and JavaScript-disabled observations."
+            }
+          ],
+          "fix": "Keep motion limited to the single nonessential hero entrance."
+        },
+        "imageryCoherence": {
+          "status": "pass",
+          "evidence": [
+            {
+              "viewport": "desktop",
+              "observation": "Workbench tools, bicycle wheel, repair environment, and desert route share warm amber grading and deliberate mechanical focal crops."
+            },
+            {
+              "viewport": "tablet",
+              "observation": "The same warm workshop and Tucson-route visual language remains consistent after responsive cropping."
+            },
+            {
+              "viewport": "phone",
+              "observation": "Stacked photographs retain matching color treatment, subject matter, and contemporary editorial framing."
+            }
+          ],
+          "fix": "Preserve the warm commissioned-shoot appearance and consistent crop treatment."
+        },
+        "factualRestraint": {
+          "status": "pass",
+          "evidence": [
+            {
+              "viewport": "desktop",
+              "observation": "Visible claims are limited to planning guidance, the confirmed commuter-repair clause, the confirmed walk-in clause, and explicit language that details are unconfirmed."
+            },
+            {
+              "viewport": "tablet",
+              "observation": "No unsupported prices, hours, address, transactional action, turnaround, or inferred repair service is presented."
+            },
+            {
+              "viewport": "phone",
+              "observation": "The full page repeats the same restrained guidance and directs visitors only to confirm details with the business."
+            },
+            {
+              "viewport": "source",
+              "observation": "Neighborhood bicycle repair for commuters and Walk in service is welcome appear verbatim in confirmedUserClauses; the claim policy otherwise requires guidance-only language."
+            }
+          ],
+          "fix": "Continue using confirmed clauses verbatim and avoid adding inferred services or transactional language."
+        }
+      },
+      "lawCoverage": {
+        "headlineDiscipline": {
+          "requiredViewports": [],
+          "observedViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "missingViewports": [],
+          "complete": true
+        },
+        "foldComposition": {
+          "requiredViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "observedViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "missingViewports": [],
+          "complete": true
+        },
+        "completeLayouts": {
+          "requiredViewports": [],
+          "observedViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "missingViewports": [],
+          "complete": true
+        },
+        "firstBeatVisibility": {
+          "requiredViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "observedViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "missingViewports": [],
+          "complete": true
+        },
+        "imageContrast": {
+          "requiredViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "observedViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "missingViewports": [],
+          "complete": true
+        },
+        "motionRestraint": {
+          "requiredViewports": [],
+          "observedViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "missingViewports": [],
+          "complete": true
+        },
+        "imageryCoherence": {
+          "requiredViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "observedViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "missingViewports": [],
+          "complete": true
+        },
+        "factualRestraint": {
+          "requiredViewports": [],
+          "observedViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "missingViewports": [],
+          "complete": true
+        }
+      }
     }
   ],
   "delivery": {
-    "schemaVersion": "1.0",
+    "schemaVersion": "2.0",
+    "mode": "cloudflare",
     "slug": "canyon-wheelworks",
     "selectedCycle": 2,
-    "createdAt": "2026-07-18T00:15:42.480Z",
-    "mode": "cloudflare",
-    "projectName": "mainstreet-hackathon",
+    "commit": "26e6714c571ab07f25a7a230b8fa73674fa9a6ce",
     "url": "https://mainstreet-hackathon.pages.dev/",
-    "deploymentUrl": "https://5e81fe26.mainstreet-hackathon.pages.dev/",
-    "verified": true,
+    "immutableUrl": "https://f3a57ad6.mainstreet-hackathon.pages.dev/",
+    "createdAt": "2026-07-19T21:08:40.065Z",
     "status": 200,
-    "reason": null
+    "verified": true,
+    "aggregateSha256": "e9af70db174e2ac1a3be49fb6519513c5098f61ad377e6900bb5e1e56c9140e9",
+    "files": [
+      {
+        "path": "assets/offerings-detail.png",
+        "bytes": 2331380,
+        "sha256": "782d7188d567c0c086d7ea98c67bc45a06c3a0ef3ad1af828f5bb6f5b61f2e15",
+        "status": 200,
+        "verified": true
+      },
+      {
+        "path": "assets/tucson-route-detail.png",
+        "bytes": 2747876,
+        "sha256": "aa67a8a132672157bcc6b073e190bfc527910a76698454bf03e35cb98de06454",
+        "status": 200,
+        "verified": true
+      },
+      {
+        "path": "assets/workbench-hero.png",
+        "bytes": 2432633,
+        "sha256": "549e7cef747298d4158c8d8410a1643c6bc154546a60ff76ab231ffe698fb9ee",
+        "status": 200,
+        "verified": true
+      },
+      {
+        "path": "index.html",
+        "bytes": 4116,
+        "sha256": "c2b3a8fdd0b483bd6cef302bee605f8e1777acb638fc76d91f29b37dfcd8186d",
+        "status": 200,
+        "verified": true
+      },
+      {
+        "path": "script.js",
+        "bytes": 931,
+        "sha256": "8338c7eca7f263025e8db69bc5b8892d974ddca5d1915ca652de1ded12989de6",
+        "status": 200,
+        "verified": true
+      },
+      {
+        "path": "styles.css",
+        "bytes": 9501,
+        "sha256": "7f65035b6c1d0085a4feebb1579f4c0e90031391eebab2d0c26ac974381c69d7",
+        "status": 200,
+        "verified": true
+      }
+    ]
   }
 }

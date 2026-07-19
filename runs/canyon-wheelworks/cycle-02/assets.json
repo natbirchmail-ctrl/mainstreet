@@ -1,0 +1,60 @@
+{
+  "schemaVersion": "1.0",
+  "allResolved": true,
+  "requestCount": 3,
+  "successCount": 3,
+  "fallbackCount": 0,
+  "files": [
+    {
+      "filename": "workbench-hero.png",
+      "path": "assets/workbench-hero.png",
+      "role": "hero",
+      "alt": "Contemporary still life inspired by bicycle repair shop",
+      "focalPoint": {
+        "x": 0.56,
+        "y": 0.44
+      },
+      "promptHash": "887cd8b0a027638b5b9905614c652ee2cdd86c457b1a75cfd3f01e046e4433a8",
+      "mediaType": "image/png",
+      "bytes": 2432633,
+      "sha256": "549e7cef747298d4158c8d8410a1643c6bc154546a60ff76ab231ffe698fb9ee",
+      "source": "openai",
+      "resolved": true,
+      "errorCode": null
+    },
+    {
+      "filename": "offerings-detail.png",
+      "path": "assets/offerings-detail.png",
+      "role": "offerings",
+      "alt": "Materials and colors arranged as a planning reference",
+      "focalPoint": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "promptHash": "eeee6b87e7fda7860e79d5890b52c3fc4cf76e5f03049cab9e1f6bca370e11fa",
+      "mediaType": "image/png",
+      "bytes": 2331380,
+      "sha256": "782d7188d567c0c086d7ea98c67bc45a06c3a0ef3ad1af828f5bb6f5b61f2e15",
+      "source": "openai",
+      "resolved": true,
+      "errorCode": null
+    },
+    {
+      "filename": "tucson-route-detail.png",
+      "path": "assets/tucson-route-detail.png",
+      "role": "story",
+      "alt": "Warm desert commuter route detail in morning light",
+      "focalPoint": {
+        "x": 0.42,
+        "y": 0.52
+      },
+      "promptHash": "139fcaf493e7f6f4a2650c71339fa62e23ceb29a4b2d5547859fd2e7828c387a",
+      "mediaType": "image/png",
+      "bytes": 2747876,
+      "sha256": "aa67a8a132672157bcc6b073e190bfc527910a76698454bf03e35cb98de06454",
+      "source": "openai",
+      "resolved": true,
+      "errorCode": null
+    }
+  ]
+}

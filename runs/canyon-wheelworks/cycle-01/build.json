@@ -1,11 +1,53 @@
 {
   "cycle": 1,
-  "createdAt": "2026-07-18T00:12:44.867Z",
-  "source": "openai",
-  "fallbackReason": null,
+  "createdAt": "2026-07-19T21:01:19.364Z",
+  "source": "deterministic-fallback",
+  "fallbackReason": "Every section must declare a nonempty data-section hook.",
   "designNotes": {
-    "aesthetic": "A sun faded workshop broadsheet built from warm paper, dark mechanical linework, rust red accents, and spare Tucson terrain geometry.",
-    "signatureMove": "The service section pairs a sticky illustrated wheel with the full service list. On precise pointer devices the wheel rotates through scroll progress. It stays static on touch screens and when reduced motion is requested.",
-    "rationale": "Large editorial type gives the neighborhood shop a confident local presence, while rules, numbering, and bicycle construction lines keep the page practical. The closing section welcomes walk ins but clearly states that current contact and visit details are not yet available."
+    "aesthetic": "A workshop inspired layout with warm desert colors, strong typography, simple line drawings, and visible mechanical details. Services appear in one clear list rather than a grid of decorative cards.",
+    "signatureMove": "A simple bicycle wheel illustration sits beside the service list. Moving across a service highlights one spoke while the full service text remains visible.",
+    "rationale": "A deterministic editorial baseline preserves the brief and accessibility when model generation is unavailable.",
+    "shootDirection": "Natural morning light tactile materials calm framing and one consistent lens feel",
+    "motionMoves": [
+      "staged hero entrance"
+    ]
+  },
+  "imagePlan": [
+    {
+      "filename": "workbench-hero.png",
+      "role": "hero",
+      "alt": "Contemporary still life inspired by bicycle repair shop",
+      "prompt": "Contemporary editorial still life inspired by Bicycle repair shop with natural materials calm light no logos no signage and no business specific details",
+      "focalPoint": {
+        "x": 0.56,
+        "y": 0.44
+      }
+    },
+    {
+      "filename": "offerings-detail.png",
+      "role": "offerings",
+      "alt": "Materials and colors arranged as a planning reference",
+      "prompt": "Close editorial detail of materials and colors inspired by Bicycle repair shop with no logos no signage and no claimed business activity",
+      "focalPoint": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    {
+      "filename": "story-detail.png",
+      "role": "story",
+      "alt": "A quiet neighborhood scene in natural morning light",
+      "prompt": "Quiet contemporary neighborhood context in natural morning light with no logos no signage and no identifiable people",
+      "focalPoint": {
+        "x": 0.42,
+        "y": 0.52
+      }
+    }
+  ],
+  "assetSummary": {
+    "allResolved": true,
+    "requestCount": 3,
+    "successCount": 3,
+    "fallbackCount": 0
   }
 }

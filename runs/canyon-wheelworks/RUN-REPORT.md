@@ -6,7 +6,7 @@ Stop reason: threshold_reached
 
 Selected cycle: 2
 
-| Cycle | Score | Mechanical pass | Verdict |
-| ---: | ---: | :---: | :--- |
-| 1 | 84 | true | revise |
-| 2 | 86 | true | ship |
+| Cycle | Score | Mechanical pass | Assets resolved | Laws pass | Ship eligible | Verdict |
+| ---: | ---: | :---: | :---: | :---: | :---: | :--- |
+| 1 | 71 | false | true | false | false | revise |
+| 2 | 86 | true | true | true | true | ship |

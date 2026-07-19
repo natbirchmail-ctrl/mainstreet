@@ -1,0 +1,60 @@
+{
+  "schemaVersion": "1.0",
+  "allResolved": true,
+  "requestCount": 3,
+  "successCount": 3,
+  "fallbackCount": 0,
+  "files": [
+    {
+      "filename": "workbench-hero.png",
+      "path": "assets/workbench-hero.png",
+      "role": "hero",
+      "alt": "Contemporary still life inspired by bicycle repair shop",
+      "focalPoint": {
+        "x": 0.56,
+        "y": 0.44
+      },
+      "promptHash": "b40a68664c2c3e2714b09992ed7dbc1fb15baac4947faac4c4e6db4152c8f816",
+      "mediaType": "image/png",
+      "bytes": 2517450,
+      "sha256": "ffc4b37fffcbfe62d9b196333e08163c62e48996d42b940ac222a1e25ffbed2f",
+      "source": "openai",
+      "resolved": true,
+      "errorCode": null
+    },
+    {
+      "filename": "offerings-detail.png",
+      "path": "assets/offerings-detail.png",
+      "role": "offerings",
+      "alt": "Materials and colors arranged as a planning reference",
+      "focalPoint": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "promptHash": "05ec411b86f4a80f4a955c69fb155677f0eae410653bf57a0dd3afbc87bfc692",
+      "mediaType": "image/png",
+      "bytes": 3018655,
+      "sha256": "7bd47dfd9c8a6e55bdc0ca3be4b47d6aefe680019833de99c97fd358c67b3d76",
+      "source": "openai",
+      "resolved": true,
+      "errorCode": null
+    },
+    {
+      "filename": "story-detail.png",
+      "path": "assets/story-detail.png",
+      "role": "story",
+      "alt": "A quiet neighborhood scene in natural morning light",
+      "focalPoint": {
+        "x": 0.42,
+        "y": 0.52
+      },
+      "promptHash": "e4e671dc36a16a99956eaa3f29f149515c217c6046cb382ca93ae321ba157981",
+      "mediaType": "image/png",
+      "bytes": 2500228,
+      "sha256": "1666f4b582d3ceb56cf6bb689cacc3d4f8a65cbb7281bf02f96897e9021f36e7",
+      "source": "openai",
+      "resolved": true,
+      "errorCode": null
+    }
+  ]
+}

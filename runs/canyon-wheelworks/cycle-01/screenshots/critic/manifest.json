@@ -1,0 +1,34 @@
+{
+  "schemaVersion": "1.0",
+  "cycle": 1,
+  "capturedAt": "2026-07-19T21:01:26.258Z",
+  "capture": "full-page",
+  "motionMode": "reducedMotion",
+  "canonicalCaptureSha256": "2139cce4b87a55c3c9a87d60d94e459b919963529b700aef42c451c1e2402c80",
+  "viewports": {
+    "desktop": {
+      "width": 1440,
+      "renderedWidth": 1440,
+      "height": 3362,
+      "path": "screenshots/critic/desktop-full-page.png",
+      "bytes": 1290072,
+      "sha256": "748a34f6a2c6afe67bd60e4fe7c9156ca6bd14daf01223211206c3c8b97e981c"
+    },
+    "tablet": {
+      "width": 1024,
+      "renderedWidth": 1024,
+      "height": 2826,
+      "path": "screenshots/critic/tablet-full-page.png",
+      "bytes": 899858,
+      "sha256": "059f162ba6945543060df73dbf212ea6209b9a2dedc7c90c878bdafd7f1cb0a8"
+    },
+    "phone": {
+      "width": 390,
+      "renderedWidth": 390,
+      "height": 3343,
+      "path": "screenshots/critic/mobile-full-page.png",
+      "bytes": 558997,
+      "sha256": "b24fb7ce703944efb9ffe078e3b0a4461a12fae2ae066ff8b6ee8c162a55d500"
+    }
+  }
+}

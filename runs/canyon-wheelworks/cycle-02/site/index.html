@@ -3,132 +3,99 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Canyon Wheelworks is a neighborhood bicycle repair shop in Tucson offering commuter tune ups, flat fixes, and careful maintenance.">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'">
-  <title>Canyon Wheelworks | Bicycle repair in Tucson</title>
+  <meta name="description" content="A planning guide for Canyon Wheelworks. Service and availability details are not confirmed.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'">
+  <title>Canyon Wheelworks</title>
   <link rel="stylesheet" href="styles.css">
 </head>
-<body>
-  <a class="skip-link" href="#main-content">Skip to main content</a>
-
+<body data-motion-moves="staged-hero-entrance">
+  <a class="skip-link" href="#main">Skip to content</a>
   <header class="site-header">
-    <a class="brand" href="#top" aria-label="Canyon Wheelworks home">
-      <span class="brand-mark" aria-hidden="true"></span>
-      <span>Canyon Wheelworks</span>
-    </a>
-    <nav aria-label="Main navigation">
-      <a href="#services">Services</a>
-      <a href="#story">Our approach</a>
+    <a class="wordmark" href="#top" aria-label="Canyon Wheelworks home">Canyon Wheelworks</a>
+    <nav aria-label="Primary">
+      <a href="#ideas">Ideas</a>
+      <a href="#context">Context</a>
+      <a href="#details">Details</a>
     </nav>
   </header>
 
-  <main id="main-content">
-    <section class="hero" id="top" aria-labelledby="hero-title">
-      <div class="hero-copy">
-        <p class="eyebrow">Neighborhood bicycle repair in Tucson</p>
-        <h1 id="hero-title">Careful bike repair for everyday Tucson rides</h1>
-        <p class="hero-intro">Bring your bike in for commuter tune ups, flat fixes, and thoughtful maintenance. Walk ins are welcome.</p>
-        <div class="hero-actions">
-          <a class="button button-primary" href="#services">See repair services</a>
-          <a class="text-link" href="#story">Read the shop story</a>
-        </div>
+  <main id="main">
+    <section class="hero" id="top" data-section="hero" data-motion-root="staged-hero-entrance">
+      <div class="hero-copy" data-first-beat data-motion-target>
+        <p class="eyebrow">Tucson, AZ</p>
+        <h1>Canyon Wheelworks</h1>
+        <p class="hero-intro">A practical starting point for considering bicycle care before confirming details with the business.</p>
+        <a class="primary-action" href="#ideas" data-primary-action>Explore Ideas</a>
       </div>
-
-      <div class="desert-panel" aria-hidden="true">
-        <div class="sun"></div>
-        <div class="ridge ridge-back"></div>
-        <div class="ridge ridge-front"></div>
-        <div class="route-line"></div>
-        <p>Tucson<br>Commuter<br>Repair</p>
+      <div class="hero-art">
+        <img src="assets/workbench-hero.png" alt="Contemporary still life inspired by bicycle repair shop">
+        <span></span>
+        <span></span>
+        <span></span>
       </div>
     </section>
 
-    <section class="services-section" id="services" aria-labelledby="services-title">
-      <header class="section-heading">
-        <p class="eyebrow">Practical shop care</p>
-        <h2 id="services-title">Service for the bikes that keep daily life moving</h2>
-        <p>Clear attention for commuters and neighborhood cyclists.</p>
-      </header>
-
-      <div class="service-layout">
-        <div class="wheel-stage" aria-hidden="true">
-          <div class="wheel">
+    <section class="ideas-section" id="ideas" data-section="ideas">
+      <div class="ideas-opening" data-first-beat>
+        <div class="opening-copy">
+          <p class="eyebrow">Planning notes</p>
+          <h2>Useful Directions</h2>
+          <p>Bring the details that make a bicycle concern easier to understand and discuss.</p>
+        </div>
+        <div class="guide-visual">
+          <img src="assets/offerings-detail.png" alt="Materials and colors arranged as a planning reference">
+          <div class="wheel-mark" aria-hidden="true">
             <span></span>
             <span></span>
             <span></span>
-            <span></span>
-            <span></span>
-            <span></span>
-            <span></span>
-            <span></span>
-            <i class="hub"></i>
           </div>
-          <p>Everyday bikes<br>thoughtfully cared for</p>
         </div>
+      </div>
 
-        <div class="service-list">
-          <article class="service-item">
-            <p class="service-number">01</p>
-            <div>
-              <h3>Commuter tune ups</h3>
-              <p>Routine attention to help everyday bicycles ride smoothly and reliably.</p>
-            </div>
-          </article>
-
-          <article class="service-item">
-            <p class="service-number">02</p>
-            <div>
-              <h3>Flat fixes</h3>
-              <p>Walk in help for flat tires and related tire issues.</p>
-            </div>
-          </article>
-
-          <article class="service-item">
-            <p class="service-number">03</p>
-            <div>
-              <h3>Careful maintenance</h3>
-              <p>Thoughtful upkeep for bicycles that need regular service.</p>
-            </div>
-          </article>
-        </div>
+      <div class="ideas-list">
+        <article class="idea">
+          <p class="idea-number">01</p>
+          <h3>Ride Pattern</h3>
+          <p>Consider distance, terrain, frequency, and the way the bicycle is used.</p>
+        </article>
+        <article class="idea">
+          <p class="idea-number">02</p>
+          <h3>Known Context</h3>
+          <p>Neighborhood bicycle repair for commuters. Walk in service is welcome.</p>
+        </article>
+        <article class="idea">
+          <p class="idea-number">03</p>
+          <h3>Useful Notes</h3>
+          <p>Note current symptoms, recent changes, route conditions, and the result that matters most.</p>
+        </article>
       </div>
     </section>
 
-    <section class="story-section" id="story" aria-labelledby="story-title">
-      <div class="story-label">
-        <span aria-hidden="true">CW</span>
-        <p>Tucson, AZ</p>
+    <section class="context-section" id="context" data-section="context">
+      <div class="context-opening" data-first-beat>
+        <div class="context-marker" aria-hidden="true">C</div>
+        <div class="context-copy">
+          <p class="eyebrow">Planning context</p>
+          <h2>Local Context</h2>
+          <p>Daily routes, weather, storage, timing, and personal preferences can help frame a clearer conversation.</p>
+        </div>
       </div>
-
-      <div class="story-copy">
-        <p class="eyebrow">A neighborhood workshop</p>
-        <h2 id="story-title">Dependable attention without the fuss</h2>
-        <p>Canyon Wheelworks is focused on keeping bicycles in good working order for riders who depend on them. The shop offers practical service with close attention to routine needs.</p>
-      </div>
-
-      <aside class="shop-services" aria-label="Repair summary">
-        <p>Tune ups</p>
-        <p>Flat fixes</p>
-        <p>Routine upkeep</p>
-      </aside>
+      <img class="context-image" src="assets/tucson-route-detail.png" alt="Warm desert commuter route detail in morning light">
     </section>
 
-    <section class="visit-section" id="visit" aria-labelledby="visit-title">
-      <div>
-        <p class="eyebrow">Planning a visit</p>
-        <h2 id="visit-title">Walk in service is welcome</h2>
-      </div>
-      <div class="visit-copy">
-        <p>Current visit and contact details are not published here yet.</p>
-        <a class="button button-light" href="#services">Review services</a>
+    <section class="details-section" id="details" data-section="details">
+      <div class="details-copy" data-first-beat>
+        <p class="eyebrow">Before planning</p>
+        <h2>Confirm Details</h2>
+        <p>Service and availability details are not confirmed. Check directly with the business before making plans.</p>
       </div>
     </section>
   </main>
 
-  <footer class="site-footer">
-    <p><strong>Canyon Wheelworks</strong></p>
-    <p>Bicycle repair in Tucson, AZ</p>
-    <a href="#top">Back to top</a>
+  <footer>
+    <p>Canyon Wheelworks</p>
+    <p>Planning guide</p>
   </footer>
+  <script src="script.js" defer></script>
 </body>
 </html>

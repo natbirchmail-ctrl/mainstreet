@@ -1,115 +1,372 @@
 {
   "rubricVersion": "1.0",
-  "score": 86,
-  "verdict": "ship",
-  "summary": "A credible, distinctive neighborhood repair-shop site with strong editorial composition, a cohesive desert-workshop palette, and useful service-first navigation. It handles missing contact facts responsibly by sending the primary hero action to confirmed services rather than a dead contact flow. The main weakness is undersized supporting text—especially on mobile—plus a few illustration-label collisions that keep the execution from feeling fully refined.",
+  "summary": "A cohesive, unusually restrained planning page with strong editorial typography, warm workshop imagery, and reliable responsive structure. The composition remains complete across all three viewports and the copy respects the guidance-only claim policy. Its main weaknesses are very small supporting text on phone, generic planning language that dilutes the bicycle-repair identity, and lower desktop sections that use more vertical space than their content warrants.",
   "dimensions": {
     "layout": {
       "score": 16,
-      "evidence": "Desktop sections use a disciplined grid, generous spacing, clear rules, and effective asymmetry between copy and diagrams. Mobile converts the service area into a logical single column without losing content. The mobile header is taller than necessary because navigation drops below the wordmark, and some vertical gaps around the hero actions feel uneven.",
-      "fix": "Place the two mobile navigation links on the same row as the wordmark, or tighten the gap beneath that row by 8–12px."
+      "evidence": "Desktop uses a confident split hero and clearly separated full-width sections; the three numbered planning rows align cleanly without empty slots. Tablet preserves the same structure with sensible proportions. Phone stacks every section in a logical order, although the dark Local Context and Confirm Details sections are taller than their modest content requires.",
+      "fix": "Reduce vertical padding in the desktop Local Context and Confirm Details sections by roughly 15–20%, while preserving the existing section order and generous margins."
     },
     "hierarchy": {
       "score": 14,
-      "evidence": "The oversized serif hero, red eyebrows, numbered services, dark primary button, and contrasting visit band create an immediately understandable reading path. Service information remains more prominent than the unavailable contact details. The mobile secondary story link is visually stranded between the primary button and illustration.",
-      "fix": "Group “Read the shop story” directly beneath the primary button with a consistent 12px action-stack gap."
+      "evidence": "Across desktop, tablet, and phone, orange eyebrows, large serif headings, concise body copy, and the underlined Explore Ideas action establish a clear reading sequence. On phone, the small planning-row descriptions become visually subordinate to the point of being easy to overlook.",
+      "fix": "Increase phone planning-row descriptions by about 1–2px and slightly reduce the row-heading size so title and explanation read as one unit."
     },
     "color": {
       "score": 11,
-      "evidence": "Warm paper tones, dark ink, rust red, and the dark footer form a cohesive Tucson-inspired palette with strong primary-text contrast. The restrained red accents guide attention without overwhelming the page. Fine gray rules are faint in a few cream sections.",
-      "fix": "Darken the lightest divider rules slightly so section and list boundaries remain clear on low-contrast displays."
+      "evidence": "The cream, charcoal, rust, and warm photographic palette is coherent throughout. The dark Local Context section provides an effective tonal break, with readable cream text and orange labeling. Fine rules and tiny footer text have weaker contrast than the primary content.",
+      "fix": "Darken pale divider rules and increase the footer text contrast one step without changing the core palette."
     },
     "typography": {
-      "score": 12,
-      "evidence": "The editorial serif gives the shop a memorable, handcrafted voice, while uppercase sans-serif labels provide useful contrast. Major headings wrap attractively on both viewports. Several descriptions, navigation labels, footer lines, and diagram captions appear very small, and all-caps captions become dense on mobile.",
-      "fix": "Raise supporting copy and navigation to at least 14px on mobile and 15–16px on desktop, with approximately 1.45 line-height."
+      "score": 13,
+      "evidence": "The large serif display face gives Canyon Wheelworks a distinctive editorial identity, while the sans-serif labels and body copy remain practical. Headline wraps are controlled at all widths. In the phone full page, planning descriptions, contextual copy, and footer labels appear undersized relative to the 390px viewport.",
+      "fix": "Set all phone body and footer text to a minimum visibly rendered size of about 13–14px with at least 1.45 line-height."
     },
     "mobile": {
-      "score": 13,
-      "evidence": "All services remain visible, the wheel becomes a static illustration, buttons span a usable width, and the content order is coherent. The header avoids clipping, but its two-row composition consumes extra space, while small body copy and compact link targets reduce ease of scanning and tapping.",
-      "fix": "Give mobile navigation and text links a minimum 44px tap area while keeping their visible labels compact."
+      "score": 12,
+      "evidence": "The 390px layout avoids horizontal overflow, keeps the hero action visible before the photograph, and converts the planning list into complete two-column rows. The two-line header consumes substantial height, several descriptions are small, and the narrow text column beside each row number produces frequent short wraps.",
+      "fix": "Narrow the number column and give the row copy more width; raise the small-copy size while retaining the current stacked hero and image order."
     },
     "specificity": {
       "score": 8,
-      "evidence": "The page repeatedly identifies Tucson, commuters, walk-in flat fixes, tune ups, and routine bicycle maintenance, so it clearly belongs to this business. The wheel diagrams support the trade and visual brief. Phrases such as “dependable attention without the fuss,” “thoughtful upkeep,” and “practical service” remain broad and repetitive.",
-      "fix": "Replace one generic approach sentence with a concrete confirmed distinction, such as prioritizing everyday commuter bicycles and walk-in tire problems."
+      "evidence": "Tucson labeling, commuter wording, bicycle components, workshop tools, and desert-route photography make the page recognizably local and category-specific. However, headings such as Useful Directions, Local Context, and Useful Notes could describe many planning guides, and much of the advice remains broadly applicable.",
+      "fix": "Replace one generic planning label with a bicycle-specific two-word heading, such as Ride Notes, while keeping all service language non-transactional and policy-safe."
     },
     "accessibility": {
       "score": 8,
-      "evidence": "Dark text on warm backgrounds is generally high contrast, links are underlined where needed, the primary action is visually obvious, and a skip link is present in the supplied text. However, visibly tiny body copy, footer text, and uppercase diagram labels may be difficult for low-vision users; some mobile links also appear to have small hit areas.",
-      "fix": "Increase the smallest visible text to 14px and expand inline navigation and footer links to 44px-high interactive areas."
+      "evidence": "Dark text on cream, cream text on charcoal, a visible skip-link label in the text inventory, and a clearly underlined primary action support accessibility. Mechanical observations show the one checked touch target passes on tablet and phone, and all content remains available with reduced motion and JavaScript disabled. Small phone copy and faint dividers remain visible-accessibility concerns.",
+      "fix": "Increase the smallest phone text and divider contrast; retain the existing reduced-motion and no-JavaScript fallbacks."
     },
     "polish": {
       "score": 4,
-      "evidence": "Borders, rules, numbering, palette, and illustrations are consistently art-directed across sections. On mobile, “EVERYDAY BIKES / THOUGHTFULLY CARED FOR” crowds and partially overlaps the wheel drawing, and the hero diagram’s line passes through its label area, making these details look less controlled.",
-      "fix": "Move each diagram caption into a clear bottom margin outside the wheel and line artwork."
+      "evidence": "Image crops, borders, circular wheel motifs, section rules, and footer alignment are consistent across all screenshots. The visual system feels deliberate, though the oversized decorative rings dominate the hero photographs and some lower sections feel slightly over-spaced.",
+      "fix": "Reduce the hero ring stroke or diameter by roughly 10% and tighten the two sparsest section paddings."
     }
   },
   "strengths": [
-    "Distinctive warm desert-workshop art direction avoids a generic bicycle-shop template.",
-    "The service list is immediately useful and remains fully visible on mobile without relying on animation.",
-    "The hero’s primary action leads to confirmed service information rather than unavailable contact details.",
-    "Strong serif-led hierarchy and disciplined rules create a confident editorial character.",
-    "Missing address, hours, phone, and email are acknowledged plainly without inventing facts."
+    "The split hero is distinctive and remains balanced from 1440px through 1024px before becoming a clean phone stack.",
+    "Warm workshop and desert-route photography forms a coherent visual story without placing copy over difficult image areas.",
+    "The serif display typography gives the business name and section headings a memorable editorial character.",
+    "All four sections expose their first meaningful content with normal motion, reduced motion, and JavaScript disabled.",
+    "The copy carefully distinguishes confirmed commuter and walk-in wording from unconfirmed service and availability details."
   ],
   "issues": [
     {
       "priority": 1,
       "severity": "medium",
-      "dimension": "typography",
-      "evidence": "Service descriptions, navigation, footer copy, and several captions are visibly small, particularly in the 390px mobile view.",
-      "impact": "Visitors with reduced vision or those scanning outdoors may struggle to read important supporting information.",
-      "fix": "Set all functional and body copy to at least 14px on mobile and 15–16px on desktop."
+      "dimension": "accessibility",
+      "evidence": "In the 390px full-page screenshot, planning-row descriptions, Local Context body text, and footer labels render noticeably smaller than the hero copy.",
+      "impact": "Important guidance becomes harder to scan and read on the viewport where users are most likely to need concise, legible information.",
+      "fix": "Raise all phone supporting copy to at least 13–14px and use a minimum 1.45 line-height."
     },
     {
       "priority": 2,
       "severity": "medium",
-      "dimension": "mobile",
-      "evidence": "The wordmark occupies one row and the two navigation links sit on a separate compact row with small visible targets.",
-      "impact": "The header uses more vertical space while still providing weaker tap usability than a single well-spaced row.",
-      "fix": "Use one mobile header row and apply at least 44px-high tap areas to both navigation links."
+      "dimension": "specificity",
+      "evidence": "Useful Directions, Useful Notes, and Local Context are generic phrases despite the otherwise bicycle-specific imagery and commuter framing.",
+      "impact": "The page can feel like a polished template rather than a uniquely useful Canyon Wheelworks guide.",
+      "fix": "Change one or two generic labels to policy-safe bicycle-specific language such as Ride Notes or Bicycle Context."
     },
     {
       "priority": 3,
       "severity": "minor",
-      "dimension": "polish",
-      "evidence": "The mobile service-wheel caption overlaps the lower-right portion of the illustration, while lines intrude into the hero diagram’s label region.",
-      "impact": "The signature illustrations feel slightly accidental rather than precisely drafted.",
-      "fix": "Reserve a caption strip below each drawing and stop illustration strokes before entering it."
+      "dimension": "layout",
+      "evidence": "On desktop, the dark Local Context section and the final Confirm Details section contain relatively little content within tall vertical fields.",
+      "impact": "The lower page loses some of the economical, direct rhythm established by the planning list.",
+      "fix": "Trim top and bottom padding in those two desktop sections by approximately 15–20%."
     },
     {
       "priority": 4,
       "severity": "minor",
-      "dimension": "specificity",
-      "evidence": "The approach section relies on broad claims including “dependable attention,” “without the fuss,” and “practical service.”",
-      "impact": "The visual identity is more distinctive than the business message, limiting differentiation from other neighborhood repair shops.",
-      "fix": "Replace one broad claim with confirmed commuter- and walk-in-specific language."
+      "dimension": "polish",
+      "evidence": "The thick white rings occupy much of the hero photograph at every viewport, with the lower ring heavily cropped on desktop and phone.",
+      "impact": "The motif competes with the tools and bicycle components rather than simply directing attention to them.",
+      "fix": "Reduce ring diameter or stroke weight by about 10% while preserving the three-ring composition."
     },
     {
       "priority": 5,
       "severity": "minor",
-      "dimension": "hierarchy",
-      "evidence": "On mobile, “Read the shop story” sits as a small isolated link between the full-width service button and hero illustration.",
-      "impact": "The relationship between the two hero actions is less clear than on desktop.",
-      "fix": "Stack both actions together with a consistent 12px gap before the illustration."
+      "dimension": "mobile",
+      "evidence": "The phone planning rows reserve a sizable left area for two-digit numbers, leaving narrow descriptions with frequent line breaks.",
+      "impact": "The list feels denser and slower to scan than necessary.",
+      "fix": "Reduce the number column width and transfer that space to the description column."
     }
   ],
+  "laws": {
+    "headlineDiscipline": {
+      "status": "pass",
+      "evidence": [
+        {
+          "viewport": "desktop",
+          "observation": "Primary editorial headings are Canyon Wheelworks, Useful Directions, Local Context, and Confirm Details; all non-business headings contain no more than two meaningful words."
+        },
+        {
+          "viewport": "tablet",
+          "observation": "The same concise headings retain clean, controlled wraps."
+        },
+        {
+          "viewport": "phone",
+          "observation": "Canyon Wheelworks uses the exact business-name exception, while all other primary headings remain at two words."
+        }
+      ],
+      "fix": "Preserve the concise two-word heading system."
+    },
+    "foldComposition": {
+      "status": "pass",
+      "evidence": [
+        {
+          "viewport": "desktop",
+          "observation": "The initial viewport presents location, business name, explanation, action, and workshop image as one complete hero thought."
+        },
+        {
+          "viewport": "tablet",
+          "observation": "The hero remains a balanced text-and-image unit, with the action visible and no detached content."
+        },
+        {
+          "viewport": "phone",
+          "observation": "The text block is complete before the photograph begins, and full-page evidence shows each lower section opening with its label, heading, and supporting beat together."
+        }
+      ],
+      "fix": "Preserve the current section-opening order and keep headings attached to their explanatory copy."
+    },
+    "completeLayouts": {
+      "status": "pass",
+      "evidence": [
+        {
+          "viewport": "desktop",
+          "observation": "All three numbered planning rows are populated, and every image/text composition is complete without phantom columns."
+        },
+        {
+          "viewport": "tablet",
+          "observation": "The planning list, dark context composition, and final confirmation section retain complete counts and alignment."
+        },
+        {
+          "viewport": "phone",
+          "observation": "All repeated rows stack consistently with numbers, titles, and descriptions; no empty slot or orphan card appears."
+        }
+      ],
+      "fix": "Preserve the three-row list and complete responsive stacking."
+    },
+    "firstBeatVisibility": {
+      "status": "pass",
+      "evidence": [
+        {
+          "viewport": "desktop",
+          "observation": "Mechanical evidence reports 4 of 4 section first beats visible in normal, reduced-motion, and JavaScript-disabled states."
+        },
+        {
+          "viewport": "tablet",
+          "observation": "Mechanical evidence reports 4 of 4 section first beats visible in all three rendering states."
+        },
+        {
+          "viewport": "phone",
+          "observation": "Mechanical evidence reports 4 of 4 section first beats visible in all three rendering states, and the screenshots show each lower section beginning with visible meaningful content."
+        }
+      ],
+      "fix": "Preserve immediate rendering of every section's first beat."
+    },
+    "imageContrast": {
+      "status": "pass",
+      "evidence": [
+        {
+          "viewport": "desktop",
+          "observation": "Hero and lower-section text sits on solid cream or charcoal fields rather than over the photographs; image-adjacent copy remains readable."
+        },
+        {
+          "viewport": "tablet",
+          "observation": "Text remains separated from all photographic crops, including the dark Local Context composition."
+        },
+        {
+          "viewport": "phone",
+          "observation": "Photographs stack independently below or beside solid-background text, so difficult workshop and sunset crops do not reduce text contrast."
+        }
+      ],
+      "fix": "Continue keeping informational text on solid color fields rather than over photography."
+    },
+    "motionRestraint": {
+      "status": "pass",
+      "evidence": [
+        {
+          "viewport": "desktop",
+          "observation": "Only one staged hero entrance is declared; the normal initial composition is readable, reduced motion disables it at 0.01ms, and the JavaScript-disabled target remains visible."
+        },
+        {
+          "viewport": "tablet",
+          "observation": "The single motion root passes normal, reduced-motion, and no-JavaScript contracts without delaying any first beat."
+        },
+        {
+          "viewport": "phone",
+          "observation": "The same single entrance remains restrained, with all content visible under normal, reduced-motion, and JavaScript-disabled observations."
+        }
+      ],
+      "fix": "Keep motion limited to the single nonessential hero entrance."
+    },
+    "imageryCoherence": {
+      "status": "pass",
+      "evidence": [
+        {
+          "viewport": "desktop",
+          "observation": "Workbench tools, bicycle wheel, repair environment, and desert route share warm amber grading and deliberate mechanical focal crops."
+        },
+        {
+          "viewport": "tablet",
+          "observation": "The same warm workshop and Tucson-route visual language remains consistent after responsive cropping."
+        },
+        {
+          "viewport": "phone",
+          "observation": "Stacked photographs retain matching color treatment, subject matter, and contemporary editorial framing."
+        }
+      ],
+      "fix": "Preserve the warm commissioned-shoot appearance and consistent crop treatment."
+    },
+    "factualRestraint": {
+      "status": "pass",
+      "evidence": [
+        {
+          "viewport": "desktop",
+          "observation": "Visible claims are limited to planning guidance, the confirmed commuter-repair clause, the confirmed walk-in clause, and explicit language that details are unconfirmed."
+        },
+        {
+          "viewport": "tablet",
+          "observation": "No unsupported prices, hours, address, transactional action, turnaround, or inferred repair service is presented."
+        },
+        {
+          "viewport": "phone",
+          "observation": "The full page repeats the same restrained guidance and directs visitors only to confirm details with the business."
+        },
+        {
+          "viewport": "source",
+          "observation": "Neighborhood bicycle repair for commuters and Walk in service is welcome appear verbatim in confirmedUserClauses; the claim policy otherwise requires guidance-only language."
+        }
+      ],
+      "fix": "Continue using confirmed clauses verbatim and avoid adding inferred services or transactional language."
+    }
+  },
   "revisionBrief": {
     "mustFix": [
-      "Increase the smallest body, navigation, caption, and footer text sizes.",
-      "Provide 44px mobile tap areas and tighten the two-row mobile header.",
-      "Remove caption and line collisions from both bicycle illustrations."
+      "Increase the smallest phone supporting text and footer text to a comfortably readable size.",
+      "Give phone planning descriptions more horizontal space by narrowing the number column.",
+      "Replace at least one generic planning label with concise, bicycle-specific guidance language.",
+      "Tighten the excessive vertical padding in the sparsest lower desktop sections."
     ],
     "preserve": [
-      "Warm cream, rust, and dark-ink palette.",
-      "Large editorial serif hierarchy and ruled workshop aesthetic.",
-      "Fully visible numbered service list and static mobile wheel treatment.",
-      "Service-first primary action and transparent handling of unavailable contact details.",
-      "Tucson commuter positioning and restrained bicycle-diagram motif."
+      "The warm cream, charcoal, rust, and amber palette.",
+      "The editorial serif and sans-serif hierarchy.",
+      "The responsive split-to-stack hero composition.",
+      "The coherent workshop and Tucson-route photography.",
+      "The complete three-item planning list without decorative card clutter.",
+      "The restrained, policy-safe copy and explicit unconfirmed-details disclosure."
     ]
   },
-  "cycle": 2,
+  "score": 86,
+  "lawCoverage": {
+    "headlineDiscipline": {
+      "requiredViewports": [],
+      "observedViewports": [
+        "desktop",
+        "tablet",
+        "phone"
+      ],
+      "missingViewports": [],
+      "complete": true
+    },
+    "foldComposition": {
+      "requiredViewports": [
+        "desktop",
+        "tablet",
+        "phone"
+      ],
+      "observedViewports": [
+        "desktop",
+        "tablet",
+        "phone"
+      ],
+      "missingViewports": [],
+      "complete": true
+    },
+    "completeLayouts": {
+      "requiredViewports": [],
+      "observedViewports": [
+        "desktop",
+        "tablet",
+        "phone"
+      ],
+      "missingViewports": [],
+      "complete": true
+    },
+    "firstBeatVisibility": {
+      "requiredViewports": [
+        "desktop",
+        "tablet",
+        "phone"
+      ],
+      "observedViewports": [
+        "desktop",
+        "tablet",
+        "phone"
+      ],
+      "missingViewports": [],
+      "complete": true
+    },
+    "imageContrast": {
+      "requiredViewports": [
+        "desktop",
+        "tablet",
+        "phone"
+      ],
+      "observedViewports": [
+        "desktop",
+        "tablet",
+        "phone"
+      ],
+      "missingViewports": [],
+      "complete": true
+    },
+    "motionRestraint": {
+      "requiredViewports": [],
+      "observedViewports": [
+        "desktop",
+        "tablet",
+        "phone"
+      ],
+      "missingViewports": [],
+      "complete": true
+    },
+    "imageryCoherence": {
+      "requiredViewports": [
+        "desktop",
+        "tablet",
+        "phone"
+      ],
+      "observedViewports": [
+        "desktop",
+        "tablet",
+        "phone"
+      ],
+      "missingViewports": [],
+      "complete": true
+    },
+    "factualRestraint": {
+      "requiredViewports": [],
+      "observedViewports": [
+        "desktop",
+        "tablet",
+        "phone"
+      ],
+      "missingViewports": [],
+      "complete": true
+    }
+  },
+  "lawGatePassed": true,
+  "lawGateFailures": [],
+  "mechanicalPassed": true,
+  "assetsResolved": true,
   "mode": "vision",
-  "createdAt": "2026-07-18T00:15:25.890Z",
-  "mechanicalPassed": true
+  "hasMajorIssue": false,
+  "hardGateFailures": [],
+  "shipEligible": true,
+  "verdict": "ship",
+  "evidencePacketSha256": "01a3d12edb8f8ca87aace509c751fef0379a0b939474dcf0055fedf082a4422f",
+  "cycle": 2,
+  "createdAt": "2026-07-19T21:08:22.760Z"
 }

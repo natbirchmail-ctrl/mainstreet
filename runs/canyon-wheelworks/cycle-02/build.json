@@ -1,12 +1,54 @@
 {
   "cycle": 2,
   "fromCycle": 1,
-  "createdAt": "2026-07-18T00:14:34.997Z",
+  "createdAt": "2026-07-19T21:07:11.745Z",
   "source": "openai-revision",
   "fallbackReason": null,
   "designNotes": {
-    "aesthetic": "A sun faded workshop broadsheet using warm paper, dark mechanical linework, rust accents, and spare Tucson terrain geometry. Large editorial serif headings remain the visual anchor while practical copy now has enough size and contrast to carry equal importance.",
-    "signatureMove": "The service section pairs a sticky illustrated wheel with the complete numbered repair list. The wheel turns with page progress on precise pointer devices and remains still on touch screens and when reduced motion is requested.",
-    "rationale": "The revision preserves the distinctive desert workshop identity while raising navigation, labels, service descriptions, visit copy, and footer text to readable sizes. Mobile hero spacing is tighter, the rust panel is darker for stronger contrast, and the approach section now gives a direct recap of confirmed services instead of repeating broad values. Missing visit and contact details are handled with one concise honest line."
+    "aesthetic": "A warm workshop editorial composition using cream, charcoal, rust, strong serif typography, mechanical circles, fine rules, and one complete numbered guidance list.",
+    "signatureMove": "A static spoke mark anchors the guidance image while the restrained staged entrance remains limited to the hero copy.",
+    "rationale": "The revision removes narrow viewport overflow, strengthens supporting type, compacts the ending, groups each section opening as one first thought, replaces the unrelated street image, and limits factual language to neutral guidance and the two confirmed clauses.",
+    "shootDirection": "Use warm natural morning light, tactile workshop and desert materials, restrained saturation, close editorial framing, one consistent normal lens character, and no identifiable people or business evidence.",
+    "motionMoves": [
+      "staged hero entrance"
+    ]
+  },
+  "imagePlan": [
+    {
+      "filename": "workbench-hero.png",
+      "role": "hero",
+      "alt": "Contemporary still life inspired by bicycle repair shop",
+      "prompt": "Contemporary editorial still life inspired by Bicycle repair shop with natural materials calm light no logos no signage and no business specific details",
+      "focalPoint": {
+        "x": 0.56,
+        "y": 0.44
+      }
+    },
+    {
+      "filename": "offerings-detail.png",
+      "role": "offerings",
+      "alt": "Materials and colors arranged as a planning reference",
+      "prompt": "Close editorial detail of materials and colors inspired by Bicycle repair shop with no logos no signage and no claimed business activity",
+      "focalPoint": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    {
+      "filename": "tucson-route-detail.png",
+      "role": "story",
+      "alt": "Warm desert commuter route detail in morning light",
+      "prompt": "Contemporary editorial photograph of a quiet Tucson desert commuter route detail in warm natural morning light with tactile pavement sun faded walls native desert plants and a subtle bicycle wheel crop no people no logos no signage no identifiable address and no business specific activity using the same warm restrained color grade and lens character as the workshop still life",
+      "focalPoint": {
+        "x": 0.42,
+        "y": 0.52
+      }
+    }
+  ],
+  "assetSummary": {
+    "allResolved": true,
+    "requestCount": 3,
+    "successCount": 3,
+    "fallbackCount": 0
   }
 }

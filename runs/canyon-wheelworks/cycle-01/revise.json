@@ -2,26 +2,36 @@
   "schemaVersion": "1.0",
   "fromCycle": 1,
   "toCycle": 2,
-  "createdAt": "2026-07-18T00:14:34.996Z",
+  "createdAt": "2026-07-19T21:06:01.089Z",
   "targetScore": 85,
   "mustKeep": [
     "Confirmed business facts and explicit unknowns",
     "Single page semantic structure",
-    "No JavaScript or external assets",
+    "Owned local assets and owned motion with visible source without JavaScript",
     "No emoji or visible dash characters",
     "Every current accessibility safeguard"
   ],
   "mustFix": [
-    "Increase all undersized mobile navigation, body, service-description, visit, and footer text to a readable minimum of 14px.",
-    "Increase small desktop supporting copy modestly so practical service information does not disappear beneath the display typography.",
-    "Tighten the gap before the mobile hero illustration."
+    "Remove the narrow-screen horizontal overflow and verify the complete phone page at 390px and below.",
+    "Replace the unsupported “Built for the neighborhood” footer claim with confirmed or neutral wording.",
+    "Recompose Local Context so its emblem, label, heading, and introduction open as one unit, especially on phone.",
+    "Replace the generic residential street with a Tucson-relevant image that matches the warm workshop shoot.",
+    "Increase phone supporting-copy and footer type sizes.",
+    "Reduce the excessive empty height in the Confirm Details section."
   ],
   "preserve": [
-    "The warm paper, dark ink, and rust Tucson palette.",
-    "The oversized editorial serif headlines and restrained uppercase labels.",
-    "The bicycle-wheel service illustration and visible numbered service list.",
-    "The honest handling of unavailable address, hours, phone, and email details.",
-    "The strong full-width mobile service button and uncluttered section dividers."
+    "The split workshop hero and its strong bicycle-wheel crop.",
+    "The concise two-word editorial heading system.",
+    "The cream, charcoal, and warm mechanical palette.",
+    "The complete numbered guidance list rather than decorative cards.",
+    "The restrained single hero motion and reliable reduced-motion/no-JavaScript fallbacks.",
+    "The candid disclaimer that service and availability details are not confirmed."
   ],
-  "mechanicalFailures": []
+  "mechanicalFailures": [
+    {
+      "code": "horizontal-overflow",
+      "viewport": "narrow",
+      "mode": "normal"
+    }
+  ]
 }
