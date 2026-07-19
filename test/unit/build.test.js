@@ -451,15 +451,45 @@ test("buildSite rejects hidden motion content descendants at every viewport", as
   }
 });
 
+test("buildSite rejects offscreen or zero-bound motion content descendants at every viewport", async (t) => {
+  const attacks = [
+    [
+      "desktop headline descendant horizontally offscreen",
+      '@media (min-width: 1200px) { [class="motion-copy"] h1 { position: absolute !important; left: -9999px !important; } }',
+    ],
+    [
+      "tablet headline descendant with zero bounds",
+      '@media (min-width: 600px) and (max-width: 900px) { [class="motion-copy"] h1 { inline-size: 0 !important; block-size: 0 !important; overflow: hidden !important; } }',
+    ],
+    [
+      "phone headline descendant above the canvas",
+      '@media (max-width: 500px) { [class="motion-copy"] h1 { position: absolute !important; top: -9999px !important; } }',
+    ],
+  ];
+  for (const [name, attack] of attacks) {
+    await t.test(name, async () => {
+      const candidate = modelManifest();
+      candidate.indexHtml = candidate.indexHtml.replace(
+        "<div data-first-beat data-motion-target>",
+        '<div class="motion-copy" data-first-beat data-motion-target>',
+      );
+      candidate.stylesCss += `\n${attack}`;
+      const result = await buildSite({ brief: brief(), structuredRequester: async () => candidate });
+      assert.equal(result.source, "deterministic-fallback");
+      assert.equal(result.stylesCss.includes(attack), false);
+    });
+  }
+});
+
 test("buildSite accepts visible responsive CSS through the rendered no JavaScript gate", async () => {
   const candidate = modelManifest();
   candidate.indexHtml = candidate.indexHtml
     .replace("<div data-first-beat data-motion-target>", '<div class="motion-copy" data-first-beat data-motion-target>')
     .replace('<section id="hero"', '<section class="hero-shell" id="hero"');
   candidate.stylesCss += `
-@media (min-width: 1200px) { [class="motion-copy"] { color: #252820; } }
-@media (min-width: 600px) and (max-width: 900px) { [data-section] { font-size: 1rem; padding: 2rem; } }
-@media (max-width: 500px) { :first-child { position: relative; left: 0; } }`;
+@media (min-width: 1200px) { [class="motion-copy"] { color: #252820; } [class="motion-copy"] h1 { position: relative; left: 0; } }
+@media (min-width: 600px) and (max-width: 900px) { [data-section] { font-size: 1rem; padding: 2rem; } [class="motion-copy"] h1 { inline-size: auto; block-size: auto; } }
+@media (max-width: 500px) { :first-child { position: relative; left: 0; } [class="motion-copy"] h1 { position: relative; top: 0; } }`;
   const result = await buildSite({ brief: brief(), structuredRequester: async () => candidate });
   assert.equal(result.source, "openai");
 });

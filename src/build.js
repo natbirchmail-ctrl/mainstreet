@@ -264,11 +264,13 @@ export async function validateRenderedSourceVisibility(manifest) {
           const protectedElements = new Map();
           for (const hook of hooks) {
             for (const descendant of hook.querySelectorAll("*")) {
-              protectedElements.set(descendant, protectedElements.get(descendant) ?? { isHook: false });
+              const state = protectedElements.get(descendant) ?? { isHook: false, isContent: false };
+              state.isContent = true;
+              protectedElements.set(descendant, state);
             }
             let current = hook;
             while (current) {
-              const state = protectedElements.get(current) ?? { isHook: false };
+              const state = protectedElements.get(current) ?? { isHook: false, isContent: false };
               if (current === hook) state.isHook = true;
               protectedElements.set(current, state);
               current = current.parentElement;
@@ -297,7 +299,7 @@ export async function validateRenderedSourceVisibility(manifest) {
             if (Number.parseFloat(style.fontSize) <= 0.01) reasons.push("zero font size");
             if (isTransparent(style.color)) reasons.push("transparent text color");
 
-            if (state.isHook && style.display !== "contents") {
+            if ((state.isHook || state.isContent) && style.display !== "contents") {
               const bounds = element.getBoundingClientRect();
               if (bounds.width <= 0 || bounds.height <= 0) reasons.push("zero rendered bounds");
               if (bounds.right <= 0 || bounds.left >= currentViewport.width) reasons.push("horizontally offscreen");
