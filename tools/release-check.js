@@ -5,6 +5,17 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { isDeepStrictEqual } from "node:util";
 
+import { inspectPngBuffer } from "../src/lib/png.js";
+import {
+  MAX_CRITIC_DECODED_IMAGE_BYTES,
+  MAX_CRITIC_FULL_PAGE_HEIGHT,
+  MAX_CRITIC_IMAGE_BYTES,
+  MAX_CRITIC_RENDERED_WIDTH,
+  assertCriticEvidenceLimits,
+  createRenderedEvidencePacketSha256,
+  isEvidencePacketSha256,
+} from "../src/lib/rendered-evidence.js";
+
 const DEFAULT_EXPECTED_SLUGS = Object.freeze([
   "harborlight-flower-studio",
   "juniper-oven",
@@ -490,6 +501,7 @@ function cycleSummaryMatches(summary, artifacts) {
     summary.cycle === artifacts.cycle &&
     summary.score === critique.score &&
     summary.mode === critique.mode &&
+    summary.evidencePacketSha256 === critique.evidencePacketSha256 &&
     summary.verdict === critique.verdict &&
     summary.mechanicalPassed === mechanical.passed &&
     summary.mechanicalPassed === critique.mechanicalPassed &&
@@ -600,7 +612,10 @@ async function validateCycle({
       critique.cycle !== cycle ||
       !Number.isFinite(critique.score) ||
       typeof critique.mode !== "string" ||
-      typeof critique.shipEligible !== "boolean"
+      typeof critique.shipEligible !== "boolean" ||
+      (critique.mode === "vision"
+        ? !isEvidencePacketSha256(critique.evidencePacketSha256)
+        : critique.evidencePacketSha256 !== null)
     ) {
       findings.add("ARTIFACT_INVALID", critiquePath);
     }
@@ -615,7 +630,7 @@ async function validateCycle({
     currentPaths,
     currentBuffers,
   });
-  validateScreenshots({
+  const screenshotValidation = validateScreenshots({
     findings,
     cycle,
     cycleRoot,
@@ -624,7 +639,7 @@ async function validateCycle({
     currentPaths,
     currentBuffers,
   });
-  validateCriticScreenshots({
+  const criticScreenshotValidation = validateCriticScreenshots({
     findings,
     cycle,
     cycleRoot,
@@ -633,6 +648,32 @@ async function validateCycle({
     currentPaths,
     currentBuffers,
   });
+  try {
+    assertCriticEvidenceLimits({
+      canonical: screenshotValidation.metadata,
+      fullPage: criticScreenshotValidation.metadata,
+    });
+    const evidencePacketSha256 = createRenderedEvidencePacketSha256({
+      canonicalManifestBytes: currentBuffers.get(screenshotManifestPath),
+      canonicalBuffers: screenshotBuffers(currentBuffers, cycleRoot, SCREENSHOTS),
+      criticManifestBytes: currentBuffers.get(criticManifestPath),
+      fullPageBuffers: screenshotBuffers(
+        currentBuffers,
+        cycleRoot,
+        CRITIC_FULL_PAGE_SCREENSHOTS,
+      ),
+      mechanical,
+    });
+    if (
+      critique?.mode === "vision" &&
+      critique.evidencePacketSha256 !== evidencePacketSha256
+    ) {
+      findings.add("ARTIFACT_INVALID", critiquePath);
+    }
+  } catch {
+    findings.add("ARTIFACT_INVALID", criticManifestPath);
+    if (critique?.mode === "vision") findings.add("ARTIFACT_INVALID", critiquePath);
+  }
 
   const critiqueAnalysis = analyzeCritique({ critique, mechanical, assets });
   if (isPlainObject(critique) && !critiqueAnalysis.valid) {
@@ -795,8 +836,10 @@ function validateScreenshots({
   currentPaths,
   currentBuffers,
 }) {
-  if (!isPlainObject(manifest)) return;
+  const metadata = {};
+  if (!isPlainObject(manifest)) return { valid: false, metadata };
   let invalid = manifest.cycle !== cycle || !isPlainObject(manifest.viewports);
+  let filesValid = true;
   for (const [viewport, expectedPath] of Object.entries(SCREENSHOTS)) {
     const entry = manifest.viewports?.[viewport];
     const expectedDimensions = VIEWPORT_DIMENSIONS[viewport];
@@ -810,18 +853,29 @@ function validateScreenshots({
     }
     const relativePath = `${cycleRoot}/${expectedPath}`;
     const value = currentBuffers.get(relativePath);
-    const pngDimensions = readPngDimensions(value);
+    let image = null;
+    try {
+      image = inspectPngBuffer(value, {
+        expectedWidth: expectedDimensions.width,
+        expectedHeight: expectedDimensions.height,
+        maxBytes: MAX_CRITIC_IMAGE_BYTES,
+        maxWidth: expectedDimensions.width,
+        maxHeight: expectedDimensions.height,
+        maxDecodedBytes: MAX_CRITIC_DECODED_IMAGE_BYTES,
+      });
+      metadata[viewport] = image;
+    } catch {
+      filesValid = false;
+    }
     if (!currentPaths.has(relativePath)) {
       findings.add("ARTIFACT_MISSING", relativePath);
-    } else if (
-      !pngDimensions ||
-      pngDimensions.width !== expectedDimensions.width ||
-      pngDimensions.height !== expectedDimensions.height
-    ) {
+      filesValid = false;
+    } else if (!image) {
       findings.add("ARTIFACT_INVALID", relativePath);
     }
   }
   if (invalid) findings.add("ARTIFACT_INVALID", manifestPath);
+  return { valid: !invalid && filesValid, metadata };
 }
 
 function validateCriticScreenshots({
@@ -833,7 +887,8 @@ function validateCriticScreenshots({
   currentPaths,
   currentBuffers,
 }) {
-  if (!isPlainObject(manifest)) return;
+  const metadata = {};
+  if (!isPlainObject(manifest)) return { valid: false, metadata };
   let invalid =
     !sameStringArray(
       Object.keys(manifest).sort(),
@@ -882,14 +937,25 @@ function validateCriticScreenshots({
     }
     const relativePath = `${cycleRoot}/${expectedPath}`;
     const value = currentBuffers.get(relativePath);
-    const pngDimensions = readPngDimensions(value);
+    let image = null;
+    try {
+      image = inspectPngBuffer(value, {
+        maxBytes: MAX_CRITIC_IMAGE_BYTES,
+        maxWidth: MAX_CRITIC_RENDERED_WIDTH,
+        maxHeight: MAX_CRITIC_FULL_PAGE_HEIGHT,
+        maxDecodedBytes: MAX_CRITIC_DECODED_IMAGE_BYTES,
+      });
+      metadata[viewport] = image;
+    } catch {
+      invalid = true;
+    }
     if (!currentPaths.has(relativePath)) {
       findings.add("ARTIFACT_MISSING", relativePath);
     } else if (
       !value ||
-      !pngDimensions ||
-      pngDimensions.width !== record?.renderedWidth ||
-      pngDimensions.height !== record?.height ||
+      !image ||
+      image.width !== record?.renderedWidth ||
+      image.height !== record?.height ||
       value.length !== record?.bytes ||
       sha256(value) !== record?.sha256
     ) {
@@ -898,6 +964,7 @@ function validateCriticScreenshots({
     }
   }
   if (invalid) findings.add("ARTIFACT_INVALID", manifestPath);
+  return { valid: !invalid, metadata };
 }
 
 function analyzeCritique({ critique, mechanical, assets }) {
@@ -1811,28 +1878,13 @@ function hasPngSignature(value) {
   );
 }
 
-function readPngDimensions(value) {
-  if (
-    !hasPngSignature(value) ||
-    value.length < 45 ||
-    value.readUInt32BE(8) !== 13 ||
-    value.subarray(12, 16).toString("ascii") !== "IHDR"
-  ) {
-    return null;
-  }
-  const width = value.readUInt32BE(16);
-  const height = value.readUInt32BE(20);
-  const end = value.length - 12;
-  if (
-    width <= 0 ||
-    height <= 0 ||
-    end <= 24 ||
-    value.readUInt32BE(end) !== 0 ||
-    value.subarray(end + 4, end + 8).toString("ascii") !== "IEND"
-  ) {
-    return null;
-  }
-  return { width, height };
+function screenshotBuffers(currentBuffers, cycleRoot, paths) {
+  return Object.fromEntries(
+    Object.entries(paths).map(([viewport, relativePath]) => [
+      viewport,
+      currentBuffers.get(`${cycleRoot}/${relativePath}`),
+    ]),
+  );
 }
 
 function canonicalCaptureSha256(currentBuffers, cycleRoot) {

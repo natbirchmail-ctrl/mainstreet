@@ -19,6 +19,7 @@ import {
 import { EVIDENCE_VIEWPORTS as CANONICAL_VIEWPORTS } from "../../src/viewports.js";
 
 const COMPLETE_VIEWPORTS = ["desktop", "tablet", "phone"];
+const EVIDENCE_PACKET_SHA256 = "d".repeat(64);
 
 function rawCritique({ issues = [], laws = {} } = {}) {
   return {
@@ -76,7 +77,9 @@ test("critiqueCycle sends labeled initial and full page evidence plus bounded me
     brief: { business: { name: "Juniper Oven", category: "Bakery" } },
     cycleDir,
     mechanical,
+    expectedEvidencePacketSha256: EVIDENCE_PACKET_SHA256,
     visualEvidenceReader: async () => ({
+      evidencePacketSha256: EVIDENCE_PACKET_SHA256,
       viewports: Object.fromEntries(
         COMPLETE_VIEWPORTS.map((name) => [
           name,
@@ -144,6 +147,7 @@ test("critiqueCycle sends labeled initial and full page evidence plus bounded me
   );
   const packet = JSON.parse(request.inputContent[0].text);
   assert.equal(packet.visibleText, "Fresh from the oven");
+  assert.equal(packet.evidencePacketSha256, EVIDENCE_PACKET_SHA256);
   assert.equal(packet.brief.business.name, "Juniper Oven");
   assert.deepEqual(
     packet.viewports,
@@ -185,6 +189,7 @@ test("runCriticCycle derives an uncapped vision outcome from explicit gates", as
     captureCycleFn: async () => ({
       mechanical,
       assetsResolved: true,
+      evidencePacketSha256: EVIDENCE_PACKET_SHA256,
     }),
     critiqueCycleFn: async (input) => {
       receivedMechanical = input.mechanical;
@@ -198,11 +203,13 @@ test("runCriticCycle derives an uncapped vision outcome from explicit gates", as
   assert.equal(result.assetsResolved, true);
   assert.equal(result.shipEligible, true);
   assert.equal(result.verdict, "ship");
+  assert.equal(result.evidencePacketSha256, EVIDENCE_PACKET_SHA256);
   assert.equal(receivedMechanical, mechanical);
   assert.equal("visionScore" in result, false);
   const saved = JSON.parse(await readFile(path.join(cycleDir, "critique.json"), "utf8"));
   assert.equal(saved.createdAt, "2026-07-17T14:00:00.000Z");
   assert.equal(saved.mechanicalPassed, true);
+  assert.equal(saved.evidencePacketSha256, EVIDENCE_PACKET_SHA256);
 });
 
 test("runCriticCycle uses source review when screenshot capture fails", async () => {
@@ -231,6 +238,7 @@ test("runCriticCycle uses source review when screenshot capture fails", async ()
   assert.equal(result.assetsResolved, null);
   assert.equal(result.shipEligible, false);
   assert.equal(result.verdict, "revise");
+  assert.equal(result.evidencePacketSha256, null);
   for (const name of VISUAL_LAWS) {
     assert.equal(result.laws[name].status, "unverified");
   }
@@ -298,6 +306,7 @@ test("a later vision failure propagates without poisoning reusable capture state
       captureCycleFn: async () => ({
         mechanical: { passed: true, failures: [] },
         assetsResolved: true,
+        evidencePacketSha256: EVIDENCE_PACKET_SHA256,
       }),
       critiqueCycleFn: async () => {
         throw visionError;

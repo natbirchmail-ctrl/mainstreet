@@ -290,6 +290,7 @@ function critiqueArtifact(overrides = {}) {
     visionScore: null,
     verdict: "revise",
     mode: "vision",
+    evidencePacketSha256: "e".repeat(64),
     mechanicalPassed: true,
     assetsResolved: true,
     lawGatePassed: true,

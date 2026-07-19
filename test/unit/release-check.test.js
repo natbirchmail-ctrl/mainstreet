@@ -19,6 +19,7 @@ import {
   checkRelease,
   formatFindings,
 } from "../../tools/release-check.js";
+import { createRenderedEvidencePacketSha256 } from "../../src/lib/rendered-evidence.js";
 
 const execFileAsync = promisify(execFile);
 const projectRoot = fileURLToPath(new URL("../..", import.meta.url));
@@ -591,6 +592,95 @@ test("missing and invalid cycle evidence report artifact rules", async (t) => {
       "runs/example-run/cycle-01/screenshots/critic/manifest.json",
     );
   });
+
+  await t.test("critique remains bound when full page evidence is regenerated consistently", async () => {
+    const fixture = await makeFixture();
+    const screenshotPath =
+      "runs/example-run/cycle-01/screenshots/critic/desktop-full-page.png";
+    const manifestPath =
+      "runs/example-run/cycle-01/screenshots/critic/manifest.json";
+    const bytes = solidPng(1440, 3600, 41);
+    await writeOwnedFile(fixture.root, screenshotPath, bytes);
+    await rewriteJson(fixture.root, manifestPath, (manifest) => {
+      manifest.viewports.desktop.bytes = bytes.length;
+      manifest.viewports.desktop.sha256 = digest(bytes);
+    });
+
+    const result = await checkRelease({
+      repoRoot: fixture.root,
+      expectedSlugs: fixture.expectedSlugs,
+    });
+    assertFinding(
+      result,
+      "ARTIFACT_INVALID",
+      "runs/example-run/cycle-01/critique.json",
+    );
+  });
+
+  await t.test("critique remains bound when canonical evidence and its critic binding change", async () => {
+    const fixture = await makeFixture();
+    const cycleRoot = "runs/example-run/cycle-01";
+    await writeOwnedFile(
+      fixture.root,
+      `${cycleRoot}/screenshots/desktop-home.png`,
+      solidPng(1440, 900, 42),
+    );
+    const binding = await canonicalCaptureDigest(fixture.root, cycleRoot);
+    await rewriteJson(
+      fixture.root,
+      `${cycleRoot}/screenshots/critic/manifest.json`,
+      (manifest) => {
+        manifest.canonicalCaptureSha256 = binding;
+      },
+    );
+
+    const result = await checkRelease({
+      repoRoot: fixture.root,
+      expectedSlugs: fixture.expectedSlugs,
+    });
+    assertFinding(result, "ARTIFACT_INVALID", `${cycleRoot}/critique.json`);
+  });
+
+  await t.test("critique remains bound to the bounded rendered mechanics", async () => {
+    const fixture = await makeFixture();
+    const cycleRoot = "runs/example-run/cycle-01";
+    await rewriteJson(fixture.root, `${cycleRoot}/mechanical.json`, (mechanical) => {
+      mechanical.contexts.desktop.normal.firstBeats.sectionCount = 1;
+    });
+
+    const result = await checkRelease({
+      repoRoot: fixture.root,
+      expectedSlugs: fixture.expectedSlugs,
+    });
+    assertFinding(result, "ARTIFACT_INVALID", `${cycleRoot}/critique.json`);
+  });
+
+  for (const [name, mutate] of [
+    ["CRC corruption", corruptPngCrc],
+    ["missing IDAT", removePngIdat],
+    ["corrupt compressed data", corruptPngCompressedData],
+  ]) {
+    await t.test(`critic screenshot rejects ${name} with updated bytes and digest`, async () => {
+      const fixture = await makeFixture();
+      const screenshotPath =
+        "runs/example-run/cycle-01/screenshots/critic/desktop-full-page.png";
+      const manifestPath =
+        "runs/example-run/cycle-01/screenshots/critic/manifest.json";
+      const fullPath = path.join(fixture.root, ...screenshotPath.split("/"));
+      const bytes = mutate(await readFile(fullPath));
+      await writeOwnedFile(fixture.root, screenshotPath, bytes);
+      await rewriteJson(fixture.root, manifestPath, (manifest) => {
+        manifest.viewports.desktop.bytes = bytes.length;
+        manifest.viewports.desktop.sha256 = digest(bytes);
+      });
+
+      const result = await checkRelease({
+        repoRoot: fixture.root,
+        expectedSlugs: fixture.expectedSlugs,
+      });
+      assertFinding(result, "ARTIFACT_INVALID", screenshotPath);
+    });
+  }
 });
 
 test("cycle directories and run report references must agree", async () => {
@@ -1033,6 +1123,17 @@ test("mechanical fallback selection does not require resolved assets", async () 
       critique.verdict = "revise";
     },
   );
+  const cycleTwoEvidencePacketSha256 = await fixtureEvidencePacketSha256(
+    fixture.root,
+    "runs/example-run/cycle-02",
+  );
+  await rewriteJson(
+    fixture.root,
+    "runs/example-run/cycle-02/critique.json",
+    (critique) => {
+      critique.evidencePacketSha256 = cycleTwoEvidencePacketSha256;
+    },
+  );
   await mirrorCritiqueSummary(fixture.root, "example-run", 2);
 
   await rewriteJson(
@@ -1455,6 +1556,7 @@ async function writeCompleteRun(
     cycle,
     createdAt: "2026-07-18T00:00:00.000Z",
   };
+  const mechanical = releaseMechanicalEvidence(cycle);
 
   await writeJson(root, `runs/${slug}/brief.json`, {
     schemaVersion: "1.0",
@@ -1560,22 +1662,8 @@ async function writeCompleteRun(
     canonicalCaptureSha256: await canonicalCaptureDigest(root, cycleRoot),
     viewports: criticViewports,
   });
-  await writeJson(root, `${cycleRoot}/mechanical.json`, {
-    schemaVersion: "2.0",
-    cycle,
-    passed: true,
-    assetsResolved: true,
-    assetManifestPresent: true,
-    motionMoveSlugs: ["staged-hero-entrance"],
-    contexts: {},
-    failures: [],
-    totals: {
-      externalRequestCount: 0,
-      requestFailureCount: 0,
-      consoleErrorCount: 0,
-      pageErrorCount: 0,
-    },
-  });
+  await writeJson(root, `${cycleRoot}/mechanical.json`, mechanical);
+  critique.evidencePacketSha256 = await fixtureEvidencePacketSha256(root, cycleRoot);
   await writeJson(root, `${cycleRoot}/critique.json`, critique);
   await writeOwnedFile(root, `${cycleRoot}/visible-text.txt`, "Example business\n");
 
@@ -1630,6 +1718,7 @@ async function writeCompleteRun(
         visionScore: null,
         verdict: critique.verdict,
         mode: critique.mode,
+        evidencePacketSha256: critique.evidencePacketSha256,
         mechanicalPassed: critique.mechanicalPassed,
         assetsResolved: critique.assetsResolved,
         lawGatePassed: critique.lawGatePassed,
@@ -1691,6 +1780,13 @@ async function addSecondCycle(root, slug, { includeRevise = true } = {}) {
   await rewriteJson(root, `${secondCycle}/critique.json`, (critique) => {
     critique.cycle = 2;
   });
+  const secondEvidencePacketSha256 = await fixtureEvidencePacketSha256(
+    root,
+    secondCycle,
+  );
+  await rewriteJson(root, `${secondCycle}/critique.json`, (critique) => {
+    critique.evidencePacketSha256 = secondEvidencePacketSha256;
+  });
   if (includeRevise) {
     await writeJson(root, `${firstCycle}/revise.json`, {
       schemaVersion: "1.0",
@@ -1707,6 +1803,7 @@ async function addSecondCycle(root, slug, { includeRevise = true } = {}) {
   await rewriteJson(root, `${runRoot}/run-report.json`, (report) => {
     const second = structuredClone(report.cycles[0]);
     second.cycle = 2;
+    second.evidencePacketSha256 = secondEvidencePacketSha256;
     report.cycles.push(second);
     report.selectedCycle = 2;
     report.delivery.selectedCycle = 2;
@@ -1735,6 +1832,7 @@ async function mirrorCritiqueSummary(root, slug, cycle = 1) {
       "score",
       "verdict",
       "mode",
+      "evidencePacketSha256",
       "mechanicalPassed",
       "assetsResolved",
       "lawGatePassed",
@@ -1927,7 +2025,7 @@ function solidPng(width, height, marker = 0) {
   const cached = solidPngCache.get(key);
   if (cached) return cached;
 
-  const rowLength = width + 1;
+  const rowLength = width * 3 + 1;
   const pixels = Buffer.alloc(rowLength * height);
   for (let row = 0; row < height; row += 1) {
     const offset = row * rowLength;
@@ -1938,7 +2036,7 @@ function solidPng(width, height, marker = 0) {
   ihdr.writeUInt32BE(width, 0);
   ihdr.writeUInt32BE(height, 4);
   ihdr[8] = 8;
-  ihdr[9] = 0;
+  ihdr[9] = 2;
   ihdr[10] = 0;
   ihdr[11] = 0;
   ihdr[12] = 0;
@@ -1959,6 +2057,50 @@ function pngChunk(type, data) {
   const checksum = Buffer.alloc(4);
   checksum.writeUInt32BE(crc32(Buffer.concat([name, data])), 0);
   return Buffer.concat([length, name, data, checksum]);
+}
+
+function pngChunks(value) {
+  const chunks = [];
+  let offset = pngSignature.length;
+  while (offset < value.length) {
+    const length = value.readUInt32BE(offset);
+    const end = offset + 12 + length;
+    chunks.push({
+      type: value.subarray(offset + 4, offset + 8).toString("ascii"),
+      start: offset,
+      end,
+      data: value.subarray(offset + 8, offset + 8 + length),
+    });
+    offset = end;
+  }
+  return chunks;
+}
+
+function corruptPngCrc(value) {
+  const result = Buffer.from(value);
+  const ihdr = pngChunks(result).find((chunk) => chunk.type === "IHDR");
+  result[ihdr.end - 1] ^= 1;
+  return result;
+}
+
+function removePngIdat(value) {
+  return Buffer.concat([
+    pngSignature,
+    ...pngChunks(value)
+      .filter((chunk) => chunk.type !== "IDAT")
+      .map((chunk) => value.subarray(chunk.start, chunk.end)),
+  ]);
+}
+
+function corruptPngCompressedData(value) {
+  return Buffer.concat([
+    pngSignature,
+    ...pngChunks(value).map((chunk) =>
+      chunk.type === "IDAT"
+        ? pngChunk("IDAT", Buffer.from([0, 1, 2, 3]))
+        : value.subarray(chunk.start, chunk.end),
+    ),
+  ]);
 }
 
 function crc32(value) {
@@ -1995,6 +2137,76 @@ async function canonicalCaptureDigest(root, cycleRoot) {
 
 function digest(value) {
   return createHash("sha256").update(value).digest("hex");
+}
+
+function releaseMechanicalEvidence(cycle) {
+  const context = {
+    firstBeats: {},
+    touchTargets: {},
+    controls: {},
+    motion: {},
+  };
+  return {
+    schemaVersion: "2.0",
+    cycle,
+    passed: true,
+    assetsResolved: true,
+    assetManifestPresent: true,
+    motionMoveSlugs: ["staged-hero-entrance"],
+    contexts: Object.fromEntries(
+      evidenceViewports.map((viewport) => [
+        viewport,
+        {
+          normal: structuredClone(context),
+          reducedMotion: structuredClone(context),
+          javascriptDisabled: structuredClone(context),
+        },
+      ]),
+    ),
+    failures: [],
+    totals: {
+      externalRequestCount: 0,
+      requestFailureCount: 0,
+      consoleErrorCount: 0,
+      pageErrorCount: 0,
+    },
+  };
+}
+
+async function fixtureEvidencePacketSha256(root, cycleRoot) {
+  const read = (relativePath) =>
+    readFile(path.join(root, ...`${cycleRoot}/${relativePath}`.split("/")));
+  const [canonicalManifestBytes, criticManifestBytes, mechanicalBytes] =
+    await Promise.all([
+      read("screenshots/manifest.json"),
+      read("screenshots/critic/manifest.json"),
+      read("mechanical.json"),
+    ]);
+  const canonicalBuffers = Object.fromEntries(
+    await Promise.all(
+      Object.entries({
+        desktop: "screenshots/desktop-home.png",
+        tablet: "screenshots/tablet-home.png",
+        phone: "screenshots/mobile-home.png",
+      }).map(async ([viewport, relativePath]) => [viewport, await read(relativePath)]),
+    ),
+  );
+  const fullPageBuffers = Object.fromEntries(
+    await Promise.all(
+      Object.entries({
+        desktop: "screenshots/critic/desktop-full-page.png",
+        tablet: "screenshots/critic/tablet-full-page.png",
+        phone: "screenshots/critic/mobile-full-page.png",
+      }).map(async ([viewport, relativePath]) => [viewport, await read(relativePath)]),
+    ),
+  );
+  return createRenderedEvidencePacketSha256({
+    canonicalManifestBytes,
+    canonicalBuffers,
+    criticManifestBytes,
+    fullPageBuffers,
+    mechanical: JSON.parse(mechanicalBytes.toString("utf8")),
+  });
 }
 
 function aggregateDigest(files) {

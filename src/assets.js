@@ -1,13 +1,15 @@
 import { createHash } from "node:crypto";
 import { lstat, mkdir, open, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { deflateSync, inflateSync } from "node:zlib";
+import { deflateSync } from "node:zlib";
 
 import { requestImage as requestOpenAIImage } from "./lib/openai.js";
+import { validatePngBuffer } from "./lib/png.js";
 import { resolveInside } from "./lib/runs.js";
 
+export { PngValidationError, validatePngBuffer } from "./lib/png.js";
+
 export const MAX_IMAGE_REQUESTS_PER_CYCLE = 5;
-const MAX_PNG_BYTES = 16 * 1024 * 1024;
 const MAX_PNG_DIMENSION = 4096;
 const PNG_SIGNATURE = Buffer.from("89504e470d0a1a0a", "hex");
 const SAFE_FILENAME = /^[a-z0-9]+(?:-[a-z0-9]+)*\.png$/;
@@ -15,98 +17,8 @@ const PLAN_ITEM_FIELDS = ["filename", "role", "alt", "prompt", "focalPoint"];
 const EVIDENCE_FIELDS = ["schemaVersion", "allResolved", "requestCount", "successCount", "fallbackCount", "files"];
 const EVIDENCE_FILE_FIELDS = ["filename", "path", "role", "alt", "focalPoint", "promptHash", "mediaType", "bytes", "sha256", "source", "resolved", "errorCode"];
 
-export class PngValidationError extends Error {
-  constructor() {
-    super("PNG validation failed.");
-    this.name = "PngValidationError";
-  }
-}
-
 export function sha256Hex(value) {
   return createHash("sha256").update(value).digest("hex");
-}
-
-export function validatePngBuffer(buffer, { expectedWidth, expectedHeight } = {}) {
-  try {
-    if (!Buffer.isBuffer(buffer) || buffer.length < PNG_SIGNATURE.length || buffer.length > MAX_PNG_BYTES) {
-      throw new Error("invalid png");
-    }
-    if (!buffer.subarray(0, PNG_SIGNATURE.length).equals(PNG_SIGNATURE)) {
-      throw new Error("invalid png");
-    }
-
-    let offset = PNG_SIGNATURE.length;
-    let sawIhdr = false;
-    let sawIdat = false;
-    let sawIend = false;
-    let width;
-    let height;
-    let channels;
-    const idatChunks = [];
-
-    while (offset < buffer.length) {
-      if (offset + 12 > buffer.length) throw new Error("invalid png");
-      const length = buffer.readUInt32BE(offset);
-      const dataStart = offset + 8;
-      const dataEnd = dataStart + length;
-      const crcEnd = dataEnd + 4;
-      if (dataEnd < dataStart || crcEnd > buffer.length) throw new Error("invalid png");
-
-      const type = buffer.subarray(offset + 4, offset + 8);
-      const data = buffer.subarray(dataStart, dataEnd);
-      if (buffer.readUInt32BE(dataEnd) !== crc32(Buffer.concat([type, data]))) throw new Error("invalid png");
-      if (![...type].every((byte) => (byte >= 65 && byte <= 90) || (byte >= 97 && byte <= 122))) {
-        throw new Error("invalid png");
-      }
-      const typeText = type.toString("ascii");
-
-      if (!sawIhdr) {
-        if (typeText !== "IHDR" || length !== 13) throw new Error("invalid png");
-        sawIhdr = true;
-        width = data.readUInt32BE(0);
-        height = data.readUInt32BE(4);
-        const bitDepth = data[8];
-        const colorType = data[9];
-        const compression = data[10];
-        const filter = data[11];
-        const interlace = data[12];
-        if (
-          width < 1 || height < 1 || width > MAX_PNG_DIMENSION || height > MAX_PNG_DIMENSION ||
-          bitDepth !== 8 || ![2, 6].includes(colorType) || compression !== 0 || filter !== 0 || interlace !== 0
-        ) throw new Error("invalid png");
-        channels = colorType === 2 ? 3 : 4;
-      } else if (typeText === "IHDR" || sawIend) {
-        throw new Error("invalid png");
-      } else if (typeText === "IDAT") {
-        if (sawIend) throw new Error("invalid png");
-        sawIdat = true;
-        idatChunks.push(data);
-      } else if (typeText === "IEND") {
-        if (!sawIdat || sawIend || length !== 0 || crcEnd !== buffer.length) throw new Error("invalid png");
-        sawIend = true;
-      } else {
-        if (sawIdat || (type[0] & 0x20) === 0) throw new Error("invalid png");
-      }
-      offset = crcEnd;
-    }
-
-    if (!sawIhdr || !sawIdat || !sawIend || offset !== buffer.length) throw new Error("invalid png");
-    if ((expectedWidth !== undefined && width !== expectedWidth) || (expectedHeight !== undefined && height !== expectedHeight)) {
-      throw new Error("invalid png");
-    }
-
-    const stride = width * channels;
-    const expectedLength = height * (stride + 1);
-    const raw = inflateSync(Buffer.concat(idatChunks), { maxOutputLength: expectedLength });
-    if (raw.length !== expectedLength) throw new Error("invalid png");
-    for (let row = 0; row < height; row += 1) {
-      if (raw[row * (stride + 1)] > 4) throw new Error("invalid png");
-    }
-    return buffer;
-  } catch (error) {
-    if (error instanceof PngValidationError) throw error;
-    throw new PngValidationError();
-  }
 }
 
 export function createDeterministicPng(planItem, { width = 1536, height = 1024 } = {}) {

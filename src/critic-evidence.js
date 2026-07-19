@@ -10,6 +10,16 @@ import {
   validatePngBuffer,
 } from "./assets.js";
 import { MOTION_MOVE_SLUGS } from "./motion.js";
+import { PngValidationError, inspectPngBuffer } from "./lib/png.js";
+import {
+  CriticEvidenceLimitError,
+  MAX_CRITIC_DECODED_IMAGE_BYTES,
+  MAX_CRITIC_FULL_PAGE_HEIGHT,
+  MAX_CRITIC_IMAGE_BYTES,
+  MAX_CRITIC_RENDERED_WIDTH,
+  assertCriticEvidenceLimits,
+  createRenderedEvidencePacketSha256,
+} from "./lib/rendered-evidence.js";
 import { resolveInside } from "./lib/runs.js";
 import { startStaticServer } from "./serve.js";
 import { EVIDENCE_VIEWPORTS } from "./viewports.js";
@@ -78,7 +88,6 @@ const ASSET_SUMMARY_FIELDS = Object.freeze([
 ]);
 const EVIDENCE_PACKET_ERROR = "EVIDENCE_PACKET_INVALID";
 const UNTRUSTED_PATH_ERROR = "EVIDENCE_PATH_UNTRUSTED";
-const PNG_SIGNATURE = Buffer.from("89504e470d0a1a0a", "hex");
 const REQUIRED_CONTEXT_MODES = Object.freeze({
   desktop: VISUAL_MODES,
   tablet: VISUAL_MODES,
@@ -436,6 +445,24 @@ export async function captureRenderedEvidence({
       failures,
       totals: summarizeContexts(contexts),
     };
+    let imageMetadata;
+    try {
+      imageMetadata = inspectCriticImagePayload({
+        canonicalBuffers: screenshotBuffers,
+        fullPageBuffers,
+      });
+    } catch (error) {
+      if (
+        error instanceof PngValidationError ||
+        error instanceof CriticEvidenceLimitError
+      ) {
+        throw new CaptureUnavailableError(
+          "Rendered image evidence exceeds safe capture limits.",
+          { cause: error },
+        );
+      }
+      throw error;
+    }
     const capturedAt = now().toISOString();
     const screenshotManifest = {
       schemaVersion: "2.0",
@@ -461,15 +488,28 @@ export async function captureRenderedEvidence({
         pageErrorCount: mechanical.totals.pageErrorCount,
       },
     };
+    const screenshotManifestBytes = Buffer.from(
+      serializeJson(screenshotManifest),
+      "utf8",
+    );
     const canonicalCaptureSha256 = createCanonicalCaptureSha256({
-      manifestBytes: Buffer.from(serializeJson(screenshotManifest), "utf8"),
+      manifestBytes: screenshotManifestBytes,
       buffers: screenshotBuffers,
     });
     const criticManifest = createCriticManifest({
       cycle,
       capturedAt,
       buffers: fullPageBuffers,
+      metadata: imageMetadata.fullPage,
       canonicalCaptureSha256,
+    });
+    const criticManifestBytes = Buffer.from(serializeJson(criticManifest), "utf8");
+    const evidencePacketSha256 = createRenderedEvidencePacketSha256({
+      canonicalManifestBytes: screenshotManifestBytes,
+      canonicalBuffers: screenshotBuffers,
+      criticManifestBytes,
+      fullPageBuffers,
+      mechanical,
     });
 
     await Promise.all([
@@ -497,6 +537,7 @@ export async function captureRenderedEvidence({
       assetsResolved: assetGate.assetsResolved,
       screenshotManifest,
       criticManifest,
+      evidencePacketSha256,
     };
   } finally {
     await browser?.close().catch(() => {});
@@ -563,14 +604,22 @@ export async function readCriticVisualEvidence({ cycleDir, mechanical }) {
     const fullPage = Object.fromEntries(fullPageEntries);
     const screenshotManifest = JSON.parse(screenshotManifestText);
     const criticManifest = JSON.parse(criticManifestText);
+    const imageMetadata = inspectCriticImagePayload({
+      canonicalBuffers: initial,
+      fullPageBuffers: fullPage,
+    });
     if (
       !VISUAL_VIEWPORTS.every((viewportName) =>
-        isReusableScreenshot(initial[viewportName], EVIDENCE_VIEWPORTS[viewportName]),
+        isReusableScreenshot(
+          imageMetadata.canonical[viewportName],
+          EVIDENCE_VIEWPORTS[viewportName],
+        ),
       ) ||
       !isReusableScreenshotManifest(screenshotManifest, { cycle, mechanical }) ||
       !isReusableCriticManifest(criticManifest, {
         cycle,
         buffers: fullPage,
+        metadata: imageMetadata.fullPage,
         canonicalManifestBytes: Buffer.from(screenshotManifestText, "utf8"),
         canonicalBuffers: initial,
       })
@@ -588,6 +637,13 @@ export async function readCriticVisualEvidence({ cycleDir, mechanical }) {
         ]),
       ),
       criticManifest,
+      evidencePacketSha256: createRenderedEvidencePacketSha256({
+        canonicalManifestBytes: Buffer.from(screenshotManifestText, "utf8"),
+        canonicalBuffers: initial,
+        criticManifestBytes: Buffer.from(criticManifestText, "utf8"),
+        fullPageBuffers: fullPage,
+        mechanical,
+      }),
     };
   } catch (error) {
     if (error?.code === UNTRUSTED_PATH_ERROR || error?.code === EVIDENCE_PACKET_ERROR) {
@@ -2107,16 +2163,21 @@ async function readReusableEvidencePacket({
       phone: fullPagePhone,
     };
     const canonicalBuffers = { desktop, tablet, phone };
+    const imageMetadata = inspectCriticImagePayload({
+      canonicalBuffers,
+      fullPageBuffers,
+    });
     if (
-      !isReusableScreenshot(desktop, EVIDENCE_VIEWPORTS.desktop) ||
-      !isReusableScreenshot(tablet, EVIDENCE_VIEWPORTS.tablet) ||
-      !isReusableScreenshot(phone, EVIDENCE_VIEWPORTS.phone) ||
+      !isReusableScreenshot(imageMetadata.canonical.desktop, EVIDENCE_VIEWPORTS.desktop) ||
+      !isReusableScreenshot(imageMetadata.canonical.tablet, EVIDENCE_VIEWPORTS.tablet) ||
+      !isReusableScreenshot(imageMetadata.canonical.phone, EVIDENCE_VIEWPORTS.phone) ||
       !visibleText.trim() ||
       !isReusableMechanical(mechanical, { cycle, assetGate, buildGate }) ||
       !isReusableScreenshotManifest(screenshotManifest, { cycle, mechanical }) ||
       !isReusableCriticManifest(criticManifest, {
         cycle,
         buffers: fullPageBuffers,
+        metadata: imageMetadata.fullPage,
         canonicalManifestBytes: Buffer.from(manifestText, "utf8"),
         canonicalBuffers,
       })
@@ -2135,6 +2196,13 @@ async function readReusableEvidencePacket({
       assetsResolved: assetGate.assetsResolved,
       screenshotManifest,
       criticManifest,
+      evidencePacketSha256: createRenderedEvidencePacketSha256({
+        canonicalManifestBytes: Buffer.from(manifestText, "utf8"),
+        canonicalBuffers,
+        criticManifestBytes: Buffer.from(criticManifestText, "utf8"),
+        fullPageBuffers,
+        mechanical,
+      }),
     };
   } catch (error) {
     if (error?.code === UNTRUSTED_PATH_ERROR || error?.code === EVIDENCE_PACKET_ERROR) {
@@ -2156,44 +2224,39 @@ async function evidenceFilePresent(target, runRoot) {
   }
 }
 
-function isReusableScreenshot(buffer, viewport) {
-  if (
-    !Buffer.isBuffer(buffer) ||
-    buffer.length < 33 ||
-    !buffer.subarray(0, PNG_SIGNATURE.length).equals(PNG_SIGNATURE) ||
-    buffer.readUInt32BE(8) !== 13 ||
-    buffer.subarray(12, 16).toString("ascii") !== "IHDR" ||
-    buffer.readUInt32BE(16) !== viewport.width ||
-    buffer.readUInt32BE(20) < viewport.height
-  ) {
-    return false;
-  }
-  const end = buffer.length - 12;
-  return (
-    end > 24 &&
-    buffer.readUInt32BE(end) === 0 &&
-    buffer.subarray(end + 4, end + 8).toString("ascii") === "IEND"
-  );
+function isReusableScreenshot(metadata, viewport) {
+  return metadata?.width === viewport.width && metadata?.height === viewport.height;
 }
 
-function isReusableFullPageScreenshot(buffer, viewport) {
-  if (
-    !Buffer.isBuffer(buffer) ||
-    buffer.length < 33 ||
-    !buffer.subarray(0, PNG_SIGNATURE.length).equals(PNG_SIGNATURE) ||
-    buffer.readUInt32BE(8) !== 13 ||
-    buffer.subarray(12, 16).toString("ascii") !== "IHDR" ||
-    buffer.readUInt32BE(16) < viewport.width ||
-    buffer.readUInt32BE(20) < viewport.height
-  ) {
-    return false;
+function inspectCriticImagePayload({ canonicalBuffers, fullPageBuffers }) {
+  const canonical = {};
+  const fullPage = {};
+  for (const viewportName of VISUAL_VIEWPORTS) {
+    const viewport = EVIDENCE_VIEWPORTS[viewportName];
+    canonical[viewportName] = inspectPngBuffer(canonicalBuffers?.[viewportName], {
+      expectedWidth: viewport.width,
+      expectedHeight: viewport.height,
+      maxBytes: MAX_CRITIC_IMAGE_BYTES,
+      maxWidth: viewport.width,
+      maxHeight: viewport.height,
+      maxDecodedBytes: MAX_CRITIC_DECODED_IMAGE_BYTES,
+    });
+    const fullPageMetadata = inspectPngBuffer(fullPageBuffers?.[viewportName], {
+      maxBytes: MAX_CRITIC_IMAGE_BYTES,
+      maxWidth: MAX_CRITIC_RENDERED_WIDTH,
+      maxHeight: MAX_CRITIC_FULL_PAGE_HEIGHT,
+      maxDecodedBytes: MAX_CRITIC_DECODED_IMAGE_BYTES,
+    });
+    if (
+      fullPageMetadata.width < viewport.width ||
+      fullPageMetadata.height < viewport.height
+    ) {
+      throw new PngValidationError();
+    }
+    fullPage[viewportName] = fullPageMetadata;
   }
-  const end = buffer.length - 12;
-  return (
-    end > 24 &&
-    buffer.readUInt32BE(end) === 0 &&
-    buffer.subarray(end + 4, end + 8).toString("ascii") === "IEND"
-  );
+  assertCriticEvidenceLimits({ canonical, fullPage });
+  return { canonical, fullPage };
 }
 
 function isReusableMechanical(candidate, { cycle, assetGate, buildGate }) {
@@ -2758,7 +2821,13 @@ function recordsEqual(left, right, fields) {
   return fields.every((field) => JSON.stringify(left[field]) === JSON.stringify(right[field]));
 }
 
-function createCriticManifest({ cycle, capturedAt, buffers, canonicalCaptureSha256 }) {
+function createCriticManifest({
+  cycle,
+  capturedAt,
+  buffers,
+  metadata,
+  canonicalCaptureSha256,
+}) {
   if (!SHA256_HEX.test(canonicalCaptureSha256 || "")) {
     throw new Error("Canonical screenshot evidence binding is invalid.");
   }
@@ -2773,15 +2842,20 @@ function createCriticManifest({ cycle, capturedAt, buffers, canonicalCaptureSha2
       VISUAL_VIEWPORTS.map((viewportName) => {
         const buffer = buffers[viewportName];
         const viewport = EVIDENCE_VIEWPORTS[viewportName];
-        if (!isReusableFullPageScreenshot(buffer, viewport)) {
+        const image = metadata[viewportName];
+        if (
+          !Buffer.isBuffer(buffer) ||
+          image?.width < viewport.width ||
+          image?.height < viewport.height
+        ) {
           throw new Error("Rendered full page screenshot bytes are invalid.");
         }
         return [
           viewportName,
           {
             width: viewport.width,
-            renderedWidth: buffer.readUInt32BE(16),
-            height: buffer.readUInt32BE(20),
+            renderedWidth: image.width,
+            height: image.height,
             path: `screenshots/critic/${CRITIC_FULL_PAGE_FILES[viewportName]}`,
             bytes: buffer.length,
             sha256: sha256Hex(buffer),
@@ -2795,7 +2869,7 @@ function createCriticManifest({ cycle, capturedAt, buffers, canonicalCaptureSha2
 
 function isReusableCriticManifest(
   candidate,
-  { cycle, buffers, canonicalManifestBytes, canonicalBuffers },
+  { cycle, buffers, metadata, canonicalManifestBytes, canonicalBuffers },
 ) {
   const expectedCanonicalCaptureSha256 = createCanonicalCaptureSha256({
     manifestBytes: canonicalManifestBytes,
@@ -2829,6 +2903,7 @@ function isReusableCriticManifest(
     const record = candidate.viewports[viewportName];
     const viewport = EVIDENCE_VIEWPORTS[viewportName];
     const buffer = buffers[viewportName];
+    const image = metadata[viewportName];
     return (
       isPlainObject(record) &&
       hasExactKeys(record, ["width", "renderedWidth", "height", "path", "bytes", "sha256"]) &&
@@ -2841,9 +2916,10 @@ function isReusableCriticManifest(
       Number.isSafeInteger(record.bytes) &&
       record.bytes > 0 &&
       SHA256_HEX.test(record.sha256) &&
-      isReusableFullPageScreenshot(buffer, viewport) &&
-      buffer.readUInt32BE(16) === record.renderedWidth &&
-      buffer.readUInt32BE(20) === record.height &&
+      image?.width >= viewport.width &&
+      image?.height >= viewport.height &&
+      image.width === record.renderedWidth &&
+      image.height === record.height &&
       buffer.length === record.bytes &&
       sha256Hex(buffer) === record.sha256
     );

@@ -10,6 +10,10 @@ import {
   normalizeModelCritique,
 } from "./critic-policy.js";
 import { requestStructured } from "./lib/openai.js";
+import {
+  isEvidencePacketSha256,
+  summarizeRenderedMechanics,
+} from "./lib/rendered-evidence.js";
 import { resolveInside, writeJsonNew } from "./lib/runs.js";
 import { EVIDENCE_VIEWPORTS } from "./viewports.js";
 
@@ -30,6 +34,7 @@ export async function critiqueCycle({
   client,
   structuredRequester = requestStructured,
   visualEvidenceReader = readCriticVisualEvidence,
+  expectedEvidencePacketSha256,
 }) {
   const [systemPrompt, schema, visibleText, visualEvidence] = await Promise.all([
     readFile(promptUrl, "utf8"),
@@ -37,6 +42,14 @@ export async function critiqueCycle({
     readFile(resolveInside(cycleDir, "visible-text.txt"), "utf8"),
     visualEvidenceReader({ cycleDir, mechanical }),
   ]);
+  const evidencePacketSha256 = visualEvidence?.evidencePacketSha256;
+  if (
+    !isEvidencePacketSha256(evidencePacketSha256) ||
+    (expectedEvidencePacketSha256 !== undefined &&
+      evidencePacketSha256 !== expectedEvidencePacketSha256)
+  ) {
+    throw invalidEvidencePacket();
+  }
   const renderedMechanics = summarizeRenderedMechanics(mechanical);
   const inputContent = [
     {
@@ -46,6 +59,7 @@ export async function critiqueCycle({
         cycle: cycleNumberFromPath(cycleDir),
         brief,
         visibleText,
+        evidencePacketSha256,
         renderedMechanics,
         viewports: Object.fromEntries(
           CRITIC_VIEWPORT_NAMES.map((name) => [
@@ -157,11 +171,16 @@ export async function runCriticCycle({
   let mode = "vision";
   let mechanical = null;
   let assetsResolved = null;
+  let evidencePacketSha256 = null;
   let critique;
   try {
     const evidence = await captureCycleFn({ siteDir, cycleDir, port });
     mechanical = evidence.mechanical;
     assetsResolved = evidence.assetsResolved;
+    evidencePacketSha256 = evidence.evidencePacketSha256;
+    if (!isEvidencePacketSha256(evidencePacketSha256)) {
+      throw invalidEvidencePacket();
+    }
   } catch (error) {
     if (error?.code !== "CAPTURE_UNAVAILABLE") throw error;
     mode = "source-fallback";
@@ -175,7 +194,12 @@ export async function runCriticCycle({
   }
 
   if (mode === "vision") {
-    critique = await critiqueCycleFn({ brief, cycleDir, mechanical });
+    critique = await critiqueCycleFn({
+      brief,
+      cycleDir,
+      mechanical,
+      expectedEvidencePacketSha256: evidencePacketSha256,
+    });
   } else {
     critique = await critiqueSourceFn({ brief, cycleDir, siteDir });
   }
@@ -187,6 +211,7 @@ export async function runCriticCycle({
   });
   const artifact = {
     ...outcome,
+    evidencePacketSha256,
     cycle,
     createdAt: now().toISOString(),
   };
@@ -199,93 +224,8 @@ function cycleNumberFromPath(cycleDir) {
   return match ? Number(match[1]) : 0;
 }
 
-function summarizeRenderedMechanics(mechanical) {
-  if (
-    !mechanical ||
-    typeof mechanical !== "object" ||
-    !Array.isArray(mechanical.motionMoveSlugs) ||
-    !Array.isArray(mechanical.failures) ||
-    !mechanical.contexts ||
-    typeof mechanical.contexts !== "object"
-  ) {
-    throw new TypeError("Rendered mechanical evidence is incomplete.");
-  }
-  return {
-    motionMoveSlugs: [...mechanical.motionMoveSlugs],
-    failures: mechanical.failures.map((failure) =>
-      pickExisting(failure, [
-        "code",
-        "viewport",
-        "mode",
-        "count",
-        "subjectIndex",
-      ]),
-    ),
-    viewports: Object.fromEntries(
-      CRITIC_VIEWPORT_NAMES.map((viewportName) => {
-        const contexts = mechanical.contexts[viewportName];
-        if (!contexts || typeof contexts !== "object") {
-          throw new TypeError("Rendered mechanical viewport evidence is incomplete.");
-        }
-        return [
-          viewportName,
-          Object.fromEntries(
-            ["normal", "reducedMotion", "javascriptDisabled"].map((mode) => {
-              const context = contexts[mode];
-              if (!context || typeof context !== "object") {
-                throw new TypeError("Rendered mechanical mode evidence is incomplete.");
-              }
-              return [
-                mode,
-                {
-                  firstBeats: pickExisting(context.firstBeats, [
-                    "sectionCount",
-                    "exactFirstBeatCount",
-                    "visibleFirstBeatCount",
-                  ]),
-                  touchTargets: pickExisting(context.touchTargets, [
-                    "checkedCount",
-                    "passingCount",
-                  ]),
-                  controls: pickExisting(context.controls, [
-                    "controlCount",
-                    "ariaLinkedCount",
-                    "enterPassed",
-                    "spacePassed",
-                    "tapChecked",
-                    "tapPassed",
-                  ]),
-                  motion: pickExisting(context.motion, [
-                    "declaredRootCount",
-                    "foundRootCount",
-                    "activeRootCount",
-                    "disabledRootCount",
-                    "targetCount",
-                    "visibleTargetCount",
-                    "panelCount",
-                    "visiblePanelCount",
-                    "maxDurationMs",
-                    "progressChangedCount",
-                    "selectionChangedCount",
-                    "contractPassed",
-                    "reducedFallbackPassed",
-                    "noJavaScriptFallbackPassed",
-                  ]),
-                },
-              ];
-            }),
-          ),
-        ];
-      }),
-    ),
-  };
-}
-
-function pickExisting(value, fields) {
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
-    throw new TypeError("Rendered mechanical evidence field is incomplete.");
-  }
-  return Object.fromEntries(
-    fields.filter((field) => Object.hasOwn(value, field)).map((field) => [field, value[field]]),
-  );
+function invalidEvidencePacket() {
+  const error = new Error("Rendered evidence packet is invalid.");
+  error.code = "EVIDENCE_PACKET_INVALID";
+  return error;
 }

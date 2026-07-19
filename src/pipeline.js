@@ -97,6 +97,7 @@ export async function executePipeline({
       score: null,
       verdict: "unscored",
       mode: "unavailable",
+      evidencePacketSha256: null,
       mechanicalPassed: null,
       assetsResolved: null,
       lawGatePassed: false,
@@ -268,6 +269,10 @@ function toCycleSummary(critique) {
     visionScore: Number.isFinite(critique.visionScore) ? critique.visionScore : null,
     verdict: critique.shipEligible === true ? "ship" : "revise",
     mode: critique.mode,
+    evidencePacketSha256:
+      typeof critique.evidencePacketSha256 === "string"
+        ? critique.evidencePacketSha256
+        : null,
     mechanicalPassed: booleanOrNull(critique.mechanicalPassed),
     assetsResolved: booleanOrNull(critique.assetsResolved),
     lawGatePassed: critique.lawGatePassed === true,

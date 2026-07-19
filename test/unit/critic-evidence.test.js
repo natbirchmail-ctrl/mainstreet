@@ -579,6 +579,22 @@ test("completed critic packets cannot be transplanted onto another canonical cap
   );
 });
 
+test("fresh full page evidence beyond the height bound fails as capture unavailable", async () => {
+  const fixture = await writeFixture({
+    move: "staged hero entrance",
+    extraStyles: "html, body, main { min-height: 13000px !important; }",
+  });
+
+  await assert.rejects(
+    captureRenderedEvidence({
+      siteDir: fixture.siteDir,
+      cycleDir: fixture.cycleDir,
+      port: 4601,
+    }),
+    (error) => error?.code === "CAPTURE_UNAVAILABLE",
+  );
+});
+
 test("completed packets reject forged mechanics contexts totals failures and keys", async (t) => {
   const fixture = await writeFixture({ move: "staged hero entrance" });
   const evidence = await captureRenderedEvidence({
