@@ -32,6 +32,7 @@ test("static server binds to loopback and serves GET and HEAD safely", async () 
   const preview = await startStaticServer({ root, port: 4601 });
   try {
     assert.equal(preview.url, "http://127.0.0.1:4601/");
+    assert.equal(preview.status, 200);
 
     const getResponse = await fetch(preview.url);
     assert.equal(getResponse.status, 200);

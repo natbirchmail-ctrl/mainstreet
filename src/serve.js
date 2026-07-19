@@ -65,12 +65,30 @@ export async function startStaticServer({ root, port = DEFAULT_PORT }) {
     server.listen({ host: HOST, port, exclusive: true });
   });
 
+  const url = `http://${HOST}:${port}/`;
+  let status;
+  try {
+    const response = await fetch(url, {
+      method: "HEAD",
+      redirect: "error",
+      signal: AbortSignal.timeout(5_000),
+    });
+    if (!response.ok) {
+      throw new Error(`Local preview verification returned HTTP ${response.status}.`);
+    }
+    status = response.status;
+  } catch (error) {
+    await new Promise((resolve) => server.close(resolve));
+    throw error;
+  }
+
   return {
     server,
     host: HOST,
     port,
     root: canonicalRoot,
-    url: `http://${HOST}:${port}/`,
+    url,
+    status,
     close: () =>
       new Promise((resolve, reject) => {
         server.close((error) => (error ? reject(error) : resolve()));
