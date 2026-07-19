@@ -952,21 +952,21 @@ async function addMechanicsSpacer(page) {
 async function withInstantDocumentScrolling(page, operation) {
   const previous = await page.evaluate(() => {
     const root = document.documentElement;
-    const value = root.style.getPropertyValue("scroll-behavior");
-    const priority = root.style.getPropertyPriority("scroll-behavior");
+    const present = root.hasAttribute("style");
+    const value = root.getAttribute("style");
     root.style.setProperty("scroll-behavior", "auto", "important");
-    return { value, priority };
+    return { present, value };
   });
 
   try {
     return await operation();
   } finally {
-    await page.evaluate(({ value, priority }) => {
+    await page.evaluate(({ present, value }) => {
       const root = document.documentElement;
-      if (value) {
-        root.style.setProperty("scroll-behavior", value, priority);
+      if (present) {
+        root.setAttribute("style", value ?? "");
       } else {
-        root.style.removeProperty("scroll-behavior");
+        root.removeAttribute("style");
       }
     }, previous);
   }

@@ -4,6 +4,8 @@ import { mkdir, readdir, readFile, symlink, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import path from "node:path";
 import test from "node:test";
+import { isDeepStrictEqual } from "node:util";
+import { chromium } from "playwright";
 
 import {
   EVIDENCE_VIEWPORTS,
@@ -291,17 +293,61 @@ html { scroll-behavior: smooth !important; }
   });
 });
 
-test("the JavaScript-disabled first beat probe does not depend on timeout sleeps", async () => {
-  const source = await readFile(
-    new URL("../../src/critic-evidence.js", import.meta.url),
-    "utf8",
-  );
-  const match = source.match(
-    /async function probeFirstBeatsWithoutFrames[\s\S]*?\n}\n\nasync function probeTouchTargets/,
-  );
+test("first beat probing restores the exact root style without timeout sleeps", async (t) => {
+  const cases = [
+    { name: "absent style attribute", rootStyleAttribute: null },
+    { name: "empty style attribute", rootStyleAttribute: "" },
+    {
+      name: "populated style attribute",
+      rootStyleAttribute: "color-scheme: light; --fixture-token: 7",
+    },
+  ];
 
-  assert.ok(match, "probeFirstBeatsWithoutFrames source was not found");
-  assert.doesNotMatch(match[0], /(?:waitForTimeout|setTimeout)\s*\(/);
+  for (const variant of cases) {
+    await t.test(variant.name, async () => {
+      const fixture = await writeFixture({
+        move: "staged hero entrance",
+        disableCsp: true,
+        rootStyleAttribute: variant.rootStyleAttribute,
+        extraStyles: "html { scroll-behavior: smooth !important; }",
+      });
+      const observer = createFirstBeatProbeObserver();
+      const evidence = await captureRenderedEvidence({
+        siteDir: fixture.siteDir,
+        cycleDir: fixture.cycleDir,
+        port: 4600,
+        browserType: observer.browserType,
+      });
+
+      assert.deepEqual(
+        evidence.mechanical.failures.filter((failure) =>
+          failure.code.startsWith("first-beat-"),
+        ),
+        [],
+      );
+      assert.equal(observer.rootStyles.length, 9);
+      const expected = {
+        present: variant.rootStyleAttribute !== null,
+        value: variant.rootStyleAttribute,
+      };
+      for (const rootStyle of observer.rootStyles) {
+        assert.deepEqual(rootStyle.after, rootStyle.before);
+      }
+      assert.ok(
+        observer.rootStyles.some((rootStyle) =>
+          isDeepStrictEqual(rootStyle.before, expected),
+        ),
+        JSON.stringify(observer.rootStyles),
+      );
+      assert.ok(observer.timeoutCalls.some((call) => call.duration === 450));
+      assert.ok(observer.timeoutCalls.some((call) => call.duration === 50));
+      assert.deepEqual(
+        observer.timeoutCalls.filter((call) => call.inFirstBeatProbe),
+        [],
+        JSON.stringify(observer.timeoutCalls),
+      );
+    });
+  }
 });
 
 test("every motion move has a failing normal and reduced motion fixture", async (t) => {
@@ -1063,6 +1109,7 @@ async function writeFixture({
   runtimeSuffix = "",
   allowExternalNetwork = false,
   disableCsp = false,
+  rootStyleAttribute = null,
 }) {
   const root = path.join(process.cwd(), "tmp", randomUUID());
   const cycleDir = path.join(root, "cycle-01");
@@ -1102,7 +1149,7 @@ async function writeFixture({
     : "";
 
   const indexHtml = `<!doctype html>
-<html lang="en">
+<html lang="en"${rootStyleAttribute === null ? "" : ` style="${rootStyleAttribute}"`}>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -1250,6 +1297,77 @@ function assertAssetIntegrityFailure(evidence) {
 
 function linkDirectoryType() {
   return process.platform === "win32" ? "junction" : "dir";
+}
+
+function createFirstBeatProbeObserver() {
+  const rootStyles = [];
+  const timeoutCalls = [];
+  const browserType = {
+    async launch(options) {
+      const browser = await chromium.launch(options);
+      return {
+        async newContext(contextOptions) {
+          const context = await browser.newContext(contextOptions);
+          let page = null;
+          let firstBeatStyle = null;
+          return {
+            route: context.route.bind(context),
+            async newPage() {
+              page = await context.newPage();
+              return new Proxy(page, {
+                get(target, property) {
+                  if (property === "evaluate") {
+                    return async (...args) => {
+                      const stack = new Error("observed evaluate").stack ?? "";
+                      const inFirstBeatWrapper =
+                        /withInstantDocumentScrolling/.test(stack);
+                      if (inFirstBeatWrapper && !firstBeatStyle) {
+                        firstBeatStyle = {
+                          before: await readRootStyle(target),
+                          after: null,
+                        };
+                      }
+                      const result = await target.evaluate(...args);
+                      if (inFirstBeatWrapper) {
+                        firstBeatStyle.after = await readRootStyle(target);
+                      }
+                      return result;
+                    };
+                  }
+                  if (property === "waitForTimeout") {
+                    return async (duration) => {
+                      const stack = new Error("observed timeout").stack ?? "";
+                      timeoutCalls.push({
+                        duration,
+                        inFirstBeatProbe:
+                          /probeFirstBeats|withInstantDocumentScrolling/.test(stack),
+                      });
+                      return target.waitForTimeout(duration);
+                    };
+                  }
+                  const value = Reflect.get(target, property, target);
+                  return typeof value === "function" ? value.bind(target) : value;
+                },
+              });
+            },
+            async close() {
+              if (firstBeatStyle) rootStyles.push(firstBeatStyle);
+              await context.close();
+            },
+          };
+        },
+        close: browser.close.bind(browser),
+      };
+    },
+  };
+  return { browserType, rootStyles, timeoutCalls };
+}
+
+function readRootStyle(page) {
+  return page.evaluate(() => ({
+    present: document.documentElement.hasAttribute("style"),
+    value: document.documentElement.getAttribute("style"),
+  }));
 }
 
 async function startPermissiveFixtureServer({ root, port }) {
