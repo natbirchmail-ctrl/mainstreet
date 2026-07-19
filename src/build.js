@@ -263,6 +263,9 @@ export async function validateRenderedSourceVisibility(manifest) {
         const failures = await page.locator(sourceSelector).evaluateAll((hooks, currentViewport) => {
           const protectedElements = new Map();
           for (const hook of hooks) {
+            for (const descendant of hook.querySelectorAll("*")) {
+              protectedElements.set(descendant, protectedElements.get(descendant) ?? { isHook: false });
+            }
             let current = hook;
             while (current) {
               const state = protectedElements.get(current) ?? { isHook: false };

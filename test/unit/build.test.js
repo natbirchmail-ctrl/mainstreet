@@ -421,6 +421,36 @@ test("buildSite rejects rendered no JavaScript visibility bypasses at every view
   }
 });
 
+test("buildSite rejects hidden motion content descendants at every viewport", async (t) => {
+  const attacks = [
+    [
+      "desktop hidden headline descendant",
+      '@media (min-width: 1200px) { [class="motion-copy"] h1 { display: none !important; } }',
+    ],
+    [
+      "tablet invisible headline descendant",
+      '@media (min-width: 600px) and (max-width: 900px) { [class="motion-copy"] h1 { visibility: hidden !important; } }',
+    ],
+    [
+      "phone transparent headline descendant",
+      '@media (max-width: 500px) { [class="motion-copy"] h1 { opacity: 0 !important; } }',
+    ],
+  ];
+  for (const [name, attack] of attacks) {
+    await t.test(name, async () => {
+      const candidate = modelManifest();
+      candidate.indexHtml = candidate.indexHtml.replace(
+        "<div data-first-beat data-motion-target>",
+        '<div class="motion-copy" data-first-beat data-motion-target>',
+      );
+      candidate.stylesCss += `\n${attack}`;
+      const result = await buildSite({ brief: brief(), structuredRequester: async () => candidate });
+      assert.equal(result.source, "deterministic-fallback");
+      assert.equal(result.stylesCss.includes(attack), false);
+    });
+  }
+});
+
 test("buildSite accepts visible responsive CSS through the rendered no JavaScript gate", async () => {
   const candidate = modelManifest();
   candidate.indexHtml = candidate.indexHtml
