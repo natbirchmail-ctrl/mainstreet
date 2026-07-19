@@ -3,166 +3,88 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Juniper Oven is a warm neighborhood bakery and cafe concept in Flagstaff, Arizona.">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'none'; font-src 'none'; base-uri 'none'; form-action 'none'">
-  <title>Juniper Oven | Flagstaff Bakery and Cafe</title>
+  <meta name="description" content="A visual planning guide for Juniper Oven. Service and availability details are not confirmed.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'">
+  <title>Juniper Oven</title>
   <link rel="stylesheet" href="styles.css">
 </head>
-<body>
-  <a class="skip-link" href="#main-content">Skip to main content</a>
-
+<body data-motion-moves="staged-hero-entrance">
+  <a class="skip-link" href="#main">Skip to content</a>
   <header class="site-header">
-    <a class="brand" href="#top" aria-label="Juniper Oven home">
-      <span class="brand-mark" aria-hidden="true"><i></i></span>
-      <span class="brand-name">Juniper Oven</span>
-    </a>
-
+    <a class="wordmark" href="#top" aria-label="Juniper Oven home">Juniper Oven</a>
     <nav aria-label="Primary navigation">
-      <ul>
-        <li><a href="#menu">Menu</a></li>
-        <li><a href="#story">Story</a></li>
-        <li><a href="#visit">Visit</a></li>
-      </ul>
+      <a href="#ideas">Ideas</a>
+      <a href="#context">Context</a>
+      <a href="#details">Details</a>
     </nav>
   </header>
-
-  <main id="main-content">
-    <section class="hero" id="top" aria-labelledby="hero-title">
-      <div class="hero-copy">
-        <p class="eyebrow">A neighborhood oven in Flagstaff</p>
-        <h1 id="hero-title">Fresh from the oven. <em>Made for the day ahead.</em></h1>
-        <p class="intro">Bread, pastries, and simple cafe fare inspired by the warmth and character of the high desert.</p>
-        <div class="hero-actions">
-          <a class="button primary" href="#menu">Explore the menu</a>
-          <a class="button secondary" href="#visit">Plan your visit</a>
-        </div>
+  <main id="main">
+    <section class="hero" id="top" data-section="hero" data-motion-root="staged-hero-entrance">
+      <div class="hero-copy" data-first-beat data-motion-target>
+        <p class="eyebrow">Planning guide</p>
+        <h1>Juniper Oven</h1>
+        <p class="hero-intro">Use this visual guide to clarify preferences before confirming any details directly.</p>
+        <a class="primary-action" href="#ideas" data-primary-action>Explore Ideas</a>
       </div>
-
-      <figure class="oven-scene">
-        <div class="sun" aria-hidden="true"></div>
-        <div class="ridge ridge-one" aria-hidden="true"></div>
-        <div class="ridge ridge-two" aria-hidden="true"></div>
-        <div class="oven" aria-hidden="true">
-          <span class="oven-mouth"></span>
-          <span class="loaf loaf-one"></span>
-          <span class="loaf loaf-two"></span>
-        </div>
-        <figcaption>Warm bread for slow mornings and busy days.</figcaption>
+      <figure class="hero-art">
+        <img src="assets/workbench-hero.png" alt="Contemporary still life inspired by neighborhood bakery and cafe">
+        <div class="oven-rings" aria-hidden="true"><span></span><span></span><span></span></div>
       </figure>
     </section>
 
-    <div class="trail-layout">
-      <div class="juniper-trail" aria-hidden="true">
-        <span class="trail-node node-one"></span>
-        <span class="trail-node node-two"></span>
-        <span class="trail-node node-three"></span>
+    <section class="ideas-section" id="ideas" data-section="ideas">
+      <div class="ideas-heading" data-first-beat>
+        <div class="heading-copy">
+          <p class="eyebrow">Planning notes</p>
+          <h2>Useful Directions</h2>
+          <p>Start with the qualities that matter to you, then use them to guide a direct conversation.</p>
+        </div>
+        <img src="assets/offerings-detail.png" alt="Materials and colors arranged as a planning reference">
       </div>
+      <div class="ideas-list">
+        <article class="idea">
+          <p class="idea-number">01</p>
+          <h3>Bread Style</h3>
+          <p>Consider whether you prefer a crisp crust, a soft crumb, or something suited to sharing.</p>
+        </article>
+        <article class="idea">
+          <p class="idea-number">02</p>
+          <h3>Visit Rhythm</h3>
+          <p>Think about the pace of the day, the people joining you, and the kind of pause you want.</p>
+        </article>
+        <article class="idea">
+          <p class="idea-number">03</p>
+          <h3>Flavor Notes</h3>
+          <p>Use sweetness, richness, texture, and familiar tastes to describe your preferences clearly.</p>
+        </article>
+      </div>
+    </section>
 
-      <section class="menu-section trail-section" id="menu" aria-labelledby="menu-title">
-        <div class="menu-intro">
-          <p class="eyebrow">From the bakehouse</p>
-          <h2 id="menu-title">A simple menu, shaped by the season.</h2>
-          <p>Juniper Oven is an evolving bakery concept. These offerings describe the intended direction while the complete menu is being confirmed.</p>
+    <section class="context" id="context" data-section="context">
+      <figure class="context-image">
+        <img src="assets/context-threshold.png" alt="Warm cafe threshold arranged as a neighborhood planning reference">
+        <figcaption>Visual reference only</figcaption>
+      </figure>
+      <div class="context-copy" data-first-beat>
+        <div class="story-marker" aria-hidden="true">J</div>
+        <p class="eyebrow">Planning context</p>
+        <h2>Visit Context</h2>
+        <p>Think about how a possible stop fits with nearby errands, the pace of the day, and the setting you prefer. Treat the image as inspiration rather than a view of the business.</p>
+      </div>
+    </section>
 
-          <div class="bread-board" aria-hidden="true">
-            <span class="grain grain-one"></span>
-            <span class="grain grain-two"></span>
-            <span class="grain grain-three"></span>
-            <div class="bread-shape">
-              <i></i>
-              <i></i>
-              <i></i>
-            </div>
-          </div>
-
-          <div class="menu-direction">
-            <p class="note-label">Menu direction</p>
-            <p>Fresh bakes and simple cafe fare are at the center of the concept. Specific items, prices, and availability are not yet confirmed.</p>
-          </div>
-        </div>
-
-        <div class="menu-column">
-          <div class="menu-list">
-            <article>
-              <span class="menu-number" aria-hidden="true">01</span>
-              <div>
-                <h3>Fresh bread</h3>
-                <p>Daily loaves made for the table or a quick stop.</p>
-              </div>
-            </article>
-
-            <article>
-              <span class="menu-number" aria-hidden="true">02</span>
-              <div>
-                <h3>Pastries</h3>
-                <p>Seasonal sweet and savory bakes.</p>
-              </div>
-            </article>
-
-            <article>
-              <span class="menu-number" aria-hidden="true">03</span>
-              <div>
-                <h3>Cafe fare</h3>
-                <p>Simple food and drinks for breakfast or lunch.</p>
-              </div>
-            </article>
-
-            <article>
-              <span class="menu-number" aria-hidden="true">04</span>
-              <div>
-                <h3>Order ahead</h3>
-                <p>A convenient option for planned pickups when available.</p>
-              </div>
-            </article>
-          </div>
-
-          <aside class="ingredient-note" aria-labelledby="ingredient-title">
-            <p class="note-label">Ingredient information</p>
-            <h3 id="ingredient-title">Dietary details are being prepared.</h3>
-            <p>Ingredients, allergens, and dietary options have not been confirmed. Current details should be checked before ordering.</p>
-          </aside>
-        </div>
-      </section>
-
-      <section class="story-section trail-section" id="story" aria-labelledby="story-title">
-        <div class="story-stamp" aria-hidden="true">
-          <span>FLAGSTAFF</span>
-          <strong>AZ</strong>
-          <span>HIGH DESERT</span>
-        </div>
-
-        <div class="story-copy">
-          <p class="eyebrow">The idea behind the oven</p>
-          <h2 id="story-title">A daily place with a high desert point of view.</h2>
-          <p class="story-lead">Juniper Oven is envisioned as a welcoming place for fresh baked food and an easy daily stop.</p>
-          <p>The experience should feel thoughtful, local, and grounded in Flagstaff. Warm clay tones, simple food, and a calm sense of craft shape the concept while the complete business story is still taking form.</p>
-        </div>
-      </section>
-
-      <section class="visit-section trail-section" id="visit" aria-labelledby="visit-title">
-        <div class="visit-copy">
-          <p class="eyebrow">Visit status</p>
-          <h2 id="visit-title">The oven is finding its place in Flagstaff.</h2>
-          <p>Juniper Oven is a bakery and cafe concept in development. Flagstaff, Arizona is the only confirmed location detail.</p>
-        </div>
-
-        <aside class="status-card" aria-labelledby="status-title">
-          <p class="status-kicker">Before you plan a visit</p>
-          <h3 id="status-title">Opening details are not available yet.</h3>
-          <p>A street address, opening hours, ordering method, phone number, and email address have not been provided. Please wait for confirmed details before planning a visit or order.</p>
-          <p class="confirmed-place"><span>Confirmed city</span><strong>Flagstaff, AZ</strong></p>
-        </aside>
-      </section>
-    </div>
+    <section class="details" id="details" data-section="details">
+      <div class="details-copy" data-first-beat>
+        <p class="eyebrow">Before planning</p>
+        <h2>Confirm Details</h2>
+        <p>Service and availability details are not confirmed. Check directly with the business before making plans.</p>
+      </div>
+    </section>
   </main>
-
-  <footer class="site-footer">
-    <a class="brand footer-brand" href="#top" aria-label="Return to the top of Juniper Oven">
-      <span class="brand-mark" aria-hidden="true"><i></i></span>
-      <span class="brand-name">Juniper Oven</span>
-    </a>
-    <p>A neighborhood bakery and cafe concept for Flagstaff, AZ.</p>
-    <a class="top-link" href="#top">Back to top</a>
+  <footer>
+    <p>Juniper Oven</p>
+    <p>Planning guide</p>
   </footer>
+  <script src="script.js" defer></script>
 </body>
 </html>

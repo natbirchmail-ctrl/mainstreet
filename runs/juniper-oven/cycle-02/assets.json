@@ -1,0 +1,60 @@
+{
+  "schemaVersion": "1.0",
+  "allResolved": true,
+  "requestCount": 3,
+  "successCount": 3,
+  "fallbackCount": 0,
+  "files": [
+    {
+      "filename": "workbench-hero.png",
+      "path": "assets/workbench-hero.png",
+      "role": "hero",
+      "alt": "Contemporary still life inspired by neighborhood bakery and cafe",
+      "focalPoint": {
+        "x": 0.56,
+        "y": 0.44
+      },
+      "promptHash": "51ab30feadd169f0064044009660a278a6c1b8202f3dd9d3944c40112a2ab3a6",
+      "mediaType": "image/png",
+      "bytes": 2301673,
+      "sha256": "bdf9bde353711c3056c79b729794102eb40f290934c805e2f48337f521147f49",
+      "source": "openai",
+      "resolved": true,
+      "errorCode": null
+    },
+    {
+      "filename": "offerings-detail.png",
+      "path": "assets/offerings-detail.png",
+      "role": "offerings",
+      "alt": "Materials and colors arranged as a planning reference",
+      "focalPoint": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "promptHash": "7bc9ba3c9fdda88886d0ce84310beae0a0a2d9aca5a9f0a3c11fc19d9bfeaa87",
+      "mediaType": "image/png",
+      "bytes": 2398072,
+      "sha256": "823b4584a0b6db4978e3be676ee7269da8934059dec4993ba94e0edf99898f62",
+      "source": "openai",
+      "resolved": true,
+      "errorCode": null
+    },
+    {
+      "filename": "context-threshold.png",
+      "path": "assets/context-threshold.png",
+      "role": "context",
+      "alt": "Warm cafe threshold arranged as a neighborhood planning reference",
+      "focalPoint": {
+        "x": 0.5,
+        "y": 0.48
+      },
+      "promptHash": "496f09a054b7e251ba5fe65669274f3f33e5a3c3266a8ec4a716e61f76801d7e",
+      "mediaType": "image/png",
+      "bytes": 2361238,
+      "sha256": "7db9e7dd21d97b2dffa05782f422c154d6174a087b99f01f2d9bde304974d41a",
+      "source": "openai",
+      "resolved": true,
+      "errorCode": null
+    }
+  ]
+}

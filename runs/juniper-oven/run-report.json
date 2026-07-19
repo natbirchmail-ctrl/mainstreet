@@ -2,37 +2,601 @@
   "schemaVersion": "1.0",
   "slug": "juniper-oven",
   "businessName": "Juniper Oven",
-  "startedAt": null,
-  "completedAt": "2026-07-17T23:20:21.628Z",
+  "startedAt": "2026-07-19T19:54:20.090Z",
+  "completedAt": "2026-07-19T20:04:25.900Z",
   "status": "completed",
-  "stopReason": "max_cycles_reached",
-  "selectedCycle": 3,
+  "stopReason": "threshold_reached",
+  "selectedCycle": 2,
   "scoresImproved": true,
   "cycles": [
     {
       "cycle": 1,
-      "score": 60,
-      "visionScore": 76,
+      "score": 80,
+      "visionScore": null,
       "verdict": "revise",
       "mode": "vision",
-      "mechanicalPassed": false
+      "evidencePacketSha256": "810b99ac6a3f0b9686a63a3e1b5789eff08ccf3264660deaf230f98cd6e4edef",
+      "mechanicalPassed": true,
+      "assetsResolved": true,
+      "lawGatePassed": false,
+      "lawGateFailures": [
+        "law:imageryCoherence:fail",
+        "law:factualRestraint:fail"
+      ],
+      "shipEligible": false,
+      "hardGateFailures": [
+        "score:below-threshold",
+        "issues:major",
+        "law:imageryCoherence:fail",
+        "law:factualRestraint:fail"
+      ],
+      "laws": {
+        "headlineDiscipline": {
+          "status": "pass",
+          "evidence": [
+            {
+              "viewport": "desktop",
+              "observation": "Primary headings are the exact business name or two-word phrases: “Useful Directions,” “Local Context,” and “Confirm Details.” Supporting sentences explain rather than overloading headings."
+            },
+            {
+              "viewport": "tablet",
+              "observation": "The same concise heading structure remains intact without added explanatory headline copy."
+            },
+            {
+              "viewport": "phone",
+              "observation": "All primary headings retain clean two-word forms and actions remain directive, including “Explore Ideas.”"
+            }
+          ],
+          "fix": "No change required."
+        },
+        "foldComposition": {
+          "status": "pass",
+          "evidence": [
+            {
+              "viewport": "desktop",
+              "observation": "The initial fold presents eyebrow, business name, explanatory copy, action, and bakery image as one complete split composition."
+            },
+            {
+              "viewport": "tablet",
+              "observation": "The hero remains a complete text-and-image unit, with the action visible and no element stranded beyond the fold."
+            },
+            {
+              "viewport": "phone",
+              "observation": "The text block and action appear before the image, and enough of the bakery photograph is visible to complete the opening thought."
+            }
+          ],
+          "fix": "Preserve the text-first phone order while reducing decorative crowding."
+        },
+        "completeLayouts": {
+          "status": "pass",
+          "evidence": [
+            {
+              "viewport": "desktop",
+              "observation": "The repeating planning layout contains exactly three complete numbered rows with no empty column or orphan entry."
+            },
+            {
+              "viewport": "tablet",
+              "observation": "All three rows retain numbers, titles, descriptions, and separators in a balanced grid."
+            },
+            {
+              "viewport": "phone",
+              "observation": "The three entries stack completely with no phantom card, missing description, or broken count state."
+            }
+          ],
+          "fix": "No structural change required."
+        },
+        "firstBeatVisibility": {
+          "status": "pass",
+          "evidence": [
+            {
+              "viewport": "desktop",
+              "observation": "Mechanical observations report 4 of 4 first beats visible in normal, reduced-motion, and no-JavaScript renders."
+            },
+            {
+              "viewport": "tablet",
+              "observation": "Mechanical observations report 4 of 4 first beats visible in all three rendering conditions."
+            },
+            {
+              "viewport": "phone",
+              "observation": "Mechanical observations report 4 of 4 first beats visible in all three rendering conditions, and the full-page image shows every section without hidden content."
+            }
+          ],
+          "fix": "Keep meaningful content independent of animation."
+        },
+        "imageContrast": {
+          "status": "pass",
+          "evidence": [
+            {
+              "viewport": "desktop",
+              "observation": "Hero text is placed on an uninterrupted paper field rather than over the photograph; cream context text sits on solid evergreen."
+            },
+            {
+              "viewport": "tablet",
+              "observation": "The split hero preserves a clean text background, and the context copy remains separated from the adjacent street image."
+            },
+            {
+              "viewport": "phone",
+              "observation": "All text appears on solid paper or evergreen fields; the stacked photographs carry decoration but no overlaid reading copy."
+            }
+          ],
+          "fix": "Preserve the separation between reading text and detailed imagery."
+        },
+        "motionRestraint": {
+          "status": "pass",
+          "evidence": [
+            {
+              "viewport": "desktop",
+              "observation": "Only the staged hero entrance is declared; its target is visible normally, reduced motion disables it at 0.01 ms, and the no-JavaScript fallback remains visible."
+            },
+            {
+              "viewport": "tablet",
+              "observation": "The single motion root passes normal and reduced-motion contracts, with no competing animated panel or delayed first beat."
+            },
+            {
+              "viewport": "phone",
+              "observation": "The same single target remains visible under normal, reduced-motion, and no-JavaScript conditions; the static composition does not depend on motion."
+            }
+          ],
+          "fix": "Retain the single restrained entrance and avoid adding simultaneous section animations."
+        },
+        "imageryCoherence": {
+          "status": "fail",
+          "evidence": [
+            {
+              "viewport": "desktop",
+              "observation": "The two warm, tactile bakery still lifes appear related, but the residential street image has a sterile architectural-render quality and no visible bakery connection."
+            },
+            {
+              "viewport": "tablet",
+              "observation": "The tonal grade is similar, yet the context image’s subject, lighting language, and apparent production style remain distinct from the food photography."
+            },
+            {
+              "viewport": "phone",
+              "observation": "Stacking makes the mismatch more pronounced: two close bakery still lifes are followed by an unrelated generic housing scene."
+            }
+          ],
+          "fix": "Use a contemporary neighborhood photograph with the same warm, tactile photographic treatment and a credible visual connection to bakery or cafe context."
+        },
+        "factualRestraint": {
+          "status": "fail",
+          "evidence": [
+            {
+              "viewport": "desktop",
+              "observation": "The footer states “Built for the neighborhood,” attributing an unconfirmed neighborhood role to Juniper Oven."
+            },
+            {
+              "viewport": "tablet",
+              "observation": "The same unsupported business-attributed statement remains visible in the footer."
+            },
+            {
+              "viewport": "phone",
+              "observation": "“Built for the neighborhood” appears as a standalone footer line and reads as a factual brand claim."
+            },
+            {
+              "viewport": "source",
+              "observation": "The claim policy provides no confirmed user clause beyond the business name; category, audience, and neighborhood positioning are unconfirmed."
+            }
+          ],
+          "fix": "Remove the footer claim and retain only guidance language or the confirmed business name."
+        }
+      },
+      "lawCoverage": {
+        "headlineDiscipline": {
+          "requiredViewports": [],
+          "observedViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "missingViewports": [],
+          "complete": true
+        },
+        "foldComposition": {
+          "requiredViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "observedViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "missingViewports": [],
+          "complete": true
+        },
+        "completeLayouts": {
+          "requiredViewports": [],
+          "observedViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "missingViewports": [],
+          "complete": true
+        },
+        "firstBeatVisibility": {
+          "requiredViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "observedViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "missingViewports": [],
+          "complete": true
+        },
+        "imageContrast": {
+          "requiredViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "observedViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "missingViewports": [],
+          "complete": true
+        },
+        "motionRestraint": {
+          "requiredViewports": [],
+          "observedViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "missingViewports": [],
+          "complete": true
+        },
+        "imageryCoherence": {
+          "requiredViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "observedViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "missingViewports": [],
+          "complete": true
+        },
+        "factualRestraint": {
+          "requiredViewports": [],
+          "observedViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "missingViewports": [],
+          "complete": true
+        }
+      }
     },
     {
       "cycle": 2,
-      "score": 78,
+      "score": 85,
       "visionScore": null,
-      "verdict": "revise",
+      "verdict": "ship",
       "mode": "vision",
-      "mechanicalPassed": true
-    },
-    {
-      "cycle": 3,
-      "score": 79,
-      "visionScore": null,
-      "verdict": "revise",
-      "mode": "vision",
-      "mechanicalPassed": true
+      "evidencePacketSha256": "3e45e7fd2caa806e280ce0ff3edcb7bc3d64e185bcdc67308a551e4eb2adc31d",
+      "mechanicalPassed": true,
+      "assetsResolved": true,
+      "lawGatePassed": true,
+      "lawGateFailures": [],
+      "shipEligible": true,
+      "hardGateFailures": [],
+      "laws": {
+        "headlineDiscipline": {
+          "status": "pass",
+          "evidence": [
+            {
+              "viewport": "desktop",
+              "observation": "Primary editorial headings are Juniper Oven, Useful Directions, Visit Context, and Confirm Details; the exact business name is exempt and all other headings contain two meaningful words."
+            },
+            {
+              "viewport": "tablet",
+              "observation": "The same concise heading system remains intact without explanatory sentences being promoted as headings."
+            },
+            {
+              "viewport": "phone",
+              "observation": "Juniper Oven wraps to two lines but remains the exact business name; Useful Directions, Visit Context, and Confirm Details stay concise and actions remain directive."
+            }
+          ],
+          "fix": "No change required."
+        },
+        "foldComposition": {
+          "status": "pass",
+          "evidence": [
+            {
+              "viewport": "desktop",
+              "observation": "The initial hero composes label, business name, explanation, action, and bakery image as one complete split-screen thought; lower openings pair their heading blocks with the relevant image or guidance."
+            },
+            {
+              "viewport": "tablet",
+              "observation": "The hero remains balanced at the initial fold, and reduced-motion lower sections open with complete heading, copy, and visual units."
+            },
+            {
+              "viewport": "phone",
+              "observation": "The initial viewport shows the full hero message and action before the bakery image begins; lower sections stack heading, explanation, and first visual or row in a coherent order."
+            }
+          ],
+          "fix": "No structural change required; only trim the final section’s excess desktop padding."
+        },
+        "completeLayouts": {
+          "status": "pass",
+          "evidence": [
+            {
+              "viewport": "desktop",
+              "observation": "All three numbered planning rows are populated, split sections have both image and text panels, and no phantom grid columns are visible."
+            },
+            {
+              "viewport": "tablet",
+              "observation": "The three-item sequence and two-panel context layout remain complete with consistent boundaries."
+            },
+            {
+              "viewport": "phone",
+              "observation": "All numbered items stack fully, and the image/context split converts into two complete consecutive panels without orphaned content."
+            }
+          ],
+          "fix": "No change required."
+        },
+        "firstBeatVisibility": {
+          "status": "pass",
+          "evidence": [
+            {
+              "viewport": "desktop",
+              "observation": "Rendered mechanics report 4 of 4 section first beats visible in normal, reduced-motion, and no-JavaScript states; the screenshots show each opening without concealed content."
+            },
+            {
+              "viewport": "tablet",
+              "observation": "Rendered mechanics report 4 of 4 first beats visible in all three rendering states."
+            },
+            {
+              "viewport": "phone",
+              "observation": "Rendered mechanics report 4 of 4 first beats visible in all three rendering states, and the stacked page exposes each heading promptly."
+            }
+          ],
+          "fix": "No change required."
+        },
+        "imageContrast": {
+          "status": "pass",
+          "evidence": [
+            {
+              "viewport": "desktop",
+              "observation": "Hero and context prose sit on solid cream or evergreen panels rather than over complex photographs; the only image label uses a dark backing."
+            },
+            {
+              "viewport": "tablet",
+              "observation": "Split panels preserve strong text/background separation, and decorative rings do not overlap instructional text."
+            },
+            {
+              "viewport": "phone",
+              "observation": "Text remains outside the hero and interior images, while “Visual reference only” is readable on a dark rectangular label over the photograph."
+            }
+          ],
+          "fix": "Preserve the solid text panels and backed image disclaimer."
+        },
+        "motionRestraint": {
+          "status": "pass",
+          "evidence": [
+            {
+              "viewport": "desktop",
+              "observation": "Normal rendering declares one staged hero entrance with one visible target; reduced motion disables it at 0.01ms maximum duration, and the no-JavaScript target remains visible."
+            },
+            {
+              "viewport": "tablet",
+              "observation": "The single motion root passes normal, reduced-motion, and no-JavaScript contracts, with no competing animated panels or hidden content."
+            },
+            {
+              "viewport": "phone",
+              "observation": "The same one-target entrance remains restrained; reduced-motion and no-JavaScript observations both preserve the visible composition and all first beats."
+            }
+          ],
+          "fix": "Keep motion limited to the single nonessential hero entrance."
+        },
+        "imageryCoherence": {
+          "status": "pass",
+          "evidence": [
+            {
+              "viewport": "desktop",
+              "observation": "Hero pastries, tabletop bread-and-coffee arrangement, and warm wood interior share amber grading, soft directional light, and contemporary styling."
+            },
+            {
+              "viewport": "tablet",
+              "observation": "Crops retain the same warm palette and recognizable bread, cup, plate, and interior focal points."
+            },
+            {
+              "viewport": "phone",
+              "observation": "Responsive crops remain deliberate and visually consistent; the interior is explicitly marked as a visual reference rather than presented as the business."
+            }
+          ],
+          "fix": "Preserve the current grading and focal crops; refine only the decorative ring anchoring."
+        },
+        "factualRestraint": {
+          "status": "pass",
+          "evidence": [
+            {
+              "viewport": "desktop",
+              "observation": "Visible copy describes preference-setting and a “possible stop,” labels the interior as visual reference only, and states that service and availability are unconfirmed."
+            },
+            {
+              "viewport": "tablet",
+              "observation": "No sales, ordering, hours, location, availability, or operational claim is presented; the page directs readers to confirm details with the business."
+            },
+            {
+              "viewport": "phone",
+              "observation": "The same disclaimers remain visible, and planning prompts are framed as general considerations rather than Juniper Oven offerings."
+            },
+            {
+              "viewport": "source",
+              "observation": "The guidance-only claim policy contains no confirmed user clauses or confirmed offerings; visible wording appropriately avoids attributing inferred bread, pastry, or cafe operations to the business."
+            }
+          ],
+          "fix": "Continue avoiding transactional actions or attributed offerings until a single confirmed user clause supports each full claim."
+        }
+      },
+      "lawCoverage": {
+        "headlineDiscipline": {
+          "requiredViewports": [],
+          "observedViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "missingViewports": [],
+          "complete": true
+        },
+        "foldComposition": {
+          "requiredViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "observedViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "missingViewports": [],
+          "complete": true
+        },
+        "completeLayouts": {
+          "requiredViewports": [],
+          "observedViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "missingViewports": [],
+          "complete": true
+        },
+        "firstBeatVisibility": {
+          "requiredViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "observedViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "missingViewports": [],
+          "complete": true
+        },
+        "imageContrast": {
+          "requiredViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "observedViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "missingViewports": [],
+          "complete": true
+        },
+        "motionRestraint": {
+          "requiredViewports": [],
+          "observedViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "missingViewports": [],
+          "complete": true
+        },
+        "imageryCoherence": {
+          "requiredViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "observedViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "missingViewports": [],
+          "complete": true
+        },
+        "factualRestraint": {
+          "requiredViewports": [],
+          "observedViewports": [
+            "desktop",
+            "tablet",
+            "phone"
+          ],
+          "missingViewports": [],
+          "complete": true
+        }
+      }
     }
   ],
-  "delivery": null
+  "delivery": {
+    "schemaVersion": "2.0",
+    "mode": "cloudflare",
+    "slug": "juniper-oven",
+    "selectedCycle": 2,
+    "commit": "fe6fb5c4d65fcb5ddadc83caebdbd80a07fb0fd1",
+    "url": "https://mainstreet-hackathon.pages.dev/",
+    "immutableUrl": "https://8107ec4c.mainstreet-hackathon.pages.dev/",
+    "createdAt": "2026-07-19T20:04:25.898Z",
+    "status": 200,
+    "verified": true,
+    "aggregateSha256": "028250693db26937ae9f84f8a8046278921e3a291d18567ff635ef818738d5c8",
+    "files": [
+      {
+        "path": "assets/context-threshold.png",
+        "bytes": 2361238,
+        "sha256": "7db9e7dd21d97b2dffa05782f422c154d6174a087b99f01f2d9bde304974d41a",
+        "status": 200,
+        "verified": true
+      },
+      {
+        "path": "assets/offerings-detail.png",
+        "bytes": 2398072,
+        "sha256": "823b4584a0b6db4978e3be676ee7269da8934059dec4993ba94e0edf99898f62",
+        "status": 200,
+        "verified": true
+      },
+      {
+        "path": "assets/workbench-hero.png",
+        "bytes": 2301673,
+        "sha256": "bdf9bde353711c3056c79b729794102eb40f290934c805e2f48337f521147f49",
+        "status": 200,
+        "verified": true
+      },
+      {
+        "path": "index.html",
+        "bytes": 4073,
+        "sha256": "95327b107031d8f33a3be83c606c87baf943f6eb4a29d4ecc1dd914f561045e4",
+        "status": 200,
+        "verified": true
+      },
+      {
+        "path": "script.js",
+        "bytes": 931,
+        "sha256": "8338c7eca7f263025e8db69bc5b8892d974ddca5d1915ca652de1ded12989de6",
+        "status": 200,
+        "verified": true
+      },
+      {
+        "path": "styles.css",
+        "bytes": 10197,
+        "sha256": "5ce980b6a1a973fb4db671804119e6c605b72db7424d6f4f8b2d6d2d57d277ce",
+        "status": 200,
+        "verified": true
+      }
+    ]
+  }
 }

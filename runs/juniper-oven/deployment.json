@@ -1,13 +1,57 @@
 {
-  "schemaVersion": "1.0",
-  "slug": "juniper-oven",
-  "selectedCycle": 3,
-  "createdAt": "2026-07-17T23:27:26.249Z",
+  "schemaVersion": "2.0",
   "mode": "cloudflare",
-  "projectName": "mainstreet-hackathon",
+  "slug": "juniper-oven",
+  "selectedCycle": 2,
+  "commit": "fe6fb5c4d65fcb5ddadc83caebdbd80a07fb0fd1",
   "url": "https://mainstreet-hackathon.pages.dev/",
-  "deploymentUrl": "https://60f9cf6d.mainstreet-hackathon.pages.dev/",
-  "verified": true,
+  "immutableUrl": "https://8107ec4c.mainstreet-hackathon.pages.dev/",
+  "createdAt": "2026-07-19T20:04:25.898Z",
   "status": 200,
-  "reason": null
+  "verified": true,
+  "aggregateSha256": "028250693db26937ae9f84f8a8046278921e3a291d18567ff635ef818738d5c8",
+  "files": [
+    {
+      "path": "assets/context-threshold.png",
+      "bytes": 2361238,
+      "sha256": "7db9e7dd21d97b2dffa05782f422c154d6174a087b99f01f2d9bde304974d41a",
+      "status": 200,
+      "verified": true
+    },
+    {
+      "path": "assets/offerings-detail.png",
+      "bytes": 2398072,
+      "sha256": "823b4584a0b6db4978e3be676ee7269da8934059dec4993ba94e0edf99898f62",
+      "status": 200,
+      "verified": true
+    },
+    {
+      "path": "assets/workbench-hero.png",
+      "bytes": 2301673,
+      "sha256": "bdf9bde353711c3056c79b729794102eb40f290934c805e2f48337f521147f49",
+      "status": 200,
+      "verified": true
+    },
+    {
+      "path": "index.html",
+      "bytes": 4073,
+      "sha256": "95327b107031d8f33a3be83c606c87baf943f6eb4a29d4ecc1dd914f561045e4",
+      "status": 200,
+      "verified": true
+    },
+    {
+      "path": "script.js",
+      "bytes": 931,
+      "sha256": "8338c7eca7f263025e8db69bc5b8892d974ddca5d1915ca652de1ded12989de6",
+      "status": 200,
+      "verified": true
+    },
+    {
+      "path": "styles.css",
+      "bytes": 10197,
+      "sha256": "5ce980b6a1a973fb4db671804119e6c605b72db7424d6f4f8b2d6d2d57d277ce",
+      "status": 200,
+      "verified": true
+    }
+  ]
 }

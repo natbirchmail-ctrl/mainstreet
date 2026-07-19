@@ -1,128 +1,389 @@
 {
   "rubricVersion": "1.0",
-  "score": 60,
-  "verdict": "revise",
-  "summary": "A distinctive, cohesive high-desert bakery concept with strong art direction, an effective hero, and an unusually memorable botanical trail. It is not ready for public presentation because the page cannot support a real visit or order, body copy is consistently undersized, the mobile header is cramped, and the desktop menu composition leaves an excessive empty half-page.",
+  "summary": "80/100. Juniper Oven has a confident editorial bakery aesthetic, strong warm color control, and a responsive hero that remains composed across all three viewports. The page is weakened by very small explanatory text in the dark context section, an overly empty closing section, generic guidance, and a neighborhood image that does not feel drawn from the same commissioned shoot as the bakery still lifes. The unsupported footer statement “Built for the neighborhood” also violates factual restraint.",
   "dimensions": {
     "layout": {
-      "score": 13,
-      "evidence": "The hero has a balanced text-and-illustration split, and the story and visit sections use a coherent vertical grid. However, the desktop menu section places nearly all content in the right half, leaving a very large empty field on the left. On mobile, the trail line crowds the content edge and some sections feel compressed against it.",
-      "fix": "On desktop, move the menu column approximately 100–140px left or place a supporting bread image or short seasonal note in the empty left field; on mobile, increase the content inset from the trail line by 8px."
+      "score": 15,
+      "evidence": "Desktop and tablet use a clean split hero and consistently aligned section margins. The three planning rows form a complete layout at every width. However, the desktop “Useful Directions” heading is visually detached from its image and rows, while “Confirm Details” leaves a disproportionately large empty field below a small copy block.",
+      "fix": "Reduce the vertical padding in “Confirm Details” and move the desktop planning heading closer to the image-and-row group."
     },
     "hierarchy": {
       "score": 13,
-      "evidence": "Large editorial headlines, compact eyebrows, numbered offerings, and the dark visit block establish a clear reading sequence. The primary hero action is visibly stronger than the secondary one. The ingredient warning competes heavily with the menu despite being provisional, while the actionable visit information ends in placeholders.",
-      "fix": "Reduce the ingredient note’s vertical padding slightly and replace the visit placeholders with one prominent status message until real details exist."
+      "evidence": "The business name leads the desktop, tablet, and phone hero clearly, with restrained eyebrows and a visible underlined action. The oversized monogram and decorative white rings occasionally compete with useful content, especially over the phone hero photograph and at the opening of the phone context section.",
+      "fix": "Reduce the phone rings and context monogram by roughly 15–20% so headings and bakery subjects remain the dominant focal points."
     },
     "color": {
       "score": 11,
-      "evidence": "Clay, paper, juniper green, charcoal, and rust form a cohesive palette that supports the high-desert positioning. The dark green visit panel and cream text have strong contrast. Some small olive-green and rust labels are faint against the paper background.",
-      "fix": "Darken the small green and rust eyebrow and number text by one shade while retaining the palette."
+      "evidence": "Warm paper, evergreen, cream, and food photography create a coherent and inviting palette across all viewports. The dark context section provides a strong transition, though its smallest cream text becomes visually fragile against the green.",
+      "fix": "Retain the palette but increase the size and weight of the context paragraph rather than changing the established colors."
     },
     "typography": {
-      "score": 10,
-      "evidence": "The display serif and italic treatment give the hero a recognizable editorial voice, and headline wrapping is generally deliberate. Body copy, navigation, metadata, and supporting labels are extremely small in both screenshots; the desktop menu description and mobile visit copy require effort to read. The mobile logo also wraps awkwardly into two lines.",
-      "fix": "Set all body and utility copy to at least 14px on desktop and 15–16px on mobile with a minimum 1.45 line-height, and keep the mobile wordmark on one line."
+      "score": 12,
+      "evidence": "The display serif gives “Juniper Oven,” “Useful Directions,” and “Confirm Details” a distinctive editorial voice, while the sans-serif supports navigation and body copy. In the desktop full page and especially the phone “Local Context” section, supporting copy is much smaller than the surrounding type and appears compressed.",
+      "fix": "Set the context paragraph to at least the same body size and line height used in the hero copy, with a narrower readable measure."
     },
     "mobile": {
-      "score": 10,
-      "evidence": "The layout collapses cleanly into one column, preserves both hero actions, and keeps the illustration and trail motif. However, the header compresses a two-line logo and three tiny links into a shallow row, tap targets appear undersized, multiple paragraphs are too small, and the trail line reduces an already narrow text measure.",
-      "fix": "Increase the mobile header height to about 56px, use one-line branding, and give navigation links at least 40px-high tap areas; raise body text sizes without narrowing the content column further."
+      "score": 12,
+      "evidence": "The phone layout stacks cleanly, preserves all three planning entries, and keeps the primary action visible before the hero image. The vertically stacked navigation consumes a tall header, and the oversized circular decoration crowds and crops the hero image; context copy is also too small for comfortable phone reading.",
+      "fix": "Use a compact single-row or two-row phone header, scale down the hero rings, and increase the context paragraph size."
     },
     "specificity": {
-      "score": 7,
-      "evidence": "Flagstaff, high-desert language, the AZ seal, seasonal baking, and the custom oven landscape make the concept feel locally directed rather than like a generic cafe template. Yet most business copy describes an evolving concept, and every practical detail—address, hours, ordering, contact, allergens, and full menu—is explicitly unavailable.",
-      "fix": "Before launch, replace the placeholder visit panel with confirmed address, hours, ordering method, and one contact channel, then publish at least a representative menu with prices and dietary markers."
+      "score": 6,
+      "evidence": "Bread Style, Sharing Size, and Flavor Direction provide bakery-relevant planning prompts without presenting inferred products as confirmed inventory. Nevertheless, the prompts remain broadly reusable, the neighborhood image lacks a visible bakery connection, and “Built for the neighborhood” attributes an unsupported local role to the business.",
+      "fix": "Remove the unsupported footer line and replace one generic prompt with clearly framed bakery-planning guidance that does not claim Juniper Oven provides a product or service."
     },
     "accessibility": {
       "score": 7,
-      "evidence": "A skip link is present in the visible text, section structure is visually clear, and primary text contrast is generally strong. Readability is undermined by very small body text and labels, while the compact mobile navigation and buttons appear below comfortable touch-target sizes. The secondary outlined button also has a relatively weak visual boundary.",
-      "fix": "Increase text and control sizes, provide 44px minimum touch targets, and strengthen the secondary button border and focus treatment."
+      "evidence": "A skip link is present in the visible-text evidence, primary text generally has strong contrast, the measured tablet and phone touch targets pass, and all first beats remain visible under normal, reduced-motion, and no-JavaScript conditions. The context paragraph and some planning descriptions are visibly undersized, particularly on phone and in the scaled desktop section.",
+      "fix": "Raise all supporting copy to a comfortably readable minimum size, especially the cream text in “Local Context,” while preserving current contrast."
     },
     "polish": {
-      "score": 5,
-      "evidence": "The custom landscape illustration, botanical line, AZ seal, restrained rules, aligned numbering, and consistent footer treatment feel intentionally art-directed. The major rough edges are functional and typographic rather than unfinished decorative execution.",
-      "fix": "Preserve the illustration and trail system while completing the content and type-size corrections."
+      "score": 4,
+      "evidence": "Borders, numbering, image crops, underlines, and section transitions are consistently restrained. Remaining roughness comes from the awkwardly cropped white rings, the disconnected desktop planning composition, and the excessive empty closing section.",
+      "fix": "Refine the ring crops and tighten the two lower section compositions without changing the overall editorial system."
     }
   },
   "strengths": [
-    "The high-desert oven illustration is distinctive, relevant to the business, and more memorable than generic bakery photography.",
-    "The juniper trail creates continuity across sections and survives the mobile layout without hiding content.",
-    "The serif and italic hero composition gives the brand a warm, quietly confident editorial character.",
-    "The palette is cohesive and strongly connected to clay, juniper, paper, and the surrounding landscape.",
-    "The page is transparent about unconfirmed information rather than inventing operational details."
+    "The split hero remains balanced on desktop and tablet and converts into a logical text-first phone composition.",
+    "The warm bakery still lifes, paper background, dark evergreen type, and restrained rules establish a memorable editorial identity.",
+    "All three planning entries render without empty slots, orphaned cards, or broken numbering at any viewport.",
+    "Guidance language generally avoids presenting inferred bread and pastry offerings as confirmed availability.",
+    "Reduced-motion and no-JavaScript observations show that meaningful content remains visible without animation."
   ],
   "issues": [
     {
       "priority": 1,
       "severity": "major",
       "dimension": "specificity",
-      "evidence": "The visit section says the address, hours, ordering availability, phone, email, and direct inquiries are all unavailable; the menu is also described only as an intended direction.",
-      "impact": "Visitors cannot decide when or where to visit, place an order, contact the bakery, or evaluate actual menu choices, so the site does not fulfill its core business purpose.",
-      "fix": "Do not publicly launch until the visit panel contains confirmed address, hours, ordering instructions, and at least one working contact method."
+      "evidence": "The footer visibly states “Built for the neighborhood” on desktop, tablet, and phone, but the claim policy contains no confirmed user clause supporting a neighborhood role or operation.",
+      "impact": "This turns an otherwise careful guidance-only page into an unsupported business-attributed claim and causes factual restraint to fail.",
+      "fix": "Delete “Built for the neighborhood” or replace it with non-claiming language such as “Planning guide.”"
     },
     {
       "priority": 2,
-      "severity": "major",
-      "dimension": "typography",
-      "evidence": "Supporting paragraphs, menu descriptions, navigation, footer copy, labels, and visit details render at very small sizes across desktop and mobile.",
-      "impact": "Critical menu, dietary, and visit information becomes difficult to scan or read, especially for low-vision visitors and on small screens.",
-      "fix": "Raise body copy to at least 14px desktop and 15–16px mobile, with utility text no smaller than 12px and line-height of at least 1.45."
+      "severity": "medium",
+      "dimension": "accessibility",
+      "evidence": "In the phone “Local Context” section, the cream paragraph beneath the heading is markedly smaller and tighter than body copy elsewhere; it is also unusually small in the desktop and tablet full-page views.",
+      "impact": "Important explanatory guidance is harder to scan and read, particularly for low-vision visitors and on small screens.",
+      "fix": "Increase that paragraph’s font size and line height to match the planning-row descriptions."
     },
     {
       "priority": 3,
       "severity": "medium",
-      "dimension": "layout",
-      "evidence": "On desktop, the long menu section reserves almost the entire left half for blank paper while all useful content occupies a narrow right column.",
-      "impact": "The composition feels underfilled and makes the menu less immediate than the hero promises.",
-      "fix": "Shift the menu content left by 100–140px or add one purposeful bakery image or seasonal feature to the empty column."
+      "dimension": "specificity",
+      "evidence": "The warm bakery still lifes in the hero and planning section are replaced by a sterile residential street image in “Local Context” across desktop, tablet, and phone.",
+      "impact": "The image feels like architectural visualization rather than part of the same bakery shoot, weakening both brand coherence and the section’s bakery relevance.",
+      "fix": "Replace the street image with a similarly graded contemporary photograph showing neighborhood context tied visibly to a cafe or bakery setting, without implying a specific location."
     },
     {
       "priority": 4,
       "severity": "medium",
-      "dimension": "mobile",
-      "evidence": "The mobile header squeezes a two-line wordmark and three tiny navigation links into a very shallow strip.",
-      "impact": "Brand recognition and navigation readability suffer, and the links do not appear to provide comfortable touch targets.",
-      "fix": "Use a 56px header, keep the wordmark on one line, and enlarge each navigation link to a minimum 40–44px tap height."
+      "dimension": "layout",
+      "evidence": "On desktop, “Useful Directions” sits high and to the right of a small image with a large unused area before the rows; “Confirm Details” uses a tall section for only a heading and short paragraph.",
+      "impact": "Lower-page pacing feels less intentional than the hero and makes the page appear unfinished or stretched.",
+      "fix": "Bring the planning heading into the image-and-list block and reduce the closing section’s vertical padding."
     },
     {
       "priority": 5,
       "severity": "medium",
-      "dimension": "accessibility",
-      "evidence": "Small colored eyebrows and rust menu numbers are faint on the cream background, while the outlined secondary action has a thin, subdued boundary.",
-      "impact": "Low-vision visitors may miss labels, item ordering, and the secondary call to action.",
-      "fix": "Darken the label colors and increase the secondary button border to a clearly contrasting 1.5–2px stroke."
+      "dimension": "mobile",
+      "evidence": "The phone header stacks IDEAS, CONTEXT, and DETAILS vertically beside the brand, while large overlapping rings cover substantial portions of the hero photograph.",
+      "impact": "Navigation consumes excessive opening space and the decoration competes with the bakery imagery rather than framing it.",
+      "fix": "Place the links in one compact row beneath the brand and reduce the phone ring diameter and overlap."
     },
     {
       "priority": 6,
       "severity": "minor",
-      "dimension": "hierarchy",
-      "evidence": "The large dark ingredient-warning card becomes one of the strongest elements in the menu despite containing only provisional information.",
-      "impact": "A caveat draws more attention than the bakery’s actual offerings.",
-      "fix": "Reduce the warning card’s padding and headline size while retaining its clear contrast."
+      "dimension": "polish",
+      "evidence": "The lower white ring is abruptly cut at the desktop and tablet hero boundary, while the phone composition clips multiple rings against the image edges.",
+      "impact": "The signature decoration reads partly as accidental overflow rather than a precisely art-directed motif.",
+      "fix": "Reposition the rings so each crop has a deliberate tangent to an image edge and does not obscure the central pastry."
     }
   ],
+  "laws": {
+    "headlineDiscipline": {
+      "status": "pass",
+      "evidence": [
+        {
+          "viewport": "desktop",
+          "observation": "Primary headings are the exact business name or two-word phrases: “Useful Directions,” “Local Context,” and “Confirm Details.” Supporting sentences explain rather than overloading headings."
+        },
+        {
+          "viewport": "tablet",
+          "observation": "The same concise heading structure remains intact without added explanatory headline copy."
+        },
+        {
+          "viewport": "phone",
+          "observation": "All primary headings retain clean two-word forms and actions remain directive, including “Explore Ideas.”"
+        }
+      ],
+      "fix": "No change required."
+    },
+    "foldComposition": {
+      "status": "pass",
+      "evidence": [
+        {
+          "viewport": "desktop",
+          "observation": "The initial fold presents eyebrow, business name, explanatory copy, action, and bakery image as one complete split composition."
+        },
+        {
+          "viewport": "tablet",
+          "observation": "The hero remains a complete text-and-image unit, with the action visible and no element stranded beyond the fold."
+        },
+        {
+          "viewport": "phone",
+          "observation": "The text block and action appear before the image, and enough of the bakery photograph is visible to complete the opening thought."
+        }
+      ],
+      "fix": "Preserve the text-first phone order while reducing decorative crowding."
+    },
+    "completeLayouts": {
+      "status": "pass",
+      "evidence": [
+        {
+          "viewport": "desktop",
+          "observation": "The repeating planning layout contains exactly three complete numbered rows with no empty column or orphan entry."
+        },
+        {
+          "viewport": "tablet",
+          "observation": "All three rows retain numbers, titles, descriptions, and separators in a balanced grid."
+        },
+        {
+          "viewport": "phone",
+          "observation": "The three entries stack completely with no phantom card, missing description, or broken count state."
+        }
+      ],
+      "fix": "No structural change required."
+    },
+    "firstBeatVisibility": {
+      "status": "pass",
+      "evidence": [
+        {
+          "viewport": "desktop",
+          "observation": "Mechanical observations report 4 of 4 first beats visible in normal, reduced-motion, and no-JavaScript renders."
+        },
+        {
+          "viewport": "tablet",
+          "observation": "Mechanical observations report 4 of 4 first beats visible in all three rendering conditions."
+        },
+        {
+          "viewport": "phone",
+          "observation": "Mechanical observations report 4 of 4 first beats visible in all three rendering conditions, and the full-page image shows every section without hidden content."
+        }
+      ],
+      "fix": "Keep meaningful content independent of animation."
+    },
+    "imageContrast": {
+      "status": "pass",
+      "evidence": [
+        {
+          "viewport": "desktop",
+          "observation": "Hero text is placed on an uninterrupted paper field rather than over the photograph; cream context text sits on solid evergreen."
+        },
+        {
+          "viewport": "tablet",
+          "observation": "The split hero preserves a clean text background, and the context copy remains separated from the adjacent street image."
+        },
+        {
+          "viewport": "phone",
+          "observation": "All text appears on solid paper or evergreen fields; the stacked photographs carry decoration but no overlaid reading copy."
+        }
+      ],
+      "fix": "Preserve the separation between reading text and detailed imagery."
+    },
+    "motionRestraint": {
+      "status": "pass",
+      "evidence": [
+        {
+          "viewport": "desktop",
+          "observation": "Only the staged hero entrance is declared; its target is visible normally, reduced motion disables it at 0.01 ms, and the no-JavaScript fallback remains visible."
+        },
+        {
+          "viewport": "tablet",
+          "observation": "The single motion root passes normal and reduced-motion contracts, with no competing animated panel or delayed first beat."
+        },
+        {
+          "viewport": "phone",
+          "observation": "The same single target remains visible under normal, reduced-motion, and no-JavaScript conditions; the static composition does not depend on motion."
+        }
+      ],
+      "fix": "Retain the single restrained entrance and avoid adding simultaneous section animations."
+    },
+    "imageryCoherence": {
+      "status": "fail",
+      "evidence": [
+        {
+          "viewport": "desktop",
+          "observation": "The two warm, tactile bakery still lifes appear related, but the residential street image has a sterile architectural-render quality and no visible bakery connection."
+        },
+        {
+          "viewport": "tablet",
+          "observation": "The tonal grade is similar, yet the context image’s subject, lighting language, and apparent production style remain distinct from the food photography."
+        },
+        {
+          "viewport": "phone",
+          "observation": "Stacking makes the mismatch more pronounced: two close bakery still lifes are followed by an unrelated generic housing scene."
+        }
+      ],
+      "fix": "Use a contemporary neighborhood photograph with the same warm, tactile photographic treatment and a credible visual connection to bakery or cafe context."
+    },
+    "factualRestraint": {
+      "status": "fail",
+      "evidence": [
+        {
+          "viewport": "desktop",
+          "observation": "The footer states “Built for the neighborhood,” attributing an unconfirmed neighborhood role to Juniper Oven."
+        },
+        {
+          "viewport": "tablet",
+          "observation": "The same unsupported business-attributed statement remains visible in the footer."
+        },
+        {
+          "viewport": "phone",
+          "observation": "“Built for the neighborhood” appears as a standalone footer line and reads as a factual brand claim."
+        },
+        {
+          "viewport": "source",
+          "observation": "The claim policy provides no confirmed user clause beyond the business name; category, audience, and neighborhood positioning are unconfirmed."
+        }
+      ],
+      "fix": "Remove the footer claim and retain only guidance language or the confirmed business name."
+    }
+  },
   "revisionBrief": {
     "mustFix": [
-      "Add confirmed address, hours, ordering instructions, and a usable contact method before public launch.",
-      "Publish a real or representative menu with prices and dietary or allergen indicators.",
-      "Increase body, utility, and navigation text sizes across both viewports.",
-      "Rebuild the mobile header with a one-line wordmark and accessible tap targets.",
-      "Resolve the excessive empty left side of the desktop menu section.",
-      "Strengthen contrast for small labels and the outlined secondary action."
+      "Remove or neutralize “Built for the neighborhood” because no confirmed clause supports it.",
+      "Increase the size and line height of the “Local Context” explanatory copy across all viewports.",
+      "Replace the residential street image with a photograph that matches the bakery still lifes in subject relevance and commissioned-shoot character.",
+      "Tighten the oversized closing section and reconnect the desktop planning heading with its image and rows.",
+      "Compact the phone navigation and reduce the size and overlap of the white hero rings."
     ],
     "preserve": [
-      "The custom high-desert oven illustration and geometric landscape.",
-      "The juniper trail as the page’s signature connective device.",
-      "The clay, paper, juniper, charcoal, and rust palette.",
-      "The editorial serif and italic headline character.",
-      "The AZ high-desert seal and Flagstaff-specific visual language.",
-      "The clear, honest treatment of information that has not yet been confirmed."
+      "The warm paper, evergreen, and cream palette.",
+      "The editorial serif and concise two-word heading system.",
+      "The text-first phone hero and visible underlined “Explore Ideas” action.",
+      "The complete three-row planning layout and its numbered separators.",
+      "The restrained single motion treatment with reduced-motion and no-JavaScript visibility.",
+      "The careful guidance-only disclaimer that service and availability details are not confirmed."
     ]
   },
-  "visionScore": 76,
-  "cycle": 1,
+  "score": 80,
+  "lawCoverage": {
+    "headlineDiscipline": {
+      "requiredViewports": [],
+      "observedViewports": [
+        "desktop",
+        "tablet",
+        "phone"
+      ],
+      "missingViewports": [],
+      "complete": true
+    },
+    "foldComposition": {
+      "requiredViewports": [
+        "desktop",
+        "tablet",
+        "phone"
+      ],
+      "observedViewports": [
+        "desktop",
+        "tablet",
+        "phone"
+      ],
+      "missingViewports": [],
+      "complete": true
+    },
+    "completeLayouts": {
+      "requiredViewports": [],
+      "observedViewports": [
+        "desktop",
+        "tablet",
+        "phone"
+      ],
+      "missingViewports": [],
+      "complete": true
+    },
+    "firstBeatVisibility": {
+      "requiredViewports": [
+        "desktop",
+        "tablet",
+        "phone"
+      ],
+      "observedViewports": [
+        "desktop",
+        "tablet",
+        "phone"
+      ],
+      "missingViewports": [],
+      "complete": true
+    },
+    "imageContrast": {
+      "requiredViewports": [
+        "desktop",
+        "tablet",
+        "phone"
+      ],
+      "observedViewports": [
+        "desktop",
+        "tablet",
+        "phone"
+      ],
+      "missingViewports": [],
+      "complete": true
+    },
+    "motionRestraint": {
+      "requiredViewports": [],
+      "observedViewports": [
+        "desktop",
+        "tablet",
+        "phone"
+      ],
+      "missingViewports": [],
+      "complete": true
+    },
+    "imageryCoherence": {
+      "requiredViewports": [
+        "desktop",
+        "tablet",
+        "phone"
+      ],
+      "observedViewports": [
+        "desktop",
+        "tablet",
+        "phone"
+      ],
+      "missingViewports": [],
+      "complete": true
+    },
+    "factualRestraint": {
+      "requiredViewports": [],
+      "observedViewports": [
+        "desktop",
+        "tablet",
+        "phone"
+      ],
+      "missingViewports": [],
+      "complete": true
+    }
+  },
+  "lawGatePassed": false,
+  "lawGateFailures": [
+    "law:imageryCoherence:fail",
+    "law:factualRestraint:fail"
+  ],
+  "mechanicalPassed": true,
+  "assetsResolved": true,
   "mode": "vision",
-  "createdAt": "2026-07-17T23:07:58.383Z",
-  "mechanicalPassed": false
+  "hasMajorIssue": true,
+  "hardGateFailures": [
+    "score:below-threshold",
+    "issues:major",
+    "law:imageryCoherence:fail",
+    "law:factualRestraint:fail"
+  ],
+  "shipEligible": false,
+  "verdict": "revise",
+  "evidencePacketSha256": "810b99ac6a3f0b9686a63a3e1b5789eff08ccf3264660deaf230f98cd6e4edef",
+  "cycle": 1,
+  "createdAt": "2026-07-19T20:00:04.829Z"
 }

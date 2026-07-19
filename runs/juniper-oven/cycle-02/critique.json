@@ -1,126 +1,362 @@
 {
   "rubricVersion": "1.0",
-  "score": 78,
-  "verdict": "revise",
-  "summary": "The desktop page has a distinctive, credible high-desert bakery identity, strong editorial composition, and a memorable botanical trail. It is not ready to ship because the mobile header, buttons, labels, and body copy are visibly undersized, while the visit CTA contradicts the prominent message that no visit information is available. Repeated concept-stage disclaimers also make the business feel less concrete than the visual presentation suggests.",
+  "summary": "85/100. A warm, coherent editorial guide with strong bakery imagery, disciplined headings, reliable responsive stacking, and careful factual restraint. The main weaknesses are undersized supporting text on phone, excessive vertical space in the final desktop section, and decorative ring/monogram devices that feel less specific than the otherwise polished art direction.",
   "dimensions": {
     "layout": {
-      "score": 16,
-      "evidence": "The desktop hero, split menu section, centered trail, alternating story composition, and dark visit band create a controlled editorial rhythm. Mobile sections stack logically, but the trail is pushed against the left edge and several content blocks become narrow and dense.",
-      "fix": "On mobile, inset the botanical trail 8–12px farther from the edge and add a little more separation between menu rows and the ingredient panel."
+      "score": 15,
+      "evidence": "Desktop and tablet use balanced split compositions in the hero and Visit Context section, while the three planning rows align consistently. Phone stacking is orderly with no clipped or orphaned content. The desktop Confirm Details section, however, leaves a disproportionately large empty field beneath a short paragraph.",
+      "fix": "Reduce the desktop Confirm Details section’s vertical padding by roughly one third while retaining its quiet separation from the footer."
     },
     "hierarchy": {
-      "score": 13,
-      "evidence": "Large serif headlines, small uppercase eyebrows, numbered offerings, and contrasting panels make the main sections easy to scan. On mobile, very small supporting copy and labels weaken the hierarchy beneath otherwise strong headings.",
-      "fix": "Increase mobile body and label sizes while retaining the existing headline scale."
+      "score": 14,
+      "evidence": "Across all viewports, eyebrow, serif heading, explanation, and action form a clear reading sequence. The phone hero remains immediately understandable despite the two-line business name. Lower-section labels and row numbers are noticeably quieter without disappearing.",
+      "fix": "Slightly increase the contrast or weight of the small planning-row numbers so they remain useful wayfinding elements."
     },
     "color": {
       "score": 11,
-      "evidence": "Cream, clay, rust, and juniper green form a cohesive palette with strong dark-on-light contrast. The pale tan uppercase label inside the visit card and some tiny green or rust labels have weaker practical contrast at their displayed size.",
-      "fix": "Darken the pale tan visit-card eyebrow and small rust numerals by one shade."
+      "evidence": "Warm paper, dark evergreen, and amber photography form a restrained, cohesive palette. The dark Visit Context panel provides excellent contrast on desktop, tablet, and phone. Some fine rules, outlined circles, and small muted labels approach decorative faintness.",
+      "fix": "Darken the light divider and outline color slightly so fine graphic elements remain visible without becoming dominant."
     },
     "typography": {
-      "score": 11,
-      "evidence": "The serif display face gives the page a warm, crafted character, and the italic hero treatment is distinctive. Mobile navigation, captions, menu descriptions, disclaimer copy, and footer text appear markedly too small; the visit headline also breaks into several short lines.",
-      "fix": "Set mobile body copy to at least 14–16px with roughly 1.45 line height, labels to at least 11–12px, and slightly reduce the mobile visit headline so it wraps more evenly."
+      "score": 12,
+      "evidence": "The serif display face gives Juniper Oven and section headings a distinctive editorial character, while the sans-serif body copy remains plainspoken. On phone, planning-row descriptions and the image disclaimer are visibly small, and the dense narrow lines require more effort than the hero copy.",
+      "fix": "Raise phone row descriptions to at least 13px with modestly increased line-height, and enlarge the image disclaimer by about 1px."
     },
     "mobile": {
-      "score": 9,
-      "evidence": "The overall stacking order is coherent and the hero artwork scales cleanly, but the header is cramped, the four navigation items are tiny, and both hero buttons appear substantially shorter than comfortable touch targets. Dense copy in the menu, ingredient, story, visit, and footer areas requires effort to read.",
-      "fix": "Replace the mobile text navigation with one 44px menu control and make both hero actions at least 44px tall."
+      "score": 13,
+      "evidence": "At 390px, the navigation remains readable, the hero name wraps cleanly, imagery crops around recognizable focal subjects, and all three planning rows stack without broken columns. The header consumes two rows and several lower text elements are small, but the page remains usable and visually ordered.",
+      "fix": "Tighten the vertical gap between the phone brand row and navigation by about 6–8px, then use the saved space to enlarge lower supporting copy."
     },
     "specificity": {
-      "score": 7,
-      "evidence": "Flagstaff, high-desert language, the AZ seal, oven illustration, seasonal menu framing, and named categories establish a recognizable concept. However, nearly every offering remains generic, and repeated phrases such as “concept,” “intended direction,” and “not confirmed” prevent visitors from learning what makes this bakery materially different.",
-      "fix": "Consolidate the uncertainty into one status notice and replace one generic offering description with a concrete example once an item is approved."
+      "score": 8,
+      "evidence": "Bread Style, Visit Rhythm, Flavor Notes, and the explicit visual-reference disclaimer make the guide more tailored than generic cafe marketing. However, the repeated white rings and standalone “J” medallion read as abstract template decoration rather than a bakery-specific visual system.",
+      "fix": "Replace one ring motif or the generic J medallion with a restrained oven-window or scoring-mark detail that remains purely illustrative."
     },
     "accessibility": {
-      "score": 7,
-      "evidence": "A visible skip link is present in the supplied text, major sections have clear headings, and most color pairings are legible. Visible mobile text and navigation are too small, CTA heights appear below common 44px touch guidance, and the decorative trail closely approaches content without helping navigation.",
-      "fix": "Raise all mobile interactive targets to 44px minimum and eliminate text below 12px, with primary reading copy at 14px or larger."
+      "score": 8,
+      "evidence": "Dark green text on cream and cream text on evergreen are visibly strong, the active-looking action is underlined, and rendered mechanics report all first beats visible with reduced-motion and no-JavaScript fallbacks at every viewport. Phone captions and row descriptions are the main visible legibility concern.",
+      "fix": "Increase the smallest phone text and strengthen faint rules; preserve the existing high-contrast text/background pairings."
     },
     "polish": {
       "score": 4,
-      "evidence": "Illustration, borders, botanical details, numbering, and footer styling feel coordinated rather than templated. The mobile microtype and the mismatch between “Plan your visit” and “Please wait before planning a visit” are conspicuous final-pass problems.",
-      "fix": "Rename the unavailable visit CTA to “View opening status” until address and hours exist."
+      "evidence": "Image grading, spacing logic, thin rules, and section transitions are consistent across desktop, tablet, and phone. The oversized final-section whitespace and occasional arbitrary cropping of the large ring outlines keep the result just short of fully resolved.",
+      "fix": "Trim the final section and normalize ring placement so each crop appears deliberately anchored to a photographed object."
     }
   },
   "strengths": [
-    "The arched oven and high-desert landscape create a recognizable visual signature without relying on stock photography.",
-    "The central botanical trail successfully connects the menu, story, and visit sections on desktop.",
-    "The desktop serif typography and asymmetric editorial layouts feel warm, grounded, and craft focused.",
-    "The palette is cohesive and the dark green visit section provides an effective tonal transition.",
-    "The page is unusually transparent about unconfirmed menu, ingredient, and location information."
+    "The warm photographic treatment is consistent across hero, tabletop, and interior images.",
+    "Responsive layouts preserve clear focal crops and avoid empty grid slots or broken card states.",
+    "The editorial serif and restrained palette establish a recognizable, welcoming visual voice.",
+    "Visible copy consistently frames the page as guidance and explicitly labels imagery as reference material.",
+    "All four section first beats remain visible under normal, reduced-motion, and no-JavaScript observations."
   ],
   "issues": [
     {
       "priority": 1,
-      "severity": "major",
-      "dimension": "mobile",
-      "evidence": "At 390px, header links, labels, descriptions, footer text, and both hero actions are visibly miniature; the buttons appear only around half the height of a standard touch target.",
-      "impact": "Mobile visitors may struggle to read the page or accurately activate navigation and calls to action.",
-      "fix": "Use one 44px mobile menu control, make CTAs at least 44px tall, and set body copy to a minimum of 14px."
+      "severity": "medium",
+      "dimension": "accessibility",
+      "evidence": "On the 390px phone page, planning-row descriptions and the “Visual reference only” label are markedly smaller than surrounding body text.",
+      "impact": "Visitors with low vision or limited mobile display scaling may struggle to read useful guidance and the important image disclaimer.",
+      "fix": "Set phone row descriptions to at least 13px and enlarge the image disclaimer by approximately 1px with matching line-height."
     },
     {
       "priority": 2,
       "severity": "medium",
-      "dimension": "hierarchy",
-      "evidence": "The hero offers “Plan your visit,” but the visit section says opening details are unavailable and explicitly asks users to wait before planning a visit.",
-      "impact": "The primary journey promises an action the page cannot support, reducing trust and creating a dead-end interaction.",
-      "fix": "Change “Plan your visit” to “View opening status.”"
+      "dimension": "specificity",
+      "evidence": "Desktop, tablet, and phone reuse large white rings over bakery photographs, while Visit Context uses a generic circular J monogram.",
+      "impact": "These devices are visually polished but do not communicate the bakery-guide concept as distinctly as the copy and photography do.",
+      "fix": "Replace one repeated ring treatment or the J medallion with a simple oven-window or bread-scoring motif."
     },
     {
       "priority": 3,
-      "severity": "medium",
-      "dimension": "typography",
-      "evidence": "Menu descriptions, ingredient details, story paragraphs, visit details, and footer copy are small even on desktop and become especially compressed on mobile.",
-      "impact": "Important qualification and dietary-status information is harder to read than the decorative headings around it.",
-      "fix": "Increase supporting text by 2–3px on mobile and 1–2px in the desktop information panels."
+      "severity": "minor",
+      "dimension": "layout",
+      "evidence": "The desktop Confirm Details section contains only a heading and short paragraph but occupies a tall block with substantial unused space before the footer.",
+      "impact": "The page loses momentum at its final informational beat and feels slightly unfinished.",
+      "fix": "Reduce that section’s desktop top and bottom padding by roughly one third."
     },
     {
       "priority": 4,
-      "severity": "medium",
-      "dimension": "specificity",
-      "evidence": "The menu contains only broad categories, while multiple sections repeat that the concept, menu, dietary details, story, ordering, and location are unconfirmed.",
-      "impact": "The page reads more like a polished concept presentation than a useful bakery website for customers.",
-      "fix": "Combine repeated caveats into one clearly labeled development-status notice and remove duplicate qualification paragraphs."
-    },
-    {
-      "priority": 5,
       "severity": "minor",
-      "dimension": "color",
-      "evidence": "The pale tan “Before you plan a visit” label sits on a cream card at small size, and rust menu numbers are also fine and subdued.",
-      "impact": "These secondary cues lose definition, particularly for low-vision visitors.",
-      "fix": "Use the main dark green for the visit-card label and a darker rust for menu numbers."
-    },
-    {
-      "priority": 6,
-      "severity": "minor",
-      "dimension": "layout",
-      "evidence": "On mobile, the botanical trail and leaf markers sit very close to the viewport edge and occasionally feel detached from the section content they are meant to connect.",
-      "impact": "The signature device reads more like a border artifact than a guided narrative line.",
-      "fix": "Move the mobile trail inward by 8–12px and align each leaf marker with its associated section heading."
+      "dimension": "polish",
+      "evidence": "Several ring outlines are cropped at unrelated frame edges, especially at the bottom of the desktop and tablet hero images.",
+      "impact": "The decorative system can appear mechanically overlaid rather than intentionally tied to the food composition.",
+      "fix": "Reposition or scale the rings so each one frames a specific loaf, pastry, or plate and avoids incidental edge fragments."
     }
   ],
+  "laws": {
+    "headlineDiscipline": {
+      "status": "pass",
+      "evidence": [
+        {
+          "viewport": "desktop",
+          "observation": "Primary editorial headings are Juniper Oven, Useful Directions, Visit Context, and Confirm Details; the exact business name is exempt and all other headings contain two meaningful words."
+        },
+        {
+          "viewport": "tablet",
+          "observation": "The same concise heading system remains intact without explanatory sentences being promoted as headings."
+        },
+        {
+          "viewport": "phone",
+          "observation": "Juniper Oven wraps to two lines but remains the exact business name; Useful Directions, Visit Context, and Confirm Details stay concise and actions remain directive."
+        }
+      ],
+      "fix": "No change required."
+    },
+    "foldComposition": {
+      "status": "pass",
+      "evidence": [
+        {
+          "viewport": "desktop",
+          "observation": "The initial hero composes label, business name, explanation, action, and bakery image as one complete split-screen thought; lower openings pair their heading blocks with the relevant image or guidance."
+        },
+        {
+          "viewport": "tablet",
+          "observation": "The hero remains balanced at the initial fold, and reduced-motion lower sections open with complete heading, copy, and visual units."
+        },
+        {
+          "viewport": "phone",
+          "observation": "The initial viewport shows the full hero message and action before the bakery image begins; lower sections stack heading, explanation, and first visual or row in a coherent order."
+        }
+      ],
+      "fix": "No structural change required; only trim the final section’s excess desktop padding."
+    },
+    "completeLayouts": {
+      "status": "pass",
+      "evidence": [
+        {
+          "viewport": "desktop",
+          "observation": "All three numbered planning rows are populated, split sections have both image and text panels, and no phantom grid columns are visible."
+        },
+        {
+          "viewport": "tablet",
+          "observation": "The three-item sequence and two-panel context layout remain complete with consistent boundaries."
+        },
+        {
+          "viewport": "phone",
+          "observation": "All numbered items stack fully, and the image/context split converts into two complete consecutive panels without orphaned content."
+        }
+      ],
+      "fix": "No change required."
+    },
+    "firstBeatVisibility": {
+      "status": "pass",
+      "evidence": [
+        {
+          "viewport": "desktop",
+          "observation": "Rendered mechanics report 4 of 4 section first beats visible in normal, reduced-motion, and no-JavaScript states; the screenshots show each opening without concealed content."
+        },
+        {
+          "viewport": "tablet",
+          "observation": "Rendered mechanics report 4 of 4 first beats visible in all three rendering states."
+        },
+        {
+          "viewport": "phone",
+          "observation": "Rendered mechanics report 4 of 4 first beats visible in all three rendering states, and the stacked page exposes each heading promptly."
+        }
+      ],
+      "fix": "No change required."
+    },
+    "imageContrast": {
+      "status": "pass",
+      "evidence": [
+        {
+          "viewport": "desktop",
+          "observation": "Hero and context prose sit on solid cream or evergreen panels rather than over complex photographs; the only image label uses a dark backing."
+        },
+        {
+          "viewport": "tablet",
+          "observation": "Split panels preserve strong text/background separation, and decorative rings do not overlap instructional text."
+        },
+        {
+          "viewport": "phone",
+          "observation": "Text remains outside the hero and interior images, while “Visual reference only” is readable on a dark rectangular label over the photograph."
+        }
+      ],
+      "fix": "Preserve the solid text panels and backed image disclaimer."
+    },
+    "motionRestraint": {
+      "status": "pass",
+      "evidence": [
+        {
+          "viewport": "desktop",
+          "observation": "Normal rendering declares one staged hero entrance with one visible target; reduced motion disables it at 0.01ms maximum duration, and the no-JavaScript target remains visible."
+        },
+        {
+          "viewport": "tablet",
+          "observation": "The single motion root passes normal, reduced-motion, and no-JavaScript contracts, with no competing animated panels or hidden content."
+        },
+        {
+          "viewport": "phone",
+          "observation": "The same one-target entrance remains restrained; reduced-motion and no-JavaScript observations both preserve the visible composition and all first beats."
+        }
+      ],
+      "fix": "Keep motion limited to the single nonessential hero entrance."
+    },
+    "imageryCoherence": {
+      "status": "pass",
+      "evidence": [
+        {
+          "viewport": "desktop",
+          "observation": "Hero pastries, tabletop bread-and-coffee arrangement, and warm wood interior share amber grading, soft directional light, and contemporary styling."
+        },
+        {
+          "viewport": "tablet",
+          "observation": "Crops retain the same warm palette and recognizable bread, cup, plate, and interior focal points."
+        },
+        {
+          "viewport": "phone",
+          "observation": "Responsive crops remain deliberate and visually consistent; the interior is explicitly marked as a visual reference rather than presented as the business."
+        }
+      ],
+      "fix": "Preserve the current grading and focal crops; refine only the decorative ring anchoring."
+    },
+    "factualRestraint": {
+      "status": "pass",
+      "evidence": [
+        {
+          "viewport": "desktop",
+          "observation": "Visible copy describes preference-setting and a “possible stop,” labels the interior as visual reference only, and states that service and availability are unconfirmed."
+        },
+        {
+          "viewport": "tablet",
+          "observation": "No sales, ordering, hours, location, availability, or operational claim is presented; the page directs readers to confirm details with the business."
+        },
+        {
+          "viewport": "phone",
+          "observation": "The same disclaimers remain visible, and planning prompts are framed as general considerations rather than Juniper Oven offerings."
+        },
+        {
+          "viewport": "source",
+          "observation": "The guidance-only claim policy contains no confirmed user clauses or confirmed offerings; visible wording appropriately avoids attributing inferred bread, pastry, or cafe operations to the business."
+        }
+      ],
+      "fix": "Continue avoiding transactional actions or attributed offerings until a single confirmed user clause supports each full claim."
+    }
+  },
   "revisionBrief": {
     "mustFix": [
-      "Make mobile navigation and all calls to action at least 44px tall.",
-      "Increase mobile body, caption, disclaimer, and footer text to readable sizes.",
-      "Rename “Plan your visit” to “View opening status” while opening details remain unavailable.",
-      "Consolidate repeated concept-stage disclaimers into one concise status notice.",
-      "Strengthen contrast for the pale visit-card eyebrow and small rust numerals."
+      "Increase the smallest phone guidance and disclaimer text.",
+      "Reduce excessive desktop whitespace in the Confirm Details section.",
+      "Make at least one decorative brand device more bakery-specific and anchor ring crops more deliberately."
     ],
     "preserve": [
-      "The high-desert oven illustration and arched visual motif.",
-      "The cream, clay, rust, and juniper-green palette.",
-      "The central botanical trail as the page’s signature device.",
-      "The editorial serif headlines and italic hero emphasis.",
-      "The transparent handling of unconfirmed business information.",
-      "The desktop alternating section composition and AZ seal."
+      "Warm paper, evergreen, and amber photographic palette.",
+      "Concise two-word editorial headings and strong serif/sans-serif hierarchy.",
+      "Complete responsive stacking and clear image focal crops.",
+      "Explicit guidance-only language and visual-reference disclaimer.",
+      "Single restrained motion treatment with reduced-motion and no-JavaScript visibility."
     ]
   },
-  "cycle": 2,
+  "score": 85,
+  "lawCoverage": {
+    "headlineDiscipline": {
+      "requiredViewports": [],
+      "observedViewports": [
+        "desktop",
+        "tablet",
+        "phone"
+      ],
+      "missingViewports": [],
+      "complete": true
+    },
+    "foldComposition": {
+      "requiredViewports": [
+        "desktop",
+        "tablet",
+        "phone"
+      ],
+      "observedViewports": [
+        "desktop",
+        "tablet",
+        "phone"
+      ],
+      "missingViewports": [],
+      "complete": true
+    },
+    "completeLayouts": {
+      "requiredViewports": [],
+      "observedViewports": [
+        "desktop",
+        "tablet",
+        "phone"
+      ],
+      "missingViewports": [],
+      "complete": true
+    },
+    "firstBeatVisibility": {
+      "requiredViewports": [
+        "desktop",
+        "tablet",
+        "phone"
+      ],
+      "observedViewports": [
+        "desktop",
+        "tablet",
+        "phone"
+      ],
+      "missingViewports": [],
+      "complete": true
+    },
+    "imageContrast": {
+      "requiredViewports": [
+        "desktop",
+        "tablet",
+        "phone"
+      ],
+      "observedViewports": [
+        "desktop",
+        "tablet",
+        "phone"
+      ],
+      "missingViewports": [],
+      "complete": true
+    },
+    "motionRestraint": {
+      "requiredViewports": [],
+      "observedViewports": [
+        "desktop",
+        "tablet",
+        "phone"
+      ],
+      "missingViewports": [],
+      "complete": true
+    },
+    "imageryCoherence": {
+      "requiredViewports": [
+        "desktop",
+        "tablet",
+        "phone"
+      ],
+      "observedViewports": [
+        "desktop",
+        "tablet",
+        "phone"
+      ],
+      "missingViewports": [],
+      "complete": true
+    },
+    "factualRestraint": {
+      "requiredViewports": [],
+      "observedViewports": [
+        "desktop",
+        "tablet",
+        "phone"
+      ],
+      "missingViewports": [],
+      "complete": true
+    }
+  },
+  "lawGatePassed": true,
+  "lawGateFailures": [],
+  "mechanicalPassed": true,
+  "assetsResolved": true,
   "mode": "vision",
-  "createdAt": "2026-07-17T23:13:46.477Z",
-  "mechanicalPassed": true
+  "hasMajorIssue": false,
+  "hardGateFailures": [],
+  "shipEligible": true,
+  "verdict": "ship",
+  "evidencePacketSha256": "3e45e7fd2caa806e280ce0ff3edcb7bc3d64e185bcdc67308a551e4eb2adc31d",
+  "cycle": 2,
+  "createdAt": "2026-07-19T20:04:07.105Z"
 }

@@ -1,12 +1,54 @@
 {
   "cycle": 2,
   "fromCycle": 1,
-  "createdAt": "2026-07-17T23:12:41.347Z",
+  "createdAt": "2026-07-19T20:02:43.668Z",
   "source": "openai-revision",
   "fallbackReason": null,
   "designNotes": {
-    "aesthetic": "A high desert bakehouse expressed through warm paper, clay, rust, deep juniper green, editorial serif typography, and bold geometric food illustrations.",
-    "signatureMove": "The continuous juniper trail remains fully visible as a static guide through the menu, story, and visit chapters. A new bread board echoes its botanical marks and gives the desktop menu a balanced visual anchor.",
-    "rationale": "The revision removes the invalid security directive, enlarges reading text and controls, keeps the mobile wordmark on one line, strengthens label and button contrast, and gives every primary navigation target a comfortable touch area. The desktop menu now uses both columns without relying on unavailable photography. Unconfirmed operational details are consolidated into one clear status card rather than repeated as placeholders, while all original business facts and the distinctive oven landscape remain intact."
+    "aesthetic": "A warm editorial planning guide using paper tones, evergreen fields, quiet rules, tactile photography, and restrained circular oven forms.",
+    "signatureMove": "A staged hero entrance introduces the business name beside a static oven window inspired frame while every element remains visible in source.",
+    "rationale": "The revision removes the unsupported neighborhood claim, strengthens readable guidance, tightens lower page pacing, and replaces the unrelated street view with an anonymous cafe threshold from the same visual world. The complete numbered layout and text first phone hero remain intact.",
+    "shootDirection": "Use one contemporary commissioned shoot language throughout: soft natural morning light, warm neutral grading, tactile wood and stone, close to medium framing, calm perspective, no branding, and no documentary suggestion that any scene depicts the business.",
+    "motionMoves": [
+      "staged hero entrance"
+    ]
+  },
+  "imagePlan": [
+    {
+      "filename": "workbench-hero.png",
+      "role": "hero",
+      "alt": "Contemporary still life inspired by neighborhood bakery and cafe",
+      "prompt": "Contemporary editorial still life inspired by Neighborhood bakery and cafe with natural materials calm light no logos no signage and no business specific details",
+      "focalPoint": {
+        "x": 0.56,
+        "y": 0.44
+      }
+    },
+    {
+      "filename": "offerings-detail.png",
+      "role": "offerings",
+      "alt": "Materials and colors arranged as a planning reference",
+      "prompt": "Close editorial detail of materials and colors inspired by Neighborhood bakery and cafe with no logos no signage and no claimed business activity",
+      "focalPoint": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    {
+      "filename": "context-threshold.png",
+      "role": "context",
+      "alt": "Warm cafe threshold arranged as a neighborhood planning reference",
+      "prompt": "Contemporary editorial photograph of an anonymous cafe threshold with a warm paper toned interior glimpse, tactile wood and stone, soft natural morning light, no logos, no signage, no readable text, no identifiable people, no specific location, matching the quiet warm still life photography in the companion images",
+      "focalPoint": {
+        "x": 0.5,
+        "y": 0.48
+      }
+    }
+  ],
+  "assetSummary": {
+    "allResolved": true,
+    "requestCount": 3,
+    "successCount": 3,
+    "fallbackCount": 0
   }
 }

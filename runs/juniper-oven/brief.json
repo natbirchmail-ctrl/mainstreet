@@ -3,38 +3,32 @@
   "mode": "fast",
   "business": {
     "name": "Juniper Oven",
-    "city": "Flagstaff, AZ",
+    "city": null,
     "category": "Neighborhood bakery and cafe",
-    "summary": "A warm Flagstaff bakery concept centered on fresh bread, pastries, and simple cafe fare."
+    "summary": "A planning guide inspired by neighborhood bakery and cafe. Service and availability details are not confirmed."
   },
   "audience": {
-    "primary": "Flagstaff residents and visitors looking for fresh baked food in a welcoming local setting",
+    "primary": "Local residents seeking fresh baked goods and a welcoming everyday stop",
     "needs": [
-      "A clear view of the menu",
-      "Current hours and location",
-      "Easy ordering or visit information",
-      "Dietary and ingredient details"
+      "A clear view of what is available",
+      "Easy access to location and hours",
+      "Simple ways to ask about orders"
     ]
   },
   "offerings": [
     {
       "name": "Fresh bread",
-      "description": "Daily loaves made for the table or a quick stop.",
+      "description": "A focused selection of loaves and everyday breads.",
       "confidence": "inferred"
     },
     {
       "name": "Pastries",
-      "description": "Seasonal sweet and savory bakes.",
+      "description": "Sweet and savory pastries for morning visits and afternoon treats.",
       "confidence": "inferred"
     },
     {
-      "name": "Cafe fare",
-      "description": "Simple food and drinks for breakfast or lunch.",
-      "confidence": "inferred"
-    },
-    {
-      "name": "Order ahead",
-      "description": "A convenient option for planned pickups when available.",
+      "name": "Seasonal bakes",
+      "description": "A changing selection inspired by the season.",
       "confidence": "inferred"
     }
   ],
@@ -43,31 +37,31 @@
       "Warm",
       "Grounded",
       "Craft focused",
-      "Welcoming"
+      "Inviting"
     ],
-    "voice": "Direct, neighborly, and quietly confident",
-    "aesthetic": "A high desert bakehouse with warm clay surfaces, deep juniper green, natural paper textures, and close food photography.",
+    "voice": "Plainspoken, sensory, and welcoming without making unsupported claims.",
+    "aesthetic": "An editorial bakery style with warm paper tones, deep evergreen type, restrained botanical details, and close views of baked goods.",
     "signatureMove": {
-      "name": "Juniper trail",
-      "description": "A fine botanical line traces down the page as visitors move through the story, connecting the oven, menu, and visit sections.",
-      "touchFallback": "The complete line appears as a static visual guide, with every section and action always visible.",
-      "reducedMotion": "The line is shown fully drawn with no animation."
+      "name": "The Oven Window",
+      "description": "A small oven window illustration gently opens as visitors explore the page and reveals the featured bake while the same information remains visible in text.",
+      "touchFallback": "A clearly labeled button opens the featured bake panel without hiding any content.",
+      "reducedMotion": "The oven window appears open as a static illustration with the featured bake already visible."
     },
     "palette": {
       "background": "#F3EBDD",
-      "surface": "#D8C5A5",
-      "text": "#252820",
-      "accent": "#315748"
+      "surface": "#FFF9EF",
+      "text": "#24352D",
+      "accent": "#A45432"
     }
   },
   "content": {
-    "eyebrow": "A neighborhood oven in Flagstaff",
-    "headline": "Fresh from the oven. Made for the day ahead.",
-    "subheadline": "Bread, pastries, and simple cafe fare inspired by the warmth and character of the high desert.",
-    "about": "Juniper Oven is envisioned as a welcoming place for fresh baked food and an easy daily stop. The experience should feel thoughtful, local, and grounded in Flagstaff.",
-    "primaryAction": "Explore the menu",
-    "secondaryAction": "Plan your visit",
-    "contactPrompt": "Have a question about an order, ingredients, or your visit? Get in touch with the team."
+    "eyebrow": "Local inspiration",
+    "headline": "Explore Ideas",
+    "subheadline": "A practical starting point for considering neighborhood bakery and cafe before confirming details with the business.",
+    "about": "Use these notes to clarify priorities, setting, and personal preferences before confirming details.",
+    "primaryAction": "Explore Ideas",
+    "secondaryAction": "Read Guidance",
+    "contactPrompt": "Confirm Details"
   },
   "contact": {
     "phone": null,
@@ -81,11 +75,6 @@
         "label": "Business name",
         "value": "Juniper Oven",
         "source": "user"
-      },
-      {
-        "label": "City",
-        "value": "Flagstaff, AZ",
-        "source": "user"
       }
     ],
     "inferred": [
@@ -95,26 +84,30 @@
         "confidence": "medium"
       },
       {
-        "label": "Core offerings",
-        "value": "Fresh bread, pastries, cafe fare, and possible order ahead service",
+        "label": "Primary audience",
+        "value": "Local residents seeking fresh baked goods",
+        "confidence": "medium"
+      },
+      {
+        "label": "Offering mix",
+        "value": "Fresh bread, pastries, and seasonal bakes",
         "confidence": "low"
       },
       {
-        "label": "Brand positioning",
-        "value": "A warm, craft focused high desert bakehouse",
+        "label": "Brand direction",
+        "value": "Warm, grounded, and craft focused",
         "confidence": "medium"
       }
     ],
     "needed": [
+      "City",
       "Confirmed business category",
-      "Core menu and dietary options",
-      "Service model and ordering options",
+      "Confirmed products and services",
       "Phone number",
       "Email address",
       "Street address",
       "Opening hours",
-      "Approved business story",
-      "Photography and logo assets"
+      "Ordering details"
     ]
   }
 }

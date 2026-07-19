@@ -1,11 +1,53 @@
 {
   "cycle": 1,
-  "createdAt": "2026-07-17T22:55:51.173Z",
-  "source": "openai",
-  "fallbackReason": null,
+  "createdAt": "2026-07-19T19:58:39.070Z",
+  "source": "deterministic-fallback",
+  "fallbackReason": "Every section must declare a nonempty data-section hook.",
   "designNotes": {
-    "aesthetic": "A high desert bakehouse rendered with uncoated paper tones, clay warmth, deep juniper green, editorial serif type, and a restrained abstract oven landscape.",
-    "signatureMove": "A continuous juniper stem runs through the menu, story, and visit sections. Botanical nodes mark each chapter, while the layout shifts around the central stem on wide screens and keeps it as a clear side guide on mobile.",
-    "rationale": "The oversized type and simple oven illustration create a distinctive opening without relying on unavailable photography. Ruled menu rows feel practical and bakery specific, while transparent status language keeps every unconfirmed menu, ordering, contact, and visit detail honest."
+    "aesthetic": "An editorial bakery style with warm paper tones, deep evergreen type, restrained botanical details, and close views of baked goods.",
+    "signatureMove": "A small oven window illustration gently opens as visitors explore the page and reveals the featured bake while the same information remains visible in text.",
+    "rationale": "A deterministic editorial baseline preserves the brief and accessibility when model generation is unavailable.",
+    "shootDirection": "Natural morning light tactile materials calm framing and one consistent lens feel",
+    "motionMoves": [
+      "staged hero entrance"
+    ]
+  },
+  "imagePlan": [
+    {
+      "filename": "workbench-hero.png",
+      "role": "hero",
+      "alt": "Contemporary still life inspired by neighborhood bakery and cafe",
+      "prompt": "Contemporary editorial still life inspired by Neighborhood bakery and cafe with natural materials calm light no logos no signage and no business specific details",
+      "focalPoint": {
+        "x": 0.56,
+        "y": 0.44
+      }
+    },
+    {
+      "filename": "offerings-detail.png",
+      "role": "offerings",
+      "alt": "Materials and colors arranged as a planning reference",
+      "prompt": "Close editorial detail of materials and colors inspired by Neighborhood bakery and cafe with no logos no signage and no claimed business activity",
+      "focalPoint": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    {
+      "filename": "story-detail.png",
+      "role": "story",
+      "alt": "A quiet neighborhood scene in natural morning light",
+      "prompt": "Quiet contemporary neighborhood context in natural morning light with no logos no signage and no identifiable people",
+      "focalPoint": {
+        "x": 0.42,
+        "y": 0.52
+      }
+    }
+  ],
+  "assetSummary": {
+    "allResolved": true,
+    "requestCount": 3,
+    "successCount": 3,
+    "fallbackCount": 0
   }
 }

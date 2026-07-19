@@ -2,33 +2,29 @@
   "schemaVersion": "1.0",
   "fromCycle": 1,
   "toCycle": 2,
-  "createdAt": "2026-07-17T23:12:41.345Z",
+  "createdAt": "2026-07-19T20:01:31.435Z",
   "targetScore": 85,
   "mustKeep": [
     "Confirmed business facts and explicit unknowns",
     "Single page semantic structure",
-    "No JavaScript or external assets",
+    "Owned local assets and owned motion with visible source without JavaScript",
     "No emoji or visible dash characters",
     "Every current accessibility safeguard"
   ],
   "mustFix": [
-    "Add confirmed address, hours, ordering instructions, and a usable contact method before public launch.",
-    "Publish a real or representative menu with prices and dietary or allergen indicators.",
-    "Increase body, utility, and navigation text sizes across both viewports.",
-    "Rebuild the mobile header with a one-line wordmark and accessible tap targets.",
-    "Resolve the excessive empty left side of the desktop menu section.",
-    "Strengthen contrast for small labels and the outlined secondary action."
+    "Remove or neutralize “Built for the neighborhood” because no confirmed clause supports it.",
+    "Increase the size and line height of the “Local Context” explanatory copy across all viewports.",
+    "Replace the residential street image with a photograph that matches the bakery still lifes in subject relevance and commissioned-shoot character.",
+    "Tighten the oversized closing section and reconnect the desktop planning heading with its image and rows.",
+    "Compact the phone navigation and reduce the size and overlap of the white hero rings."
   ],
   "preserve": [
-    "The custom high-desert oven illustration and geometric landscape.",
-    "The juniper trail as the page’s signature connective device.",
-    "The clay, paper, juniper, charcoal, and rust palette.",
-    "The editorial serif and italic headline character.",
-    "The AZ high-desert seal and Flagstaff-specific visual language.",
-    "The clear, honest treatment of information that has not yet been confirmed."
+    "The warm paper, evergreen, and cream palette.",
+    "The editorial serif and concise two-word heading system.",
+    "The text-first phone hero and visible underlined “Explore Ideas” action.",
+    "The complete three-row planning layout and its numbered separators.",
+    "The restrained single motion treatment with reduced-motion and no-JavaScript visibility.",
+    "The careful guidance-only disclaimer that service and availability details are not confirmed."
   ],
-  "mechanicalFailures": [
-    "desktop: console errors",
-    "mobile: console errors"
-  ]
+  "mechanicalFailures": []
 }
