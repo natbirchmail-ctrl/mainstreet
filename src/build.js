@@ -279,9 +279,45 @@ export async function validateRenderedSourceVisibility(manifest) {
 
           const isTransparent = (color) =>
             color === "transparent" || /rgba\([^)]*,\s*0(?:\.0+)?\s*\)$/i.test(color);
-          const hasZeroOpacityFilter = (filter) =>
-            [...filter.matchAll(/\bopacity\(\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+))(%?)\s*\)/gi)]
-              .some((match) => Number.parseFloat(match[1]) <= 0);
+          const hasInvisibleOpacityFilter = (filter) => {
+            const matches = [...filter.matchAll(/\bopacity\(\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+))(%?)\s*\)/gi)];
+            if (matches.length === 0) return false;
+            const effectiveOpacity = matches.reduce((product, match) => {
+              const amount = Number.parseFloat(match[1]);
+              return product * (match[2] === "%" ? amount / 100 : amount);
+            }, 1);
+            return effectiveOpacity <= 0.01;
+          };
+          const hasUnsafeLegacyClip = (style, element) => {
+            if (style.position !== "absolute" && style.position !== "fixed") return false;
+            const clip = style.clip.trim();
+            if (clip === "auto") return false;
+            const rect = /^rect\((.*)\)$/i.exec(clip);
+            if (!rect) return true;
+            const values = rect[1].trim().split(/\s*,\s*|\s+/).filter(Boolean);
+            if (values.length !== 4) return true;
+            const bounds = element.getBoundingClientRect();
+            const autoValues = [0, bounds.width, bounds.height, 0];
+            const resolved = values.map((value, index) => {
+              if (value.toLowerCase() === "auto") return autoValues[index];
+              const length = /^([+-]?(?:\d+(?:\.\d*)?|\.\d+))px$/i.exec(value);
+              return length ? Number.parseFloat(length[1]) : Number.NaN;
+            });
+            if (!resolved.every(Number.isFinite)) return true;
+            const [top, right, bottom, left] = resolved;
+            const visibleWidth = Math.min(right, bounds.width) - Math.max(left, 0);
+            const visibleHeight = Math.min(bottom, bounds.height) - Math.max(top, 0);
+            return visibleWidth <= 0 || visibleHeight <= 0;
+          };
+          const hasClippedDisplacedText = (style, element) => {
+            if (style.overflowX !== "hidden" && style.overflowX !== "clip") return false;
+            const indent = /^([+-]?(?:\d+(?:\.\d*)?|\.\d+))(px|%)$/i.exec(style.textIndent);
+            if (!indent) return style.textIndent !== "0px";
+            const bounds = element.getBoundingClientRect();
+            const amount = Number.parseFloat(indent[1]);
+            const indentPixels = indent[2] === "%" ? (amount / 100) * bounds.width : amount;
+            return indentPixels <= -bounds.width || indentPixels >= bounds.width;
+          };
           const hasUnsafeClipPath = (clipPath, element) => {
             if (clipPath === "none") return false;
             const inset = /^inset\((.*)\)$/i.exec(clipPath);
@@ -337,15 +373,21 @@ export async function validateRenderedSourceVisibility(manifest) {
             if (style.contentVisibility === "hidden") reasons.push("content visibility hidden");
             if (Number.parseFloat(style.fontSize) <= 0.01) reasons.push("zero font size");
             if (isTransparent(style.color)) reasons.push("transparent text color");
-            if (hasZeroOpacityFilter(style.filter)) reasons.push("zero opacity filter");
+            if (hasInvisibleOpacityFilter(style.filter)) reasons.push("invisible opacity filter");
+            if (hasUnsafeLegacyClip(style, element)) reasons.push("unsafe legacy clip");
             if (hasUnsafeClipPath(style.clipPath, element)) reasons.push("unsafe clip path");
             if (hasUnsafeMaskImage(style)) reasons.push("unsafe mask image");
+            if (hasClippedDisplacedText(style, element)) reasons.push("clipped displaced text");
 
             if ((state.isHook || state.isContent) && style.display !== "contents") {
               const bounds = element.getBoundingClientRect();
               if (bounds.width <= 0 || bounds.height <= 0) reasons.push("zero rendered bounds");
               if (bounds.right <= 0 || bounds.left >= currentViewport.width) reasons.push("horizontally offscreen");
               if (bounds.bottom <= 0) reasons.push("above the rendered canvas");
+              if (
+                (style.position === "absolute" || style.position === "fixed") &&
+                bounds.top >= currentViewport.height
+              ) reasons.push("below the rendered canvas");
             }
             if (reasons.length > 0) failures.push({ element: describe(element), reasons });
           }

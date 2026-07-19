@@ -481,6 +481,54 @@ test("buildSite rejects offscreen or zero-bound motion content descendants at ev
   }
 });
 
+test("buildSite rejects legacy clipping, far edge positioning, and displaced text", async (t) => {
+  const attacks = [
+    [
+      "desktop headline descendant with zero area legacy clip",
+      '@media (min-width: 1200px) { [class="motion-copy"] h1 { position: absolute !important; clip: rect(0 0 0 0) !important; } }',
+    ],
+    [
+      "tablet headline descendant fixed beyond the right edge",
+      '@media (min-width: 600px) and (max-width: 900px) { [class="motion-copy"] h1 { position: fixed !important; left: calc(100vw + 10px) !important; top: 10px !important; } }',
+    ],
+    [
+      "phone headline descendant positioned below the viewport",
+      '@media (max-width: 500px) { [class="motion-copy"] h1 { position: absolute !important; top: calc(100vh + 10px) !important; } }',
+    ],
+    [
+      "desktop headline text displaced into clipped overflow",
+      '@media (min-width: 1200px) { [class="motion-copy"] h1 { text-indent: -9999px !important; overflow: hidden !important; white-space: nowrap !important; } }',
+    ],
+  ];
+  for (const [name, attack] of attacks) {
+    await t.test(name, async () => {
+      const candidate = modelManifest();
+      candidate.indexHtml = candidate.indexHtml.replace(
+        "<div data-first-beat data-motion-target>",
+        '<div class="motion-copy" data-first-beat data-motion-target>',
+      );
+      candidate.stylesCss += `\n${attack}`;
+      const result = await buildSite({ brief: brief(), structuredRequester: async () => candidate });
+      assert.equal(result.source, "deterministic-fallback");
+      assert.equal(result.stylesCss.includes(attack), false);
+    });
+  }
+});
+
+test("buildSite accepts ordinary positioning, legacy clips, and text indentation", async () => {
+  const candidate = modelManifest();
+  candidate.indexHtml = candidate.indexHtml.replace(
+    "<div data-first-beat data-motion-target>",
+    '<div class="motion-copy" data-first-beat data-motion-target>',
+  );
+  candidate.stylesCss += `
+@media (min-width: 1200px) { [class="motion-copy"] h1 { position: relative; left: 1px; top: 1px; clip: auto; } }
+@media (min-width: 600px) and (max-width: 900px) { [class="motion-copy"] h1 { position: absolute; left: 1rem; top: 1rem; clip: rect(0px, 1000px, 200px, 0px); } }
+@media (max-width: 500px) { [class="motion-copy"] h1 { text-indent: 1rem; overflow: hidden; } }`;
+  const result = await buildSite({ brief: brief(), structuredRequester: async () => candidate });
+  assert.equal(result.source, "openai");
+});
+
 test("buildSite rejects fully transparent filters and fully clipped motion source at every viewport", async (t) => {
   const attacks = [
     [
@@ -521,6 +569,50 @@ test("buildSite rejects fully transparent filters and fully clipped motion sourc
       assert.equal(result.stylesCss.includes(attack), false);
     });
   }
+});
+
+test("buildSite rejects filter opacity at or below the visible opacity threshold", async (t) => {
+  const attacks = [
+    [
+      "desktop hook decimal filter opacity below threshold",
+      '@media (min-width: 1200px) { [class="motion-copy"] { filter: opacity(.001) !important; } }',
+    ],
+    [
+      "tablet content percentage filter opacity below threshold",
+      '@media (min-width: 600px) and (max-width: 900px) { [class="motion-copy"] h1 { filter: opacity(.5%) !important; } }',
+    ],
+    [
+      "phone hook filter opacity on threshold",
+      '@media (max-width: 500px) { [class="motion-copy"] { filter: opacity(.01) !important; } }',
+    ],
+  ];
+  for (const [name, attack] of attacks) {
+    await t.test(name, async () => {
+      const candidate = modelManifest();
+      candidate.indexHtml = candidate.indexHtml.replace(
+        "<div data-first-beat data-motion-target>",
+        '<div class="motion-copy" data-first-beat data-motion-target>',
+      );
+      candidate.stylesCss += `\n${attack}`;
+      const result = await buildSite({ brief: brief(), structuredRequester: async () => candidate });
+      assert.equal(result.source, "deterministic-fallback");
+      assert.equal(result.stylesCss.includes(attack), false);
+    });
+  }
+});
+
+test("buildSite accepts filter opacity above the visible opacity threshold", async () => {
+  const candidate = modelManifest();
+  candidate.indexHtml = candidate.indexHtml.replace(
+    "<div data-first-beat data-motion-target>",
+    '<div class="motion-copy" data-first-beat data-motion-target>',
+  );
+  candidate.stylesCss += `
+@media (min-width: 1200px) { [class="motion-copy"] { filter: opacity(.02); } }
+@media (min-width: 600px) and (max-width: 900px) { [class="motion-copy"] h1 { filter: opacity(2%); } }
+@media (max-width: 500px) { [class="motion-copy"] { filter: opacity(.5); } }`;
+  const result = await buildSite({ brief: brief(), structuredRequester: async () => candidate });
+  assert.equal(result.source, "openai");
 });
 
 test("buildSite rejects unsupported clip path shapes through indirect selectors", async (t) => {
