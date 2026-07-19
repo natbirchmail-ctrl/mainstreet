@@ -155,9 +155,14 @@ export async function deployRun({
 
   const digestManifest = await createSiteDigestManifest(resolvedSiteDir);
   const shipEligible = await readShipEligibility(runDir, selectedCycle);
-  let result = shipEligible
-    ? await deployFn({ siteDir: resolvedSiteDir, digestManifest })
-    : localFallback("not_ship_eligible", digestManifest);
+  const commit = await resolveDeploymentCommit(commitResolver);
+  let result =
+    shipEligible && commit !== "unavailable"
+      ? await deployFn({ siteDir: resolvedSiteDir, digestManifest, commit })
+      : localFallback(
+          shipEligible ? "commit_unavailable" : "not_ship_eligible",
+          digestManifest,
+        );
   if (result.mode === "local" && startLocalFn) {
     const preview = await startLocalFn({ root: resolvedSiteDir, port: 4601 });
     result = {
@@ -172,7 +177,6 @@ export async function deployRun({
       })),
     };
   }
-  const commit = await commitResolver();
   const files = normalizeDeploymentFiles({
     sourceFiles: digestManifest.files,
     verificationFiles: result.files,
@@ -185,7 +189,7 @@ export async function deployRun({
     mode: result.mode,
     slug,
     selectedCycle,
-    commit: normalizeCommit(commit),
+    commit,
     url: result.url,
     immutableUrl: result.immutableUrl ?? result.deploymentUrl ?? null,
     createdAt: now().toISOString(),
@@ -207,6 +211,14 @@ export async function resolveGitCommit() {
       encoding: "utf8",
     });
     return normalizeCommit(stdout.trim());
+  } catch {
+    return "unavailable";
+  }
+}
+
+async function resolveDeploymentCommit(commitResolver) {
+  try {
+    return normalizeCommit(await commitResolver());
   } catch {
     return "unavailable";
   }

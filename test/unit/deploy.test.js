@@ -400,33 +400,45 @@ test("one stale image prevents Cloudflare verification even when index HTML matc
   assert.equal(result.reason, "cloudflare_failed");
 });
 
-test("deployRun records only the public allowlist bound to cycle, commit, and all files", async () => {
+test("deployRun resolves commit before Cloudflare and binds the exact input digest", async () => {
   const runDir = path.join(process.cwd(), "tmp", randomUUID(), "run");
   const siteDir = path.join(runDir, "cycle-02", "site");
   await makeCompleteSite(siteDir, "Allowlist");
   await writeEligibility(runDir, 2, true);
   const digestManifest = await createSiteDigestManifest(siteDir);
+  const events = [];
+  let deployedManifest;
 
   const result = await deployRun({
     runDir,
     slug: "allowlist-proof",
     selectedCycle: 2,
     siteDir,
-    deployFn: async () => ({
-      mode: "cloudflare",
-      url: "https://mainstreet-hackathon.pages.dev/",
-      immutableUrl: "https://allowlist.mainstreet-hackathon.pages.dev/",
-      verified: true,
-      status: 200,
-      aggregateSha256: digestManifest.aggregateSha256,
-      files: digestManifest.files.map((file) => ({ ...file, status: 200, verified: true })),
-      providerOutput: "must not persist",
-      projectName: "must-not-persist",
-    }),
-    commitResolver: async () => TEST_COMMIT,
+    deployFn: async ({ commit, digestManifest: manifest }) => {
+      events.push("deploy");
+      assert.equal(commit, TEST_COMMIT);
+      deployedManifest = manifest;
+      return {
+        mode: "cloudflare",
+        url: "https://mainstreet-hackathon.pages.dev/",
+        immutableUrl: "https://allowlist.mainstreet-hackathon.pages.dev/",
+        verified: true,
+        status: 200,
+        aggregateSha256: manifest.aggregateSha256,
+        files: manifest.files.map((file) => ({ ...file, status: 200, verified: true })),
+        providerOutput: "must not persist",
+        projectName: "must-not-persist",
+      };
+    },
+    commitResolver: async () => {
+      events.push("resolve");
+      return TEST_COMMIT;
+    },
     now: () => new Date("2026-07-17T20:00:00.000Z"),
   });
 
+  assert.deepEqual(events, ["resolve", "deploy"]);
+  assert.ok(deployedManifest);
   assert.deepEqual(Object.keys(result).sort(), [
     "aggregateSha256",
     "commit",
@@ -444,11 +456,86 @@ test("deployRun records only the public allowlist bound to cycle, commit, and al
   assert.equal(result.slug, "allowlist-proof");
   assert.equal(result.selectedCycle, 2);
   assert.equal(result.commit, TEST_COMMIT);
-  assert.equal(result.aggregateSha256, digestManifest.aggregateSha256);
+  assert.equal(result.aggregateSha256, deployedManifest.aggregateSha256);
+  assert.deepEqual(
+    result.files.map(({ path: filePath, bytes, sha256 }) => ({ path: filePath, bytes, sha256 })),
+    deployedManifest.files,
+  );
   assert.equal(JSON.stringify(result).includes("must not persist"), false);
   assert.ok(result.files.every((file) =>
     JSON.stringify(Object.keys(file).sort()) === JSON.stringify(["bytes", "path", "sha256", "status", "verified"])
   ));
+});
+
+test("deployRun skips Cloudflare and serves locally for an invalid commit", async () => {
+  const runDir = path.join(process.cwd(), "tmp", randomUUID(), "run");
+  const siteDir = path.join(runDir, "cycle-01", "site");
+  await makeCompleteSite(siteDir, "Invalid commit fallback");
+  await writeEligibility(runDir, 1, true);
+  let cloudflareCalled = false;
+  let localStarted = false;
+
+  const result = await deployRun({
+    runDir,
+    slug: "invalid-commit",
+    selectedCycle: 1,
+    siteDir,
+    deployFn: async ({ digestManifest }) => {
+      cloudflareCalled = true;
+      return {
+        mode: "cloudflare",
+        url: "https://mainstreet-hackathon.pages.dev/",
+        immutableUrl: "https://invalid.mainstreet-hackathon.pages.dev/",
+        verified: true,
+        status: 200,
+        files: digestManifest.files.map((file) => ({ ...file, status: 200, verified: true })),
+      };
+    },
+    startLocalFn: async () => {
+      localStarted = true;
+      return { url: "http://127.0.0.1:4601/", status: 200 };
+    },
+    commitResolver: async () => "not-a-git-commit",
+  });
+
+  assert.equal(cloudflareCalled, false);
+  assert.equal(localStarted, true);
+  assert.equal(result.mode, "local");
+  assert.equal(result.commit, "unavailable");
+  assert.equal(result.url, "http://127.0.0.1:4601/");
+  assert.equal(result.immutableUrl, null);
+});
+
+test("deployRun skips Cloudflare and completes locally when commit resolution fails", async () => {
+  const runDir = path.join(process.cwd(), "tmp", randomUUID(), "run");
+  const siteDir = path.join(runDir, "cycle-01", "site");
+  await makeCompleteSite(siteDir, "Resolver failure fallback");
+  await writeEligibility(runDir, 1, true);
+  let cloudflareCalled = false;
+
+  const result = await deployRun({
+    runDir,
+    slug: "resolver-failure",
+    selectedCycle: 1,
+    siteDir,
+    deployFn: async () => {
+      cloudflareCalled = true;
+      throw new Error("must not deploy");
+    },
+    startLocalFn: async () => ({
+      url: "http://127.0.0.1:4601/",
+      status: 200,
+    }),
+    commitResolver: async () => {
+      throw Object.assign(new Error("git unavailable"), { code: "ENOENT" });
+    },
+  });
+
+  assert.equal(cloudflareCalled, false);
+  assert.equal(result.mode, "local");
+  assert.equal(result.commit, "unavailable");
+  assert.equal(result.verified, true);
+  assert.equal(result.status, 200);
 });
 
 test("deployRun never calls Cloudflare for a noneligible selected cycle", async () => {
