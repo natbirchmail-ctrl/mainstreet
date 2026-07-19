@@ -1,6 +1,13 @@
 import { spawn } from "node:child_process";
+import path from "node:path";
 
 const INSTALL_TIMEOUT_MS = 120_000;
+const WINDOWS_COMMAND_PROCESSOR_FALLBACK = path.win32.join(
+  "C:" + path.win32.sep,
+  "Windows",
+  "System32",
+  "cmd.exe",
+);
 const SAFE_STAGES = new Set(["build", "critic", "revise"]);
 
 export class PlaywrightBrowserUnavailableError extends Error {
@@ -21,6 +28,7 @@ export function isPlaywrightChromiumExecutableMissing(error) {
 export async function installPlaywrightChromium({
   spawnFn = spawn,
   platform = process.platform,
+  commandProcessor = process.env.ComSpec,
   timeoutMs = INSTALL_TIMEOUT_MS,
 } = {}) {
   if (typeof spawnFn !== "function") {
@@ -30,11 +38,15 @@ export async function installPlaywrightChromium({
     throw new TypeError("The Chromium installer timeout must be a positive integer.");
   }
 
-  const command = platform === "win32" ? "npx.cmd" : "npx";
+  const { command, args } = createNpxInvocation({
+    platform,
+    commandProcessor,
+    action: "install",
+  });
   return new Promise((resolve, reject) => {
     let child;
     try {
-      child = spawnFn(command, ["playwright", "install", "chromium"], {
+      child = spawnFn(command, args, {
         shell: false,
         stdio: "ignore",
         timeout: timeoutMs,
@@ -68,6 +80,33 @@ export async function installPlaywrightChromium({
         settle(installerUnavailable("installer_nonzero"));
       }
     });
+  });
+}
+
+export function createNpxInvocation({
+  platform = process.platform,
+  commandProcessor = process.env.ComSpec,
+  action = "install",
+} = {}) {
+  const npxArgs =
+    action === "install"
+      ? ["playwright", "install", "chromium"]
+      : action === "version"
+        ? ["--version"]
+        : null;
+  if (!npxArgs) {
+    throw new TypeError("A known npx action is required.");
+  }
+  if (platform !== "win32") {
+    return Object.freeze({ command: "npx", args: Object.freeze(npxArgs) });
+  }
+
+  const trustedCommandProcessor = isTrustedCommandProcessor(commandProcessor)
+    ? commandProcessor
+    : WINDOWS_COMMAND_PROCESSOR_FALLBACK;
+  return Object.freeze({
+    command: trustedCommandProcessor,
+    args: Object.freeze(["/d", "/s", "/c", "npx.cmd", ...npxArgs]),
   });
 }
 
@@ -148,6 +187,14 @@ export function isPlaywrightBrowserUnavailable(error) {
 
 function installerUnavailable(reason) {
   return Object.freeze({ status: "unavailable", reason });
+}
+
+function isTrustedCommandProcessor(value) {
+  return (
+    typeof value === "string" &&
+    path.win32.isAbsolute(value) &&
+    path.win32.basename(value).toLowerCase() === "cmd.exe"
+  );
 }
 
 function validateInstallerResult(result) {

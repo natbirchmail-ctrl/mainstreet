@@ -4,6 +4,7 @@ import test from "node:test";
 import { syntheticWindowsPath, syntheticWindowsPathOnDrive } from "../helpers/windows-path.js";
 
 import * as pipelineModule from "../../src/pipeline.js";
+import * as recoveryModule from "../../src/playwright-recovery.js";
 import { isPlaywrightBrowserUnavailable } from "../../src/playwright-recovery.js";
 
 function recoveryApi(name) {
@@ -44,6 +45,7 @@ test("installer uses the platform safe exact command without shell or inherited 
   let invocation;
   const result = await installPlaywrightChromium({
     platform: "win32",
+    commandProcessor: syntheticWindowsPath("Windows", "System32", "cmd.exe"),
     timeoutMs: 45_000,
     spawnFn(command, args, options) {
       invocation = { command, args, options };
@@ -52,8 +54,8 @@ test("installer uses the platform safe exact command without shell or inherited 
   });
 
   assert.deepEqual(invocation, {
-    command: "npx.cmd",
-    args: ["playwright", "install", "chromium"],
+    command: syntheticWindowsPath("Windows", "System32", "cmd.exe"),
+    args: ["/d", "/s", "/c", "npx.cmd", "playwright", "install", "chromium"],
     options: {
       shell: false,
       stdio: "ignore",
@@ -63,6 +65,65 @@ test("installer uses the platform safe exact command without shell or inherited 
   });
   assert.deepEqual(result, { status: "installed", reason: null });
   assert.doesNotMatch(JSON.stringify(result), /private|stdout|stderr|chrome\.exe/i);
+});
+
+test("non Windows installer invokes npx directly with the exact install arguments", async () => {
+  const installPlaywrightChromium = recoveryApi("installPlaywrightChromium");
+  let invocation;
+  await installPlaywrightChromium({
+    platform: "linux",
+    spawnFn(command, args, options) {
+      invocation = { command, args, options };
+      return fakeChild((child) => child.emit("close", 0, null));
+    },
+  });
+  assert.equal(invocation.command, "npx");
+  assert.deepEqual(invocation.args, ["playwright", "install", "chromium"]);
+  assert.equal(invocation.options.shell, false);
+});
+
+test("Windows command builder uses fixed tokens and a safe command processor fallback", () => {
+  assert.equal(typeof recoveryModule.createNpxInvocation, "function");
+  assert.deepEqual(
+    recoveryModule.createNpxInvocation({
+      platform: "win32",
+      commandProcessor: syntheticWindowsPath("Trusted", "cmd.exe"),
+      action: "version",
+    }),
+    {
+      command: syntheticWindowsPath("Trusted", "cmd.exe"),
+      args: ["/d", "/s", "/c", "npx.cmd", "--version"],
+    },
+  );
+  assert.deepEqual(
+    recoveryModule.createNpxInvocation({
+      platform: "win32",
+      commandProcessor: "",
+      action: "install",
+    }),
+    {
+      command: syntheticWindowsPath("Windows", "System32", "cmd.exe"),
+      args: ["/d", "/s", "/c", "npx.cmd", "playwright", "install", "chromium"],
+    },
+  );
+});
+
+test("synchronous Windows spawn EINVAL is sanitized as installer start failure", async () => {
+  const installPlaywrightChromium = recoveryApi("installPlaywrightChromium");
+  const result = await installPlaywrightChromium({
+    platform: "win32",
+    commandProcessor: syntheticWindowsPath("Windows", "System32", "cmd.exe"),
+    spawnFn() {
+      throw Object.assign(new Error(`spawn EINVAL at ${syntheticWindowsPath("private", "cmd.exe")}`), {
+        code: "EINVAL",
+      });
+    },
+  });
+  assert.deepEqual(result, {
+    status: "unavailable",
+    reason: "installer_start_failed",
+  });
+  assert.doesNotMatch(JSON.stringify(result), /private|cmd\.exe|EINVAL/i);
 });
 
 test("installer returns sanitized typed outcomes for missing command nonzero exit and timeout", async (t) => {
