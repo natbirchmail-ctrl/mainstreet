@@ -231,6 +231,16 @@ test("missing asset evidence and browser failures fail mechanics with stable cod
       true,
     );
   }
+
+  const reused = await captureRenderedEvidence({
+    siteDir: fixture.siteDir,
+    cycleDir: fixture.cycleDir,
+    port: 4601,
+    startServer: async () => {
+      throw new Error("a complete failing packet must be reused without recapture");
+    },
+  });
+  assert.deepEqual(reused.mechanical, evidence.mechanical);
 });
 
 test("an unresolved asset manifest remains a separate nonmechanical gate", async () => {
@@ -437,6 +447,138 @@ test("partial and corrupt completed packets are rejected before recapture", asyn
           port: 4601,
           startServer: async () => {
             throw new Error("invalid packets must not be recaptured");
+          },
+        }),
+        (error) => error?.code === "EVIDENCE_PACKET_INVALID",
+      );
+    });
+  }
+});
+
+test("completed packets reject forged mechanics contexts totals failures and keys", async (t) => {
+  const fixture = await writeFixture({ move: "staged hero entrance" });
+  const evidence = await captureRenderedEvidence({
+    siteDir: fixture.siteDir,
+    cycleDir: fixture.cycleDir,
+    port: 4601,
+  });
+  assert.equal(evidence.mechanical.passed, true, JSON.stringify(evidence.mechanical.failures));
+  for (const modes of Object.values(evidence.mechanical.contexts)) {
+    for (const context of Object.values(modes)) {
+      assert.equal(context.passed, true);
+      assert.deepEqual(context.failures, []);
+      assert.deepEqual(context.totals, {
+        contextCount: 1,
+        externalRequestCount: context.network.externalRequestCount,
+        requestFailureCount: context.network.requestFailureCount,
+        consoleErrorCount: context.network.consoleErrorCount,
+        pageErrorCount: context.network.pageErrorCount,
+        brokenImageCount: context.base.brokenImageCount,
+      });
+    }
+  }
+
+  const mechanicalPath = path.join(fixture.cycleDir, "mechanical.json");
+  const manifestPath = path.join(fixture.cycleDir, "screenshots", "manifest.json");
+  const originalMechanical = JSON.parse(await readFile(mechanicalPath, "utf8"));
+  const originalManifest = JSON.parse(await readFile(manifestPath, "utf8"));
+
+  const cases = [
+    {
+      name: "forged empty matrix with zero totals and a pass verdict",
+      mutate(mechanical, manifest) {
+        mechanical.contexts = {};
+        mechanical.failures = [];
+        mechanical.passed = true;
+        mechanical.totals = {
+          contextCount: 0,
+          externalRequestCount: 0,
+          requestFailureCount: 0,
+          consoleErrorCount: 0,
+          pageErrorCount: 0,
+          brokenImageCount: 0,
+        };
+        manifest.network = {
+          externalRequestCount: 0,
+          requestFailureCount: 0,
+          consoleErrorCount: 0,
+          pageErrorCount: 0,
+        };
+      },
+    },
+    {
+      name: "tampered aggregate totals",
+      mutate(mechanical) {
+        mechanical.totals.contextCount += 1;
+      },
+    },
+    {
+      name: "tampered per context totals",
+      mutate(mechanical) {
+        mechanical.contexts.desktop.normal.totals.contextCount = 0;
+      },
+    },
+    {
+      name: "zeroed normal motion hidden behind a forged pass",
+      mutate(mechanical) {
+        Object.assign(mechanical.contexts.desktop.normal.motion, {
+          foundRootCount: 0,
+          activeRootCount: 0,
+          progressChangedCount: 0,
+          selectionChangedCount: 0,
+          targetCount: 0,
+          visibleTargetCount: 0,
+          contractPassed: true,
+        });
+      },
+    },
+    {
+      name: "tampered derived failures and verdict",
+      mutate(mechanical) {
+        mechanical.failures.push({ code: "forged-failure" });
+        mechanical.passed = false;
+      },
+    },
+    {
+      name: "coherently tampered context and aggregate failures",
+      mutate(mechanical) {
+        const forgedFailure = {
+          code: "h1-count",
+          viewport: "desktop",
+          mode: "normal",
+          count: 0,
+        };
+        mechanical.contexts.desktop.normal.failures = [forgedFailure];
+        mechanical.contexts.desktop.normal.passed = false;
+        mechanical.failures = [forgedFailure];
+        mechanical.passed = false;
+      },
+    },
+    {
+      name: "unexpected nested context key",
+      mutate(mechanical) {
+        mechanical.contexts.desktop.normal.base.unexpected = true;
+      },
+    },
+  ];
+
+  for (const packetCase of cases) {
+    await t.test(packetCase.name, async () => {
+      const mechanical = structuredClone(originalMechanical);
+      const manifest = structuredClone(originalManifest);
+      packetCase.mutate(mechanical, manifest);
+      await Promise.all([
+        writeFile(mechanicalPath, `${JSON.stringify(mechanical, null, 2)}\n`, "utf8"),
+        writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8"),
+      ]);
+
+      await assert.rejects(
+        captureRenderedEvidence({
+          siteDir: fixture.siteDir,
+          cycleDir: fixture.cycleDir,
+          port: 4601,
+          startServer: async () => {
+            throw new Error("invalid completed packets must not be recaptured");
           },
         }),
         (error) => error?.code === "EVIDENCE_PACKET_INVALID",

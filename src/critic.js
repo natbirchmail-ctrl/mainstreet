@@ -8,19 +8,16 @@ import {
 } from "./critic-policy.js";
 import { requestStructured } from "./lib/openai.js";
 import { resolveInside, writeJsonNew } from "./lib/runs.js";
+import { EVIDENCE_VIEWPORTS } from "./viewports.js";
 
 const projectRoot = new URL("../", import.meta.url);
 const promptUrl = new URL("prompts/critic-system.md", projectRoot);
 const sourcePromptUrl = new URL("prompts/critic-source-system.md", projectRoot);
 const schemaUrl = new URL("prompts/schemas/critique.schema.json", projectRoot);
-const VIEWPORTS = {
-  desktop: { width: 1440, height: 900, filename: "desktop-home.png" },
-  tablet: { width: 1024, height: 768, filename: "tablet-home.png" },
-  mobile: { width: 390, height: 844, filename: "mobile-home.png" },
-  narrow: { width: 320, height: 800, filename: null },
-};
+const CRITIC_VIEWPORT_NAMES = Object.freeze(["desktop", "tablet", "phone"]);
 
 export const captureCycle = captureRenderedEvidence;
+export { EVIDENCE_VIEWPORTS };
 
 export async function critiqueCycle({
   brief,
@@ -33,9 +30,9 @@ export async function critiqueCycle({
   const [systemPrompt, schema, desktop, tablet, phone, visibleText] = await Promise.all([
     readFile(promptUrl, "utf8"),
     readFile(schemaUrl, "utf8").then(JSON.parse),
-    readFile(resolveInside(screenshotsDir, VIEWPORTS.desktop.filename)),
-    readFile(resolveInside(screenshotsDir, VIEWPORTS.tablet.filename)),
-    readFile(resolveInside(screenshotsDir, VIEWPORTS.mobile.filename)),
+    readFile(resolveInside(screenshotsDir, EVIDENCE_VIEWPORTS.desktop.filename)),
+    readFile(resolveInside(screenshotsDir, EVIDENCE_VIEWPORTS.tablet.filename)),
+    readFile(resolveInside(screenshotsDir, EVIDENCE_VIEWPORTS.phone.filename)),
     readFile(resolveInside(cycleDir, "visible-text.txt"), "utf8"),
   ]);
 
@@ -53,11 +50,15 @@ export async function critiqueCycle({
           cycle: cycleNumberFromPath(cycleDir),
           brief,
           visibleText,
-          viewports: {
-            desktop: { width: 1440, height: 900 },
-            tablet: { width: 1024, height: 768 },
-            phone: { width: 390, height: 844 },
-          },
+          viewports: Object.fromEntries(
+            CRITIC_VIEWPORT_NAMES.map((name) => [
+              name,
+              {
+                width: EVIDENCE_VIEWPORTS[name].width,
+                height: EVIDENCE_VIEWPORTS[name].height,
+              },
+            ]),
+          ),
         }),
       },
       {

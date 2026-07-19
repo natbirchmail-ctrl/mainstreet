@@ -74,6 +74,170 @@ const ASSET_SUMMARY_FIELDS = Object.freeze([
 const EVIDENCE_PACKET_ERROR = "EVIDENCE_PACKET_INVALID";
 const UNTRUSTED_PATH_ERROR = "EVIDENCE_PATH_UNTRUSTED";
 const PNG_SIGNATURE = Buffer.from("89504e470d0a1a0a", "hex");
+const REQUIRED_CONTEXT_MODES = Object.freeze({
+  desktop: VISUAL_MODES,
+  tablet: VISUAL_MODES,
+  phone: VISUAL_MODES,
+  narrow: Object.freeze(["normal"]),
+});
+const CONTEXT_EVIDENCE_FIELDS = Object.freeze([
+  "viewport",
+  "mode",
+  "base",
+  "firstBeats",
+  "touchTargets",
+  "controls",
+  "motion",
+  "network",
+  "passed",
+  "failures",
+  "totals",
+]);
+const BASE_EVIDENCE_FIELDS = Object.freeze([
+  "viewportWidth",
+  "viewportHeight",
+  "scrollWidth",
+  "horizontalOverflow",
+  "h1Count",
+  "mainCount",
+  "internalAnchorCount",
+  "brokenAnchorCount",
+  "imageCount",
+  "missingAltCount",
+  "brokenImageCount",
+  "visibleTextLength",
+]);
+const FIRST_BEAT_EVIDENCE_FIELDS = Object.freeze([
+  "sectionCount",
+  "exactFirstBeatCount",
+  "visibleFirstBeatCount",
+]);
+const TOUCH_EVIDENCE_FIELDS = Object.freeze(["checkedCount", "passingCount"]);
+const CONTROL_EVIDENCE_FIELDS = Object.freeze([
+  "controlCount",
+  "ariaLinkedCount",
+  "roots",
+  "enterPassed",
+  "spacePassed",
+  "tapChecked",
+  "tapPassed",
+]);
+const CONTROL_ROOT_FIELDS = Object.freeze([
+  "slug",
+  "subjectIndex",
+  "rootCount",
+  "controlCount",
+  "enterPassed",
+  "spacePassed",
+  "tapChecked",
+  "tapPassed",
+  "ariaLinkedCount",
+]);
+const NORMAL_MOTION_FIELDS = Object.freeze([
+  "declaredRootCount",
+  "foundRootCount",
+  "activeRootCount",
+  "progressChangedCount",
+  "selectionChangedCount",
+  "targetCount",
+  "visibleTargetCount",
+  "contractPassed",
+]);
+const REDUCED_MOTION_FIELDS = Object.freeze([
+  "declaredRootCount",
+  "foundRootCount",
+  "disabledRootCount",
+  "targetCount",
+  "visibleTargetCount",
+  "panelCount",
+  "visiblePanelCount",
+  "maxDurationMs",
+  "reducedFallbackPassed",
+  "contractPassed",
+]);
+const NO_JAVASCRIPT_MOTION_FIELDS = Object.freeze([
+  "declaredRootCount",
+  "foundRootCount",
+  "firstBeatCount",
+  "visibleFirstBeatCount",
+  "targetCount",
+  "visibleTargetCount",
+  "panelCount",
+  "visiblePanelCount",
+  "noJavaScriptFallbackPassed",
+  "contractPassed",
+]);
+const EMPTY_MOTION_FIELDS = Object.freeze([
+  "declaredRootCount",
+  "foundRootCount",
+  "activeRootCount",
+  "disabledRootCount",
+  "targetCount",
+  "visibleTargetCount",
+  "panelCount",
+  "visiblePanelCount",
+  "maxDurationMs",
+  "progressChangedCount",
+  "selectionChangedCount",
+  "contractPassed",
+  "reducedFallbackPassed",
+  "noJavaScriptFallbackPassed",
+]);
+const NETWORK_EVIDENCE_FIELDS = Object.freeze([
+  "consoleErrorCount",
+  "pageErrorCount",
+  "externalRequestCount",
+  "requestFailureCount",
+]);
+const CONTEXT_TOTAL_FIELDS = Object.freeze([
+  "contextCount",
+  "externalRequestCount",
+  "requestFailureCount",
+  "consoleErrorCount",
+  "pageErrorCount",
+  "brokenImageCount",
+]);
+const CONTEXT_FAILURE_CODES = new Set([
+  "horizontal-overflow",
+  "h1-count",
+  "main-count",
+  "broken-internal-anchor",
+  "image-alt-missing",
+  "broken-image",
+  "visible-text-empty",
+  "section-first-beat-count",
+  "first-beat-zero-box",
+  "first-beat-hidden",
+  "first-beat-opacity",
+  "first-beat-outside-upper-fold",
+  "touch-target-too-small",
+  "motion-root-count",
+  "motion-root-not-active",
+  "motion-progress-static",
+  "motion-panel-selection-static",
+  "motion-target-not-visible",
+  "reduced-motion-root-not-disabled",
+  "reduced-motion-target-hidden",
+  "reduced-motion-panel-hidden",
+  "reduced-motion-duration",
+  "no-js-first-beat-hidden",
+  "no-js-motion-target-hidden",
+  "no-js-motion-panel-hidden",
+  "motion-control-root-missing",
+  "motion-control-root-count",
+  "motion-control-count",
+  "motion-control-aria-link",
+  "motion-control-click",
+  "motion-control-state",
+  "motion-control-focus",
+  "motion-control-enter",
+  "motion-control-space",
+  "motion-control-tap",
+  "console-error",
+  "page-error",
+  "external-request",
+  "request-failed",
+]);
 
 export class CaptureUnavailableError extends Error {
   constructor(message, { cause } = {}) {
@@ -420,20 +584,27 @@ async function captureContext({
     }
 
     failures.push(...counterFailures(counters, viewportName, mode));
+    const sortedFailures = sortFailures(failures);
+    const coreEvidence = {
+      viewport: { width: viewport.width, height: viewport.height },
+      mode,
+      base,
+      firstBeats,
+      touchTargets,
+      controls,
+      motion,
+      network: { ...counters },
+    };
     return {
       screenshot,
       visibleText,
       evidence: {
-        viewport: { width: viewport.width, height: viewport.height },
-        mode,
-        base,
-        firstBeats,
-        touchTargets,
-        controls,
-        motion,
-        network: { ...counters },
+        ...coreEvidence,
+        passed: sortedFailures.length === 0,
+        failures: sortedFailures,
+        totals: summarizeContext(coreEvidence),
       },
-      failures,
+      failures: sortedFailures,
     };
   } finally {
     await context.close();
@@ -1513,6 +1684,17 @@ async function readBuildGate(target) {
   }
 }
 
+function summarizeContext(evidence) {
+  return {
+    contextCount: 1,
+    externalRequestCount: evidence.network.externalRequestCount,
+    requestFailureCount: evidence.network.requestFailureCount,
+    consoleErrorCount: evidence.network.consoleErrorCount,
+    pageErrorCount: evidence.network.pageErrorCount,
+    brokenImageCount: evidence.base.brokenImageCount,
+  };
+}
+
 function summarizeContexts(contexts) {
   const totals = {
     contextCount: 0,
@@ -1524,12 +1706,10 @@ function summarizeContexts(contexts) {
   };
   for (const modes of Object.values(contexts)) {
     for (const evidence of Object.values(modes)) {
-      totals.contextCount += 1;
-      totals.externalRequestCount += evidence.network.externalRequestCount;
-      totals.requestFailureCount += evidence.network.requestFailureCount;
-      totals.consoleErrorCount += evidence.network.consoleErrorCount;
-      totals.pageErrorCount += evidence.network.pageErrorCount;
-      totals.brokenImageCount += evidence.base.brokenImageCount;
+      const contextTotals = summarizeContext(evidence);
+      for (const field of CONTEXT_TOTAL_FIELDS) {
+        totals[field] += contextTotals[field];
+      }
     }
   }
   return totals;
@@ -1846,23 +2026,545 @@ function isReusableMechanical(candidate, { cycle, assetGate, buildGate }) {
     candidate.assetsResolved !== assetGate.assetsResolved ||
     candidate.assetManifestPresent !== assetGate.manifestPresent ||
     JSON.stringify(candidate.motionMoveSlugs) !== JSON.stringify(buildGate.motionMoveSlugs) ||
-    !isPlainObject(candidate.contexts) ||
+    !isReusableContexts(candidate.contexts, buildGate.motionMoveSlugs) ||
     !Array.isArray(candidate.failures) ||
     !isPlainObject(candidate.totals) ||
-    candidate.passed !== (candidate.failures.length === 0)
+    !hasExactKeys(candidate.totals, CONTEXT_TOTAL_FIELDS)
   ) {
     return false;
   }
+
+  const derivedTotals = summarizeContexts(candidate.contexts);
   if (
-    ![...assetGate.failures, ...buildGate.failures].every((required) =>
-      candidate.failures.some((failure) => failure?.code === required.code),
+    !CONTEXT_TOTAL_FIELDS.every(
+      (field) =>
+        isNonnegativeInteger(candidate.totals[field]) &&
+        candidate.totals[field] === derivedTotals[field],
     )
   ) {
     return false;
   }
-  return candidate.failures.every(
-    (failure) => isPlainObject(failure) && typeof failure.code === "string" && failure.code,
+
+  const contextFailures = Object.values(candidate.contexts).flatMap((modes) =>
+    Object.values(modes).flatMap((context) => context.failures),
   );
+  const derivedFailures = sortFailures([
+    ...assetGate.failures,
+    ...buildGate.failures,
+    ...contextFailures,
+  ]);
+  return (
+    JSON.stringify(candidate.failures) === JSON.stringify(derivedFailures) &&
+    candidate.passed === (derivedFailures.length === 0)
+  );
+}
+
+function isReusableContexts(contexts, motionMoveSlugs) {
+  if (
+    !isPlainObject(contexts) ||
+    !hasExactKeys(contexts, Object.keys(REQUIRED_CONTEXT_MODES))
+  ) {
+    return false;
+  }
+  for (const [viewportName, requiredModes] of Object.entries(REQUIRED_CONTEXT_MODES)) {
+    const modes = contexts[viewportName];
+    if (!isPlainObject(modes) || !hasExactKeys(modes, requiredModes)) return false;
+    for (const mode of requiredModes) {
+      if (!isReusableContext(modes[mode], { viewportName, mode, motionMoveSlugs })) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+function isReusableContext(candidate, { viewportName, mode, motionMoveSlugs }) {
+  const viewport = EVIDENCE_VIEWPORTS[viewportName];
+  if (
+    !isPlainObject(candidate) ||
+    !hasExactKeys(candidate, CONTEXT_EVIDENCE_FIELDS) ||
+    !isPlainObject(candidate.viewport) ||
+    !hasExactKeys(candidate.viewport, ["width", "height"]) ||
+    candidate.viewport.width !== viewport.width ||
+    candidate.viewport.height !== viewport.height ||
+    candidate.mode !== mode ||
+    !isReusableBaseEvidence(candidate.base, viewport) ||
+    !isReusableFirstBeatEvidence(candidate.firstBeats) ||
+    !isReusableTouchEvidence(candidate.touchTargets, { viewportName, mode }) ||
+    !isReusableControlEvidence(candidate.controls, {
+      viewportName,
+      mode,
+      motionMoveSlugs,
+    }) ||
+    !isReusableMotionEvidence(candidate.motion, {
+      viewportName,
+      mode,
+      motionMoveSlugs,
+    }) ||
+    !isReusableNetworkEvidence(candidate.network) ||
+    typeof candidate.passed !== "boolean" ||
+    !isReusableContextFailures(candidate.failures, candidate, {
+      viewportName,
+      mode,
+      motionMoveSlugs,
+    }) ||
+    !motionContractMatchesFailures(candidate, {
+      viewportName,
+      mode,
+      motionMoveSlugs,
+    }) ||
+    !isPlainObject(candidate.totals) ||
+    !hasExactKeys(candidate.totals, CONTEXT_TOTAL_FIELDS)
+  ) {
+    return false;
+  }
+
+  const derivedTotals = summarizeContext(candidate);
+  if (
+    !CONTEXT_TOTAL_FIELDS.every(
+      (field) =>
+        isNonnegativeInteger(candidate.totals[field]) &&
+        candidate.totals[field] === derivedTotals[field],
+    )
+  ) {
+    return false;
+  }
+
+  const passedFromFailures = candidate.failures.length === 0;
+  return (
+    candidate.passed === passedFromFailures &&
+    candidate.passed === contextEvidencePasses(candidate, viewportName)
+  );
+}
+
+function isReusableBaseEvidence(candidate, viewport) {
+  if (
+    !isPlainObject(candidate) ||
+    !hasExactKeys(candidate, BASE_EVIDENCE_FIELDS) ||
+    candidate.viewportWidth !== viewport.width ||
+    candidate.viewportHeight !== viewport.height ||
+    !isNonnegativeInteger(candidate.scrollWidth) ||
+    candidate.scrollWidth < candidate.viewportWidth ||
+    typeof candidate.horizontalOverflow !== "boolean" ||
+    candidate.horizontalOverflow !== candidate.scrollWidth > candidate.viewportWidth + 1
+  ) {
+    return false;
+  }
+  for (const field of [
+    "h1Count",
+    "mainCount",
+    "internalAnchorCount",
+    "brokenAnchorCount",
+    "imageCount",
+    "missingAltCount",
+    "brokenImageCount",
+    "visibleTextLength",
+  ]) {
+    if (!isNonnegativeInteger(candidate[field])) return false;
+  }
+  return (
+    candidate.brokenAnchorCount <= candidate.internalAnchorCount &&
+    candidate.missingAltCount <= candidate.imageCount &&
+    candidate.brokenImageCount <= candidate.imageCount
+  );
+}
+
+function isReusableFirstBeatEvidence(candidate) {
+  return (
+    isPlainObject(candidate) &&
+    hasExactKeys(candidate, FIRST_BEAT_EVIDENCE_FIELDS) &&
+    FIRST_BEAT_EVIDENCE_FIELDS.every((field) => isNonnegativeInteger(candidate[field])) &&
+    candidate.exactFirstBeatCount <= candidate.sectionCount &&
+    candidate.visibleFirstBeatCount <= candidate.exactFirstBeatCount
+  );
+}
+
+function isReusableTouchEvidence(candidate, { viewportName, mode }) {
+  if (
+    !isPlainObject(candidate) ||
+    !hasExactKeys(candidate, TOUCH_EVIDENCE_FIELDS) ||
+    !TOUCH_EVIDENCE_FIELDS.every((field) => isNonnegativeInteger(candidate[field])) ||
+    candidate.passingCount > candidate.checkedCount
+  ) {
+    return false;
+  }
+  const probed = mode === "normal" && (viewportName === "tablet" || viewportName === "phone");
+  return probed || recordsEqual(candidate, emptyTouchEvidence(), TOUCH_EVIDENCE_FIELDS);
+}
+
+function isReusableControlEvidence(candidate, { viewportName, mode, motionMoveSlugs }) {
+  if (
+    !isPlainObject(candidate) ||
+    !hasExactKeys(candidate, CONTROL_EVIDENCE_FIELDS) ||
+    !isNonnegativeInteger(candidate.controlCount) ||
+    !isNonnegativeInteger(candidate.ariaLinkedCount) ||
+    candidate.ariaLinkedCount > candidate.controlCount ||
+    !Array.isArray(candidate.roots) ||
+    !["enterPassed", "spacePassed", "tapChecked", "tapPassed"].every(
+      (field) => typeof candidate[field] === "boolean",
+    )
+  ) {
+    return false;
+  }
+
+  const interactiveSlugs = motionMoveSlugs.filter((slug) => INTERACTIVE_SLUGS.has(slug));
+  if (mode !== "normal" || viewportName === "narrow" || interactiveSlugs.length === 0) {
+    return recordsEqual(candidate, emptyControlEvidence(), CONTROL_EVIDENCE_FIELDS);
+  }
+  if (candidate.roots.length !== interactiveSlugs.length) return false;
+
+  for (let index = 0; index < candidate.roots.length; index += 1) {
+    const record = candidate.roots[index];
+    if (
+      !isPlainObject(record) ||
+      !hasExactKeys(record, CONTROL_ROOT_FIELDS) ||
+      record.slug !== interactiveSlugs[index] ||
+      record.subjectIndex !== index ||
+      !["rootCount", "controlCount", "ariaLinkedCount"].every((field) =>
+        isNonnegativeInteger(record[field]),
+      ) ||
+      record.ariaLinkedCount > record.controlCount ||
+      !["enterPassed", "spacePassed", "tapChecked", "tapPassed"].every(
+        (field) => typeof record[field] === "boolean",
+      )
+    ) {
+      return false;
+    }
+    const tapWasChecked =
+      (viewportName === "tablet" || viewportName === "phone") &&
+      record.rootCount === 1 &&
+      record.controlCount >= 2;
+    if (record.tapChecked !== tapWasChecked || (!record.tapChecked && !record.tapPassed)) {
+      return false;
+    }
+  }
+
+  const controlCount = candidate.roots.reduce((sum, root) => sum + root.controlCount, 0);
+  const ariaLinkedCount = candidate.roots.reduce(
+    (sum, root) => sum + root.ariaLinkedCount,
+    0,
+  );
+  return (
+    candidate.controlCount === controlCount &&
+    candidate.ariaLinkedCount === ariaLinkedCount &&
+    candidate.enterPassed === candidate.roots.every((root) => root.enterPassed) &&
+    candidate.spacePassed === candidate.roots.every((root) => root.spacePassed) &&
+    candidate.tapChecked === (viewportName === "tablet" || viewportName === "phone") &&
+    candidate.tapPassed === candidate.roots.every((root) => root.tapPassed)
+  );
+}
+
+function isReusableMotionEvidence(candidate, { viewportName, mode, motionMoveSlugs }) {
+  if (!isPlainObject(candidate)) return false;
+  if (viewportName === "narrow") {
+    const expected = emptyMotionEvidence(motionMoveSlugs.length);
+    return (
+      hasExactKeys(candidate, EMPTY_MOTION_FIELDS) &&
+      recordsEqual(candidate, expected, EMPTY_MOTION_FIELDS)
+    );
+  }
+
+  const commonCountsValid =
+    candidate.declaredRootCount === motionMoveSlugs.length &&
+    isNonnegativeInteger(candidate.foundRootCount) &&
+    candidate.foundRootCount <= candidate.declaredRootCount &&
+    isNonnegativeInteger(candidate.targetCount) &&
+    isNonnegativeInteger(candidate.visibleTargetCount) &&
+    candidate.visibleTargetCount <= candidate.targetCount &&
+    typeof candidate.contractPassed === "boolean";
+  if (!commonCountsValid) return false;
+
+  if (mode === "normal") {
+    return (
+      hasExactKeys(candidate, NORMAL_MOTION_FIELDS) &&
+      isNonnegativeInteger(candidate.activeRootCount) &&
+      candidate.activeRootCount <= candidate.foundRootCount &&
+      isNonnegativeInteger(candidate.progressChangedCount) &&
+      candidate.progressChangedCount <=
+        motionMoveSlugs.filter((slug) => slug === "pinned-chapter-passage").length &&
+      isNonnegativeInteger(candidate.selectionChangedCount) &&
+      candidate.selectionChangedCount <=
+        motionMoveSlugs.filter((slug) => INTERACTIVE_SLUGS.has(slug)).length
+    );
+  }
+  if (mode === "reducedMotion") {
+    if (
+      !hasExactKeys(candidate, REDUCED_MOTION_FIELDS) ||
+      !isNonnegativeInteger(candidate.disabledRootCount) ||
+      candidate.disabledRootCount > candidate.foundRootCount ||
+      !isNonnegativeInteger(candidate.panelCount) ||
+      !isNonnegativeInteger(candidate.visiblePanelCount) ||
+      candidate.visiblePanelCount > candidate.panelCount ||
+      typeof candidate.maxDurationMs !== "number" ||
+      !Number.isFinite(candidate.maxDurationMs) ||
+      candidate.maxDurationMs < 0 ||
+      typeof candidate.reducedFallbackPassed !== "boolean"
+    ) {
+      return false;
+    }
+    const derivedPassed =
+      candidate.foundRootCount === candidate.declaredRootCount &&
+      candidate.disabledRootCount === candidate.declaredRootCount &&
+      candidate.visibleTargetCount === candidate.targetCount &&
+      candidate.visiblePanelCount === candidate.panelCount &&
+      candidate.maxDurationMs <= MAX_REDUCED_DURATION_MS;
+    return (
+      candidate.reducedFallbackPassed === derivedPassed &&
+      candidate.contractPassed === derivedPassed
+    );
+  }
+  if (mode === "javascriptDisabled") {
+    if (
+      !hasExactKeys(candidate, NO_JAVASCRIPT_MOTION_FIELDS) ||
+      !isNonnegativeInteger(candidate.firstBeatCount) ||
+      !isNonnegativeInteger(candidate.visibleFirstBeatCount) ||
+      candidate.visibleFirstBeatCount > candidate.firstBeatCount ||
+      !isNonnegativeInteger(candidate.panelCount) ||
+      !isNonnegativeInteger(candidate.visiblePanelCount) ||
+      candidate.visiblePanelCount > candidate.panelCount ||
+      typeof candidate.noJavaScriptFallbackPassed !== "boolean"
+    ) {
+      return false;
+    }
+    const derivedPassed =
+      candidate.foundRootCount === candidate.declaredRootCount &&
+      candidate.visibleFirstBeatCount === candidate.firstBeatCount &&
+      candidate.visibleTargetCount === candidate.targetCount &&
+      candidate.visiblePanelCount === candidate.panelCount;
+    return (
+      candidate.noJavaScriptFallbackPassed === derivedPassed &&
+      candidate.contractPassed === derivedPassed
+    );
+  }
+  return false;
+}
+
+function isReusableNetworkEvidence(candidate) {
+  return (
+    isPlainObject(candidate) &&
+    hasExactKeys(candidate, NETWORK_EVIDENCE_FIELDS) &&
+    NETWORK_EVIDENCE_FIELDS.every((field) => isNonnegativeInteger(candidate[field]))
+  );
+}
+
+function isReusableContextFailures(
+  failures,
+  context,
+  { viewportName, mode, motionMoveSlugs },
+) {
+  if (!Array.isArray(failures)) return false;
+  for (const failure of failures) {
+    if (
+      !isPlainObject(failure) ||
+      !Object.keys(failure).every((field) =>
+        ["code", "viewport", "mode", "subjectIndex", "count"].includes(field),
+      ) ||
+      !CONTEXT_FAILURE_CODES.has(failure.code) ||
+      failure.viewport !== viewportName ||
+      failure.mode !== mode ||
+      (Object.hasOwn(failure, "subjectIndex") &&
+        !isNonnegativeInteger(failure.subjectIndex)) ||
+      (Object.hasOwn(failure, "count") && !isNonnegativeInteger(failure.count)) ||
+      !failureSupportedByContext(failure.code, context, {
+        viewportName,
+        mode,
+        motionMoveSlugs,
+      })
+    ) {
+      return false;
+    }
+  }
+  if (JSON.stringify(failures) !== JSON.stringify(sortFailures(failures))) return false;
+
+  const baseAndNetworkCodes = new Set([
+    "horizontal-overflow",
+    "h1-count",
+    "main-count",
+    "broken-internal-anchor",
+    "image-alt-missing",
+    "broken-image",
+    "visible-text-empty",
+    "console-error",
+    "page-error",
+    "external-request",
+    "request-failed",
+  ]);
+  const derived = sortFailures([
+    ...baseFailures(context.base, viewportName, mode),
+    ...counterFailures(context.network, viewportName, mode),
+  ]);
+  const stored = failures.filter((failure) => baseAndNetworkCodes.has(failure.code));
+  return JSON.stringify(stored) === JSON.stringify(derived);
+}
+
+function failureSupportedByContext(code, context, { viewportName, mode, motionMoveSlugs }) {
+  if (
+    [
+      "horizontal-overflow",
+      "h1-count",
+      "main-count",
+      "broken-internal-anchor",
+      "image-alt-missing",
+      "broken-image",
+      "visible-text-empty",
+      "console-error",
+      "page-error",
+      "external-request",
+      "request-failed",
+    ].includes(code)
+  ) {
+    return true;
+  }
+  if (viewportName === "narrow") return false;
+  if (code === "section-first-beat-count") {
+    return context.firstBeats.exactFirstBeatCount < context.firstBeats.sectionCount;
+  }
+  if (
+    [
+      "first-beat-zero-box",
+      "first-beat-hidden",
+      "first-beat-opacity",
+      "first-beat-outside-upper-fold",
+    ].includes(code)
+  ) {
+    return context.firstBeats.visibleFirstBeatCount < context.firstBeats.exactFirstBeatCount;
+  }
+  if (code === "touch-target-too-small") {
+    return (
+      mode === "normal" &&
+      (viewportName === "tablet" || viewportName === "phone") &&
+      context.touchTargets.passingCount < context.touchTargets.checkedCount
+    );
+  }
+
+  const motion = context.motion;
+  if (code === "motion-root-count") {
+    return motion.foundRootCount < motion.declaredRootCount;
+  }
+  if (mode === "normal") {
+    if (code === "motion-root-not-active") {
+      return motion.activeRootCount < motion.foundRootCount;
+    }
+    if (code === "motion-progress-static") {
+      return (
+        motion.progressChangedCount <
+        motionMoveSlugs.filter((slug) => slug === "pinned-chapter-passage").length
+      );
+    }
+    if (code === "motion-panel-selection-static") {
+      return (
+        motion.selectionChangedCount <
+        motionMoveSlugs.filter((slug) => INTERACTIVE_SLUGS.has(slug)).length
+      );
+    }
+    if (code === "motion-target-not-visible") {
+      return motion.targetCount === 0 || motion.visibleTargetCount < motion.targetCount;
+    }
+    if (code.startsWith("motion-control-")) {
+      return !controlsEvidencePasses(context.controls);
+    }
+  }
+  if (mode === "reducedMotion") {
+    if (code === "reduced-motion-root-not-disabled") {
+      return motion.disabledRootCount < motion.declaredRootCount;
+    }
+    if (code === "reduced-motion-target-hidden") {
+      return motion.visibleTargetCount < motion.targetCount;
+    }
+    if (code === "reduced-motion-panel-hidden") {
+      return motion.visiblePanelCount < motion.panelCount;
+    }
+    if (code === "reduced-motion-duration") {
+      return motion.maxDurationMs > MAX_REDUCED_DURATION_MS;
+    }
+  }
+  if (mode === "javascriptDisabled") {
+    if (code === "no-js-first-beat-hidden") {
+      return motion.visibleFirstBeatCount < motion.firstBeatCount;
+    }
+    if (code === "no-js-motion-target-hidden") {
+      return motion.visibleTargetCount < motion.targetCount;
+    }
+    if (code === "no-js-motion-panel-hidden") {
+      return motion.visiblePanelCount < motion.panelCount;
+    }
+  }
+  return false;
+}
+
+function contextEvidencePasses(context, viewportName) {
+  if (
+    baseFailures(context.base, viewportName, context.mode).length > 0 ||
+    counterFailures(context.network, viewportName, context.mode).length > 0
+  ) {
+    return false;
+  }
+  if (viewportName === "narrow") return true;
+  return (
+    context.firstBeats.exactFirstBeatCount === context.firstBeats.sectionCount &&
+    context.firstBeats.visibleFirstBeatCount === context.firstBeats.sectionCount &&
+    context.touchTargets.passingCount === context.touchTargets.checkedCount &&
+    context.motion.contractPassed
+  );
+}
+
+function motionContractMatchesFailures(
+  context,
+  { viewportName, mode, motionMoveSlugs },
+) {
+  if (viewportName === "narrow") return true;
+  const hasMotionFailure = context.failures.some(
+    ({ code }) =>
+      code.startsWith("motion-") ||
+      code.startsWith("reduced-motion-") ||
+      code.startsWith("no-js-"),
+  );
+  if (context.motion.contractPassed !== !hasMotionFailure) return false;
+  if (mode !== "normal" || !context.motion.contractPassed) return true;
+
+  const pinnedCount = motionMoveSlugs.filter(
+    (slug) => slug === "pinned-chapter-passage",
+  ).length;
+  const interactiveCount = motionMoveSlugs.filter((slug) =>
+    INTERACTIVE_SLUGS.has(slug),
+  ).length;
+  const revealCount = motionMoveSlugs.filter(
+    (slug) => slug === "staged-hero-entrance" || slug === "gentle-scroll-reveals",
+  ).length;
+  return (
+    context.motion.foundRootCount === context.motion.declaredRootCount &&
+    context.motion.activeRootCount === context.motion.declaredRootCount &&
+    context.motion.progressChangedCount === pinnedCount &&
+    context.motion.selectionChangedCount === interactiveCount &&
+    context.motion.visibleTargetCount === context.motion.targetCount &&
+    (revealCount === 0 || context.motion.targetCount >= revealCount) &&
+    controlsEvidencePasses(context.controls)
+  );
+}
+
+function controlsEvidencePasses(controls) {
+  return (
+    controls.roots.every(
+      (root) =>
+        root.rootCount === 1 &&
+        root.controlCount >= 2 &&
+        root.ariaLinkedCount === root.controlCount &&
+        root.enterPassed &&
+        root.spacePassed &&
+        (!root.tapChecked || root.tapPassed),
+    ) &&
+    controls.enterPassed &&
+    controls.spacePassed &&
+    (!controls.tapChecked || controls.tapPassed)
+  );
+}
+
+function isNonnegativeInteger(value) {
+  return Number.isSafeInteger(value) && value >= 0;
+}
+
+function recordsEqual(left, right, fields) {
+  return fields.every((field) => JSON.stringify(left[field]) === JSON.stringify(right[field]));
 }
 
 function isReusableScreenshotManifest(candidate, { cycle, mechanical }) {
@@ -1900,8 +2602,7 @@ function isReusableScreenshotManifest(candidate, { cycle, mechanical }) {
     }
   }
   return networkFields.every(
-    (field) => Number.isInteger(candidate.network[field]) &&
-      candidate.network[field] >= 0 &&
+    (field) => isNonnegativeInteger(candidate.network[field]) &&
       candidate.network[field] === mechanical.totals[field],
   );
 }

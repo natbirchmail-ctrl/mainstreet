@@ -5,6 +5,7 @@ import path from "node:path";
 import test from "node:test";
 
 import {
+  EVIDENCE_VIEWPORTS as CRITIC_VIEWPORTS,
   captureCycle,
   critiqueCycle,
   runCriticCycle,
@@ -15,6 +16,7 @@ import {
   VISUAL_LAWS,
   normalizeModelCritique,
 } from "../../src/critic-policy.js";
+import { EVIDENCE_VIEWPORTS as CANONICAL_VIEWPORTS } from "../../src/viewports.js";
 
 const COMPLETE_VIEWPORTS = ["desktop", "tablet", "phone"];
 
@@ -46,6 +48,10 @@ function rawCritique({ issues = [], laws = {} } = {}) {
 
 test("captureCycle delegates to the rendered evidence implementation", () => {
   assert.equal(captureCycle, captureRenderedEvidence);
+});
+
+test("critic integrates the exact canonical evidence viewport object", () => {
+  assert.equal(CRITIC_VIEWPORTS, CANONICAL_VIEWPORTS);
 });
 
 test("critiqueCycle sends text desktop tablet and phone in exact order", async () => {
@@ -95,7 +101,18 @@ test("critiqueCycle sends text desktop tablet and phone in exact order", async (
   const packet = JSON.parse(request.inputContent[0].text);
   assert.equal(packet.visibleText, "Fresh from the oven");
   assert.equal(packet.brief.business.name, "Juniper Oven");
-  assert.deepEqual(Object.keys(packet.viewports), ["desktop", "tablet", "phone"]);
+  assert.deepEqual(
+    packet.viewports,
+    Object.fromEntries(
+      ["desktop", "tablet", "phone"].map((name) => [
+        name,
+        {
+          width: CANONICAL_VIEWPORTS[name].width,
+          height: CANONICAL_VIEWPORTS[name].height,
+        },
+      ]),
+    ),
+  );
   assert.equal("priorCritique" in packet, false);
   assert.equal("sourceCode" in packet, false);
 });
@@ -131,6 +148,7 @@ test("runCriticCycle derives an uncapped vision outcome from explicit gates", as
 test("runCriticCycle uses source review when screenshot capture fails", async () => {
   const runDir = path.join(process.cwd(), "tmp", randomUUID(), "run");
   const cycleDir = path.join(runDir, "cycle-01");
+  const syntheticCapturePath = [["C", ":"].join(""), "example", "site"].join("\\");
   await mkdir(path.join(cycleDir, "site"), { recursive: true });
   await writeFile(path.join(runDir, "brief.json"), JSON.stringify({ business: { name: "Juniper Oven" } }), "utf8");
   await writeFile(path.join(cycleDir, "site", "index.html"), "<!doctype html><main><h1>Proof</h1></main>", "utf8");
@@ -140,7 +158,7 @@ test("runCriticCycle uses source review when screenshot capture fails", async ()
     runDir,
     cycle: 1,
     captureCycleFn: async () => {
-      throw Object.assign(new Error("browser unavailable at C:\\example\\site"), {
+      throw Object.assign(new Error(`browser unavailable at ${syntheticCapturePath}`), {
         code: "CAPTURE_UNAVAILABLE",
       });
     },
@@ -158,7 +176,7 @@ test("runCriticCycle uses source review when screenshot capture fails", async ()
   }
   const failure = JSON.parse(await readFile(path.join(cycleDir, "capture-error.json"), "utf8"));
   assert.equal(failure.message, "Playwright capture failed. Source review was used.");
-  assert.doesNotMatch(JSON.stringify(failure), /private/i);
+  assert.doesNotMatch(JSON.stringify(failure), new RegExp("private", "i"));
 });
 
 test("runCriticCycle propagates integrity filesystem and programming faults", async (t) => {
