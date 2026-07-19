@@ -8,9 +8,10 @@
     "mainstreet": "bin/mainstreet.js"
   },
   "scripts": {
-    "test": "node --test",
-    "test:unit": "node --test test/unit/*.test.js",
-    "check": "node --check bin/mainstreet.js && node --test",
+    "test": "node --test --test-concurrency=1",
+    "test:unit": "node --test --test-concurrency=1 test/unit/*.test.js",
+    "check": "node --check bin/mainstreet.js && node --test --test-concurrency=1",
+    "release:check": "node tools/release-check.js",
     "mainstreet": "node bin/mainstreet.js"
   },
   "engines": {
