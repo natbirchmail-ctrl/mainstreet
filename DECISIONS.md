@@ -37,6 +37,8 @@ Out of scope: modifying the production factory, importing production customer co
 - DECISION: brand files supplied by the project owner are authorized for this public hackathon repository. Four required assets are tracked. The full source extract is retained only in the ignored recovery area.
 - DECISION: Mainstreet is repository-only software for the hackathon. The package is private to prevent accidental npm publication, while its local `mainstreet` binary remains available through `npm link`.
 - DECISION: the first public push will contain a reconstructed `main` history that preserves commit authors, messages, and timestamps while generalizing two early process references. The original objects remain recoverable in an ignored bundle and a local-only backup ref.
+- DECISION: non fast intake uses one bounded GPT generated interview of exactly six business questions. Terminal answers are length bounded, screened for sensitive data, and admitted as confirmed owner provenance. Fast mode remains fully noninteractive.
+- DECISION: one invocation scoped Playwright recovery owns browser availability across build, critique, and revision. An exact missing Chromium failure triggers one installer attempt and one retry. Persistent absence records sanitized evidence, permits source review and local delivery, and can never satisfy a public ship gate. Integrity, configuration, and programming failures still propagate.
 
 ## Quality rebuild decision
 
@@ -52,7 +54,7 @@ The rebuild replaces score led best effort publishing with a fail closed quality
 6. **Public promotion:** a ship eligible cycle must also resolve to a Git commit and pass canonical byte verification for every deployed HTML, CSS, JavaScript, and PNG file. Any failed gate, source fallback, deterministic image fallback, missing commit, missing credentials, or Cloudflare failure keeps delivery local and leaves the public alias unchanged.
 7. **Release proof:** the three public examples, README evidence table, demo ledger, selected cycle summaries, deployment dispositions, and digests must agree. `npm run release:check` enforces that agreement and rejects unsafe paths, secrets, private source references, and inconsistent artifacts.
 
-The example score paths, selected cycles, verdicts, live alias owner, public URL, terminal output, and deployment digests remain pending until the quality rebuild regenerates and commits all three runs. Pre-rebuild values are historical evidence, not current release claims.
+The quality rebuild is complete. The three committed examples improve from 75 to 88, 80 to 85, and 71 to 86. Each selected second cycle passes vision, mechanics, resolved assets, all eight laws, and ship eligibility. Canyon Wheelworks owns the verified shared alias; immutable deployment URLs and exact digests remain recorded with every example.
 
 ## Security controls
 
@@ -72,10 +74,12 @@ The example score paths, selected cycles, verdicts, live alias owner, public URL
 - Attempt 7: the public live audit found 12 pixels of overflow at a 320 pixel viewport and proved that HTTP 200 alone could briefly verify a stale Pages alias. The critic added a narrow viewport gate, deployment verification added an exact content digest, the prompts were hardened, and a clean rerun improved from 84 to 86 with a `ship` verdict.
 - Attempt 8: the Cloudflare credential variables were intentionally blanked for an isolated deployment copy. The CLI bound `127.0.0.1:4601`, recorded a verified local fallback, returned the selected site with HTTP 200, and left no listener after the smoke test.
 - Attempt 9: the repository history was rebuilt commit for commit with its original authorship, timestamps, messages, and final tree while removing private workstation references from the public object graph. The sanitized `main` branch was pushed alone, the rendered GitHub README loaded without broken images or console warnings, and the original local history was preserved under ignored `.trash/` recovery storage.
+- Attempt 10: a test written before terminal dependency injection accidentally invoked the real CLI and archived the committed Juniper evidence. Nothing was deleted. The one file replacement moved to ignored recovery storage, the complete 43 file run returned to its original path, and its Git object hash matched the committed run report before work continued.
+- Attempt 11: a direct Node 24 probe proved that Windows rejects spawning `npx.cmd` without a command processor. The installer now uses pinned System32 tools with an owned process tree, bounded cleanup, and sanitized failure states. A harmless version probe through the same command builder exited successfully without installing a browser.
 
 ## Known prototype limits
 
-- The three public examples require regeneration under the current quality contract. Their score paths, selected cycles, verdicts, delivery modes, digests, and live alias ownership are pending committed evidence.
+- The three public examples are judging prototypes built from incomplete or fictional inputs. Their committed evidence proves pipeline behavior and design improvement, not verified operating facts for real businesses.
 - Fast mode produces a concept site. A real business launch still requires verified facts, owner approval, and human review.
 - A selected ineligible result remains useful as a local preview, but it cannot update or stand in for the public alias.
 - The shared Cloudflare Pages alias hosts one verified promoted example at a time. Immutable deployment URLs remain in deployment artifacts when Cloudflare returns them.
