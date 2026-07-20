@@ -3,6 +3,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { mkdir, readFile, symlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
+import { syntheticWindowsPath } from "../helpers/windows-path.js";
 import { chromium } from "playwright";
 
 import * as buildModule from "../../src/build.js";
@@ -11,6 +12,7 @@ import {
   materializeAssets,
   validatePngBuffer,
 } from "../../src/assets.js";
+import { createPlaywrightRecovery } from "../../src/playwright-recovery.js";
 
 const {
   buildSite,
@@ -1485,6 +1487,82 @@ test("writeSiteFiles writes the fixed public file set without overwrite", async 
   await assert.rejects(writeSiteFiles(siteDir, safeManifest(), trustedRunRoot), /already exists/i);
 });
 
+test("writeSiteFiles rejects forged unavailable evidence when live recovery is fresh", async () => {
+  const trustedRunRoot = path.join(process.cwd(), ".trash", "tests", randomUUID());
+  const siteDir = path.join(trustedRunRoot, "site");
+  const forged = {
+    ...safeManifest(),
+    source: "openai",
+    renderedVerification: {
+      status: "unavailable",
+      reason: "chromium_missing_after_retry",
+      installStatus: "installed",
+      installReason: null,
+    },
+  };
+  forged.indexHtml = forged.indexHtml.replace(
+    "<div data-first-beat data-motion-target>",
+    '<div class="motion-copy" data-first-beat data-motion-target>',
+  );
+  appendModelCss(
+    forged,
+    '@media (min-width: 1200px) { [class="motion-copy"] { color: transparent !important; } }',
+  );
+  const browserRecovery = createPlaywrightRecovery({
+    installer: async () => {
+      throw new Error("fresh available recovery must not install");
+    },
+  });
+  assert.deepEqual(browserRecovery.snapshot().unavailableStages, []);
+
+  await assert.rejects(
+    writeSiteFiles(siteDir, forged, trustedRunRoot, { browserRecovery }),
+    (error) => error?.code === "RENDERED_SOURCE_VISIBILITY_FAILED",
+  );
+  for (const filename of ["index.html", "styles.css", "script.js"]) {
+    await assert.rejects(readFile(path.join(siteDir, filename)), { code: "ENOENT" });
+  }
+});
+
+test("writeSiteFiles rejects unavailable evidence that mismatches its live stage latch", async () => {
+  const trustedRunRoot = path.join(process.cwd(), ".trash", "tests", randomUUID());
+  const siteDir = path.join(trustedRunRoot, "site");
+  const browserRecovery = createPlaywrightRecovery({
+    installer: async () => ({ status: "unavailable", reason: "installer_nonzero" }),
+  });
+  await assert.rejects(
+    browserRecovery.run(async () => {
+      throw new Error(
+        `browserType.launch: Executable doesn't exist at ${syntheticWindowsPath("private", "playwright", "chrome.exe")}`,
+      );
+    }, { stage: "build" }),
+    (error) => error?.code === "PLAYWRIGHT_BROWSER_UNAVAILABLE",
+  );
+  const mismatched = {
+    ...safeManifest(),
+    source: "openai",
+    renderedVerification: {
+      status: "unavailable",
+      reason: "installer_timeout",
+      installStatus: "unavailable",
+      installReason: "installer_timeout",
+    },
+  };
+  mismatched.indexHtml = mismatched.indexHtml.replace(
+    "<div data-first-beat data-motion-target>",
+    '<div class="motion-copy" data-first-beat data-motion-target>',
+  );
+  appendModelCss(
+    mismatched,
+    '@media (min-width: 1200px) { [class="motion-copy"] { color: transparent !important; } }',
+  );
+
+  await assert.rejects(
+    writeSiteFiles(siteDir, mismatched, trustedRunRoot, { browserRecovery }),
+    (error) => error?.code === "RENDERED_SOURCE_VISIBILITY_FAILED",
+  );
+});
+
 test("buildRun rejects a cycle junction before site source bytes can escape", async (t) => {
   const fixtureRoot = path.join(process.cwd(), "tmp", randomUUID());
   const runDir = path.join(fixtureRoot, "run");
@@ -1674,38 +1752,40 @@ test("buildRun writes a statically valid local cycle with sanitized recovery evi
   const runDir = path.join(process.cwd(), ".trash", "tests", randomUUID(), "run");
   await mkdir(runDir, { recursive: true });
   await writeFile(path.join(runDir, "brief.json"), JSON.stringify(brief()), "utf8");
-  const unavailable = Object.assign(
-    new Error("Chromium is unavailable after one recovery attempt."),
-    {
-      code: "PLAYWRIGHT_BROWSER_UNAVAILABLE",
-      recovery: {
-        schemaVersion: "1.0",
-        stage: "build",
-        reason: "installer_nonzero",
-        installStatus: "unavailable",
-        installReason: "installer_nonzero",
-      },
+  const browserRecovery = createPlaywrightRecovery({
+    installer: async () => ({ status: "unavailable", reason: "installer_nonzero" }),
+  });
+  let unavailable;
+  await assert.rejects(
+    browserRecovery.run(async () => {
+      throw new Error(
+        `browserType.launch: Executable doesn't exist at ${syntheticWindowsPath("private", "playwright", "chrome.exe")}`,
+      );
+    }, { stage: "build" }),
+    (error) => {
+      unavailable = error;
+      return error?.code === "PLAYWRIGHT_BROWSER_UNAVAILABLE";
     },
   );
-  const browserRecovery = {
-    async run() {
-      throw unavailable;
-    },
-  };
   let modelCalls = 0;
 
   const result = await buildRun({
     runDir,
     browserRecovery,
-    buildSiteFn: ({ brief: inputBrief, browserRecovery: receivedRecovery }) =>
-      buildSite({
-        brief: inputBrief,
-        browserRecovery: receivedRecovery,
-        structuredRequester: async () => {
-          modelCalls += 1;
-          return modelManifest();
+    buildSiteFn: async ({ browserRecovery: receivedRecovery }) => {
+      assert.equal(receivedRecovery, browserRecovery);
+      modelCalls += 1;
+      return {
+        ...safeManifest(),
+        source: "openai",
+        renderedVerification: {
+          status: "unavailable",
+          reason: unavailable.recovery.reason,
+          installStatus: unavailable.recovery.installStatus,
+          installReason: unavailable.recovery.installReason,
         },
-      }),
+      };
+    },
     materializeAssetsFn: async () => ({
       allResolved: false,
       requestCount: 3,

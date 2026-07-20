@@ -2,13 +2,13 @@ import { spawn } from "node:child_process";
 import path from "node:path";
 
 const INSTALL_TIMEOUT_MS = 120_000;
-const WINDOWS_COMMAND_PROCESSOR_FALLBACK = path.win32.join(
+const CLEANUP_TIMEOUT_MS = 10_000;
+const WINDOWS_SYSTEM_ROOT_FALLBACK = path.win32.join(
   "C:" + path.win32.sep,
   "Windows",
-  "System32",
-  "cmd.exe",
 );
 const SAFE_STAGES = new Set(["build", "critic", "revise"]);
+const liveRecoveryEvidenceByStage = new WeakMap();
 
 export class PlaywrightBrowserUnavailableError extends Error {
   constructor(recovery) {
@@ -28,18 +28,36 @@ export function isPlaywrightChromiumExecutableMissing(error) {
 export async function installPlaywrightChromium({
   spawnFn = spawn,
   platform = process.platform,
+  systemRoot = process.env.SystemRoot || WINDOWS_SYSTEM_ROOT_FALLBACK,
   commandProcessor = process.env.ComSpec,
   timeoutMs = INSTALL_TIMEOUT_MS,
+  cleanupTimeoutMs = CLEANUP_TIMEOUT_MS,
+  setTimeoutFn = setTimeout,
+  clearTimeoutFn = clearTimeout,
+  cleanupProcessTreeFn = terminateOwnedProcessTree,
 } = {}) {
   if (typeof spawnFn !== "function") {
     throw new TypeError("A Chromium installer process function is required.");
   }
-  if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 1) {
-    throw new TypeError("The Chromium installer timeout must be a positive integer.");
+  if (
+    typeof setTimeoutFn !== "function" ||
+    typeof clearTimeoutFn !== "function" ||
+    typeof cleanupProcessTreeFn !== "function"
+  ) {
+    throw new TypeError("Chromium installer lifecycle functions are required.");
+  }
+  if (
+    !Number.isSafeInteger(timeoutMs) ||
+    timeoutMs < 1 ||
+    !Number.isSafeInteger(cleanupTimeoutMs) ||
+    cleanupTimeoutMs < 1
+  ) {
+    throw new TypeError("Chromium installer timeouts must be positive integers.");
   }
 
   const { command, args } = createNpxInvocation({
     platform,
+    systemRoot,
     commandProcessor,
     action: "install",
   });
@@ -47,9 +65,9 @@ export async function installPlaywrightChromium({
     let child;
     try {
       child = spawnFn(command, args, {
+        detached: platform !== "win32",
         shell: false,
         stdio: "ignore",
-        timeout: timeoutMs,
         windowsHide: true,
       });
     } catch (error) {
@@ -61,11 +79,20 @@ export async function installPlaywrightChromium({
       reject(new TypeError("The Chromium installer process contract is invalid."));
       return;
     }
+    const ownedPid = isOwnedPid(child.pid) ? child.pid : null;
 
-    let settled = false;
+    let state = "active";
+    let timeoutHandle;
+    const clearOwnedTimeout = () => {
+      if (timeoutHandle === undefined) return;
+      const handle = timeoutHandle;
+      timeoutHandle = undefined;
+      clearTimeoutFn(handle);
+    };
     const settle = (result) => {
-      if (settled) return;
-      settled = true;
+      if (state !== "active") return;
+      state = "settled";
+      clearOwnedTimeout();
       resolve(result);
     };
     child.once("error", (error) => {
@@ -73,18 +100,64 @@ export async function installPlaywrightChromium({
     });
     child.once("close", (code, signal) => {
       if (signal) {
-        settle(installerUnavailable("installer_timeout"));
+        settle(installerUnavailable("installer_cleanup_failed"));
       } else if (code === 0) {
         settle(Object.freeze({ status: "installed", reason: null }));
       } else {
         settle(installerUnavailable("installer_nonzero"));
       }
     });
+    const onTimeout = () => {
+      if (state !== "active") return;
+      if (hasTerminalChildState(child)) {
+        clearOwnedTimeout();
+        return;
+      }
+      state = "terminating";
+      clearOwnedTimeout();
+      const childStillOwnsPid =
+        ownedPid !== null &&
+        child.pid === ownedPid &&
+        child.exitCode === null &&
+        child.signalCode === null;
+      const cleanupController = new AbortController();
+      const cleanup = childStillOwnsPid
+        ? cleanupBeforeDeadline({
+            cleanup: () =>
+              cleanupProcessTreeFn({
+                pid: ownedPid,
+                child,
+                platform,
+                systemRoot,
+                signal: cleanupController.signal,
+              }),
+            timeoutMs: cleanupTimeoutMs,
+            setTimeoutFn,
+            clearTimeoutFn,
+            onDeadline: () => cleanupController.abort(),
+          })
+        : Promise.resolve(false);
+      cleanup.then((cleanupSucceeded) => {
+        if (state !== "terminating") return;
+        releaseOwnedProcessHandle(child, ownedPid, {
+          terminate: !cleanupSucceeded,
+        });
+        state = "settled";
+        resolve(
+          installerUnavailable(
+            cleanupSucceeded ? "installer_timeout" : "installer_cleanup_failed",
+          ),
+        );
+      });
+    };
+    timeoutHandle = setTimeoutFn(onTimeout, timeoutMs);
+    if (state !== "active") clearOwnedTimeout();
   });
 }
 
 export function createNpxInvocation({
   platform = process.platform,
+  systemRoot = process.env.SystemRoot || WINDOWS_SYSTEM_ROOT_FALLBACK,
   commandProcessor = process.env.ComSpec,
   action = "install",
 } = {}) {
@@ -101,12 +174,118 @@ export function createNpxInvocation({
     return Object.freeze({ command: "npx", args: Object.freeze(npxArgs) });
   }
 
-  const trustedCommandProcessor = isTrustedCommandProcessor(commandProcessor)
-    ? commandProcessor
-    : WINDOWS_COMMAND_PROCESSOR_FALLBACK;
+  const canonicalCommandProcessor = windowsSystemExecutable(systemRoot, "cmd.exe");
+  const trustedCommandProcessor = isCanonicalWindowsExecutable(
+    commandProcessor,
+    canonicalCommandProcessor,
+  )
+    ? path.win32.normalize(commandProcessor)
+    : canonicalCommandProcessor;
   return Object.freeze({
     command: trustedCommandProcessor,
     args: Object.freeze(["/d", "/s", "/c", "npx.cmd", ...npxArgs]),
+  });
+}
+
+export async function terminateOwnedProcessTree({
+  pid,
+  child,
+  platform = process.platform,
+  systemRoot = process.env.SystemRoot || WINDOWS_SYSTEM_ROOT_FALLBACK,
+  spawnFn = spawn,
+  killFn = process.kill,
+  signal,
+} = {}) {
+  if (!isOwnedPid(pid)) {
+    throw new TypeError("An owned process id is required for installer cleanup.");
+  }
+  if (platform !== "win32") {
+    if (typeof killFn !== "function") {
+      throw new TypeError("A process group cleanup function is required.");
+    }
+    if (
+      !child ||
+      child.pid !== pid ||
+      typeof child.once !== "function" ||
+      hasTerminalChildState(child)
+    ) {
+      throw new TypeError("The owned installer process contract is invalid for cleanup.");
+    }
+    await new Promise((resolve, reject) => {
+      let settled = false;
+      let abortHandler;
+      const finish = (error) => {
+        if (settled) return;
+        settled = true;
+        if (abortHandler) signal?.removeEventListener?.("abort", abortHandler);
+        if (error) reject(error);
+        else resolve();
+      };
+      child.once("error", () => {
+        finish(new Error("The installer process group cleanup failed."));
+      });
+      child.once("close", () => {
+        finish();
+      });
+      abortHandler = () => {
+        finish(new Error("The installer process group cleanup was cancelled."));
+      };
+      signal?.addEventListener?.("abort", abortHandler, { once: true });
+      if (signal?.aborted) {
+        abortHandler();
+        return;
+      }
+      try {
+        killFn(-pid, "SIGKILL");
+      } catch {
+        finish(new Error("The installer process group cleanup failed."));
+      }
+    });
+    return;
+  }
+  if (typeof spawnFn !== "function") {
+    throw new TypeError("A Windows process tree cleanup function is required.");
+  }
+
+  const command = windowsSystemExecutable(systemRoot, "taskkill.exe");
+  await new Promise((resolve, reject) => {
+    let cleanupChild;
+    try {
+      cleanupChild = spawnFn(command, ["/PID", String(pid), "/T", "/F"], {
+        shell: false,
+        stdio: "ignore",
+        windowsHide: true,
+      });
+    } catch {
+      reject(new Error("The installer process tree cleanup could not start."));
+      return;
+    }
+    if (!cleanupChild || typeof cleanupChild.once !== "function") {
+      reject(new TypeError("The installer process tree cleanup contract is invalid."));
+      return;
+    }
+    const ownedCleanupPid = isOwnedPid(cleanupChild.pid) ? cleanupChild.pid : null;
+    let settled = false;
+    let abortHandler;
+    const finish = (error) => {
+      if (settled) return;
+      settled = true;
+      if (abortHandler) signal?.removeEventListener?.("abort", abortHandler);
+      if (error) reject(error);
+      else resolve();
+    };
+    cleanupChild.once("error", () => {
+      finish(new Error("The installer process tree cleanup could not start."));
+    });
+    cleanupChild.once("close", (code) => {
+      finish(code === 0 ? null : new Error("The installer process tree cleanup failed."));
+    });
+    abortHandler = () => {
+      finish(new Error("The installer process tree cleanup was cancelled."));
+      releaseOwnedProcessHandle(cleanupChild, ownedCleanupPid, { terminate: true });
+    };
+    signal?.addEventListener?.("abort", abortHandler, { once: true });
+    if (signal?.aborted) abortHandler();
   });
 }
 
@@ -118,7 +297,7 @@ export function createPlaywrightRecovery({ installer = installPlaywrightChromium
   let installPromise = null;
   let installResult = null;
   let triggerStage = null;
-  const unavailableStages = new Set();
+  const unavailableEvidenceByStage = new Map();
 
   const installOnce = (stage) => {
     if (!installPromise) {
@@ -134,13 +313,16 @@ export function createPlaywrightRecovery({ installer = installPlaywrightChromium
     return installPromise;
   };
 
-  return Object.freeze({
+  const recovery = Object.freeze({
     async run(operation, { stage } = {}) {
       if (typeof operation !== "function") {
         throw new TypeError("A browser operation is required.");
       }
       if (!SAFE_STAGES.has(stage)) {
         throw new TypeError("A known browser recovery stage is required.");
+      }
+      if (installResult?.reason === "installer_cleanup_failed") {
+        throw latchUnavailable(stage, installResult, unavailableEvidenceByStage);
       }
 
       try {
@@ -150,21 +332,14 @@ export function createPlaywrightRecovery({ installer = installPlaywrightChromium
       }
 
       const installation = await installOnce(stage);
+      if (installation.reason === "installer_cleanup_failed") {
+        throw latchUnavailable(stage, installation, unavailableEvidenceByStage);
+      }
       try {
         return await operation();
       } catch (error) {
         if (!isPlaywrightChromiumExecutableMissing(error)) throw error;
-        unavailableStages.add(stage);
-        throw new PlaywrightBrowserUnavailableError({
-          schemaVersion: "1.0",
-          stage,
-          reason:
-            installation.status === "installed"
-              ? "chromium_missing_after_retry"
-              : installation.reason,
-          installStatus: installation.status,
-          installReason: installation.reason,
-        });
+        throw latchUnavailable(stage, installation, unavailableEvidenceByStage);
       }
     },
 
@@ -175,10 +350,27 @@ export function createPlaywrightRecovery({ installer = installPlaywrightChromium
         installStatus: installResult?.status ?? null,
         installReason: installResult?.reason ?? null,
         triggerStage,
-        unavailableStages: [...unavailableStages],
+        unavailableStages: [...unavailableEvidenceByStage.keys()],
       };
     },
   });
+  liveRecoveryEvidenceByStage.set(recovery, unavailableEvidenceByStage);
+  return recovery;
+}
+
+export function matchesLatchedUnavailableEvidence(recovery, stage, evidence) {
+  const expected = liveRecoveryEvidenceByStage.get(recovery)?.get(stage);
+  return Boolean(
+    expected &&
+      evidence &&
+      typeof evidence === "object" &&
+      !Array.isArray(evidence) &&
+      Object.keys(evidence).length === 4 &&
+      evidence.status === "unavailable" &&
+      evidence.reason === expected.reason &&
+      evidence.installStatus === expected.installStatus &&
+      evidence.installReason === expected.installReason,
+  );
 }
 
 export function isPlaywrightBrowserUnavailable(error) {
@@ -189,12 +381,96 @@ function installerUnavailable(reason) {
   return Object.freeze({ status: "unavailable", reason });
 }
 
-function isTrustedCommandProcessor(value) {
+function latchUnavailable(stage, installation, unavailableEvidenceByStage) {
+  const evidence = Object.freeze({
+    schemaVersion: "1.0",
+    stage,
+    reason:
+      installation.status === "installed"
+        ? "chromium_missing_after_retry"
+        : installation.reason,
+    installStatus: installation.status,
+    installReason: installation.reason,
+  });
+  unavailableEvidenceByStage.set(stage, evidence);
+  return new PlaywrightBrowserUnavailableError(evidence);
+}
+
+function cleanupBeforeDeadline({
+  cleanup,
+  timeoutMs,
+  setTimeoutFn,
+  clearTimeoutFn,
+  onDeadline,
+}) {
+  let timeoutHandle;
+  const deadline = new Promise((resolve) => {
+    timeoutHandle = setTimeoutFn(() => {
+      resolve(false);
+      try {
+        onDeadline?.();
+      } catch {
+        // Cleanup cancellation is best effort; the deadline remains authoritative.
+      }
+    }, timeoutMs);
+  });
+  const attempt = Promise.resolve()
+    .then(cleanup)
+    .then(
+      () => true,
+      () => false,
+    );
+  return Promise.race([attempt, deadline]).finally(() => {
+    if (timeoutHandle !== undefined) clearTimeoutFn(timeoutHandle);
+  });
+}
+
+function releaseOwnedProcessHandle(child, ownedPid, { terminate }) {
+  if (!isOwnedPid(ownedPid) || !child || child.pid !== ownedPid) return;
+  if (terminate && !hasTerminalChildState(child) && typeof child.kill === "function") {
+    try {
+      child.kill("SIGKILL");
+    } catch {
+      // The handle is still released below so a failed cleanup cannot pin the CLI.
+    }
+  }
+  if (typeof child.unref === "function") {
+    try {
+      child.unref();
+    } catch {
+      // An unusable handle cannot safely be acted on further.
+    }
+  }
+}
+
+function hasTerminalChildState(child) {
   return (
-    typeof value === "string" &&
-    path.win32.isAbsolute(value) &&
-    path.win32.basename(value).toLowerCase() === "cmd.exe"
+    (child.exitCode !== null && child.exitCode !== undefined) ||
+    (child.signalCode !== null && child.signalCode !== undefined)
   );
+}
+
+function windowsSystemExecutable(systemRoot, filename) {
+  if (typeof systemRoot !== "string" || !systemRoot.trim()) {
+    throw new TypeError("A canonical Windows system root is required.");
+  }
+  const normalized = path.win32.resolve(systemRoot);
+  if (!/^[a-z]:\\Windows$/i.test(normalized)) {
+    throw new TypeError("A canonical Windows system root is required.");
+  }
+  return path.win32.join(normalized, "System32", filename);
+}
+
+function isCanonicalWindowsExecutable(candidate, canonical) {
+  return (
+    typeof candidate === "string" &&
+    candidate.trim() !== "" &&
+    path.win32.resolve(candidate).toLowerCase() === canonical.toLowerCase()
+  );
+}
+
+function isOwnedPid(value) {
+  return Number.isSafeInteger(value) && value > 0;
 }
 
 function validateInstallerResult(result) {
@@ -207,6 +483,7 @@ function validateInstallerResult(result) {
           "installer_nonzero",
           "installer_start_failed",
           "installer_timeout",
+          "installer_cleanup_failed",
         ].includes(result.reason);
   if (!valid || Object.keys(result).some((key) => !["status", "reason"].includes(key))) {
     throw new TypeError("The Chromium installer returned invalid recovery metadata.");
@@ -242,6 +519,7 @@ function isRecoveryMetadata(value) {
     "installer_nonzero",
     "installer_start_failed",
     "installer_timeout",
+    "installer_cleanup_failed",
   ]);
   return (
     value.installStatus === "unavailable" &&

@@ -397,6 +397,68 @@ test("executePipeline rejects critic programming and integrity faults", async (t
   }
 });
 
+test("executePipeline propagates fatal provider request statuses", async (t) => {
+  for (const status of [400, 401, 403]) {
+    await t.test(String(status), async () => {
+      const root = path.join(process.cwd(), ".trash", "tests", randomUUID());
+      const fault = Object.assign(new Error(`fatal provider status ${status}`), {
+        name: "RateLimitError",
+        code: "MODEL_RESPONSE_ERROR",
+        status,
+      });
+      await assert.rejects(
+        executePipeline({
+          businessName: `Fatal Provider ${status}`,
+          fast: true,
+          maxCycles: 1,
+          runsRoot: path.join(root, "runs"),
+          trashRoot: path.join(root, "trash"),
+          createBriefFn: async () => ({ business: { name: `Fatal Provider ${status}` } }),
+          buildRunFn: async ({ runDir }) => {
+            await mkdir(path.join(runDir, "cycle-01", "site"), { recursive: true });
+          },
+          criticFn: async () => {
+            throw fault;
+          },
+        }),
+        (error) => error === fault,
+      );
+    });
+  }
+});
+
+test("executePipeline degrades only explicit transient or exhausted provider failures", async (t) => {
+  const failures = [
+    ["408", Object.assign(new Error("request timeout"), { name: "APIError", status: 408 })],
+    ["409", Object.assign(new Error("provider conflict"), { name: "APIError", status: 409 })],
+    ["429", Object.assign(new Error("rate limited"), { name: "APIError", status: 429 })],
+    ["500", Object.assign(new Error("provider failed"), { name: "APIError", status: 500 })],
+    ["typed response exhaustion", Object.assign(new Error("response exhausted"), { code: "MODEL_RESPONSE_ERROR" })],
+    ["typed capture unavailable", Object.assign(new Error("capture unavailable"), { code: "CAPTURE_UNAVAILABLE" })],
+  ];
+  for (const [name, fault] of failures) {
+    await t.test(name, async () => {
+      const root = path.join(process.cwd(), ".trash", "tests", randomUUID());
+      const result = await executePipeline({
+        businessName: `Transient Provider ${name}`,
+        fast: true,
+        maxCycles: 1,
+        runsRoot: path.join(root, "runs"),
+        trashRoot: path.join(root, "trash"),
+        createBriefFn: async () => ({ business: { name: `Transient Provider ${name}` } }),
+        buildRunFn: async ({ runDir }) => {
+          await mkdir(path.join(runDir, "cycle-01", "site"), { recursive: true });
+        },
+        criticFn: async () => {
+          throw fault;
+        },
+      });
+      assert.equal(result.report.stopReason, "critic_unavailable");
+      assert.equal(result.report.cycles[0].mode, "unavailable");
+    });
+  }
+});
+
 test("finalizeExistingRun selects from preserved critique artifacts", async () => {
   const runDir = path.join(process.cwd(), "tmp", randomUUID(), "run");
   await mkdir(runDir, { recursive: true });

@@ -342,6 +342,14 @@ function cloneObjectOrNull(value) {
 }
 
 function isPipelineStageUnavailable(error) {
+  if (Number.isInteger(error?.status)) {
+    return (
+      error.status === 408 ||
+      error.status === 409 ||
+      error.status === 429 ||
+      (error.status >= 500 && error.status <= 599)
+    );
+  }
   const codes = new Set([
     "CAPTURE_UNAVAILABLE",
     "CONTENT_FILTER",
@@ -354,14 +362,9 @@ function isPipelineStageUnavailable(error) {
   const names = new Set([
     "APIConnectionError",
     "APIConnectionTimeoutError",
-    "APIError",
     "InternalServerError",
     "ModelResponseError",
     "RateLimitError",
   ]);
-  return (
-    codes.has(error?.code) ||
-    names.has(error?.name) ||
-    (Number.isInteger(error?.status) && error.status >= 400)
-  );
+  return codes.has(error?.code) || names.has(error?.name);
 }

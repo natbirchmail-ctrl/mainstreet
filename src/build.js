@@ -15,6 +15,7 @@ import { EVIDENCE_VIEWPORTS } from "./viewports.js";
 import {
   createPlaywrightRecovery,
   isPlaywrightBrowserUnavailable,
+  matchesLatchedUnavailableEvidence,
 } from "./playwright-recovery.js";
 
 export { createOwnedMotionRuntime, createOwnedMotionStyles } from "./motion.js";
@@ -968,7 +969,12 @@ export async function writeSiteFiles(
   } = {},
 ) {
   validateSiteManifest(manifest);
-  if (manifest.renderedVerification?.status !== "unavailable") {
+  const liveUnavailable = matchesLatchedUnavailableEvidence(
+    browserRecovery,
+    recoveryStage,
+    manifest.renderedVerification,
+  );
+  if (!liveUnavailable) {
     await validateRenderedSourceVisibility(manifest, {
       browserRecovery,
       stage: recoveryStage,
@@ -1003,6 +1009,7 @@ function validateRenderedVerification(value) {
     "installer_nonzero",
     "installer_start_failed",
     "installer_timeout",
+    "installer_cleanup_failed",
   ]);
   const unavailableEvidenceIsValid =
     value?.installStatus === "unavailable" &&

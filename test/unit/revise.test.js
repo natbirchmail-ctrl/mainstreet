@@ -3,9 +3,11 @@ import { createHash, randomUUID } from "node:crypto";
 import { mkdir, readFile, symlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
+import { syntheticWindowsPath } from "../helpers/windows-path.js";
 
 import { createDeterministicPng, materializeAssets } from "../../src/assets.js";
 import { createOwnedMotionRuntime, createOwnedMotionStyles, validateSiteManifest } from "../../src/build.js";
+import { createPlaywrightRecovery } from "../../src/playwright-recovery.js";
 import { reviseRun, reviseSite } from "../../src/revise.js";
 
 const revisePromptUrl = new URL("../../prompts/revise-system.md", import.meta.url);
@@ -529,12 +531,26 @@ test("missing Chromium preserves the first statically valid revision without a s
 test("reviseRun shares browser recovery and writes an unverified static cycle", async () => {
   const runDir = path.join(process.cwd(), ".trash", "tests", randomUUID(), "run");
   await makeResolvedFirstCycle(runDir);
-  const browserRecovery = { run: async () => { throw new Error("must not relaunch"); } };
+  const browserRecovery = createPlaywrightRecovery({
+    installer: async () => ({ status: "unavailable", reason: "installer_timeout" }),
+  });
+  let unavailable;
+  await assert.rejects(
+    browserRecovery.run(async () => {
+      throw new Error(
+        `browserType.launch: Executable doesn't exist at ${syntheticWindowsPath("private", "playwright", "chrome.exe")}`,
+      );
+    }, { stage: "revise" }),
+    (error) => {
+      unavailable = error;
+      return error?.code === "PLAYWRIGHT_BROWSER_UNAVAILABLE";
+    },
+  );
   const renderedVerification = {
     status: "unavailable",
-    reason: "installer_timeout",
-    installStatus: "unavailable",
-    installReason: "installer_timeout",
+    reason: unavailable.recovery.reason,
+    installStatus: unavailable.recovery.installStatus,
+    installReason: unavailable.recovery.installReason,
   };
 
   const result = await reviseRun({
