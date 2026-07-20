@@ -16,7 +16,7 @@ Canyon Wheelworks is both the demo run and the current shared alias owner. These
 - `DEMO_IMMUTABLE_URL: https://f3a57ad6.mainstreet-hackathon.pages.dev/`
 - `LIVE_ALIAS_OWNER_SLUG: canyon-wheelworks`
 - `LIVE_URL: https://mainstreet-hackathon.pages.dev/`
-- `DEPLOYMENT_COMMIT: 26e6714c571ab07f25a7a230b8fa73674fa9a6ce`
+- `DEPLOYMENT_COMMIT: 5e61d6a09eefaad61973a3c70a81b8b96ccba5a4`
 
 Exact successful run output:
 
@@ -147,7 +147,7 @@ Evidence: `runs/harborlight-flower-studio/` Scores: 75 to 88. Selected cycle: 2.
 
 Evidence: `runs/juniper-oven/` Scores: 80 to 85. Selected cycle: 2. Verdict: ship. Stop reason: threshold_reached. Delivery: cloudflare verified. Immutable URL: https://8107ec4c.mainstreet-hackathon.pages.dev/. Aggregate SHA 256: 028250693db26937ae9f84f8a8046278921e3a291d18567ff635ef818738d5c8.
 
-Canyon's deployment manifest records commit `26e6714c571ab07f25a7a230b8fa73674fa9a6ce`. Harborlight and Juniper record commit `fe6fb5c4d65fcb5ddadc83caebdbd80a07fb0fd1`. Each selected critique used vision mode and records `mechanicalPassed`, `assetsResolved`, `lawGatePassed`, and `shipEligible` as true. Canyon owns the current shared alias.
+Canyon's deployment manifest records commit `5e61d6a09eefaad61973a3c70a81b8b96ccba5a4`. Harborlight records commit `e1bb0948fc6c253999d460c6eeb620d12488d6b6`, and Juniper records commit `0d524f78162452d6ac6b65d267f2fc5ca1d8e72a`. Each selected critique used vision mode and records `mechanicalPassed`, `assetsResolved`, `lawGatePassed`, and `shipEligible` as true. Canyon owns the current shared alias.
 
 ## Final recording checks
 

@@ -24,7 +24,7 @@ Out of scope: modifying the production factory, importing production customer co
 - ASSUMPTION: the approved product design and the explicit autonomous build instruction replace any additional design approval gate.
 - ASSUMPTION: plain ESM JavaScript on Node.js 22 or newer is the fastest reliable clean-room implementation.
 - ASSUMPTION: a Codex agent team may work in bounded repository scopes. The root Codex agent owns integration, shared contract enforcement, verification, and final decisions.
-- ASSUMPTION: every cleanup target moves under `.trash/`; nothing is hard-deleted.
+- ASSUMPTION: every cleanup target moves to recovery trash and nothing is hard-deleted. Secret-bearing recovery moves outside the public repository root.
 - ASSUMPTION: absent Cloudflare credentials select the documented local server fallback and do not fail a run.
 - DECISION: port 4601 is the static preview and fallback server. Port 4600 remains reserved for the optional local UI. This resolves the contradictory fallback URL in the original plan.
 - DECISION: the OpenAI SDK runs with automatic retries disabled. Mainstreet owns one bounded ladder of three total attempts so latency and cost do not multiply invisibly.
@@ -58,7 +58,7 @@ The quality rebuild is complete. The three committed examples improve from 75 to
 
 ## Security controls
 
-- Secrets live only in `.env`, which is ignored before the first commit.
+- Inside the repository, secrets live only in `.env`, which is ignored before the first commit.
 - `.env.example` contains names only.
 - Public artifacts must not contain local machine paths, production customer names, credential source metadata, tokens, or copied production source.
 - Secret scanning and full-history scanning are required before public release.
@@ -76,6 +76,7 @@ The quality rebuild is complete. The three committed examples improve from 75 to
 - Attempt 9: the repository history was rebuilt commit for commit with its original authorship, timestamps, messages, and final tree while removing private workstation references from the public object graph. The sanitized `main` branch was pushed alone, the rendered GitHub README loaded without broken images or console warnings, and the original local history was preserved under ignored `.trash/` recovery storage.
 - Attempt 10: a test written before terminal dependency injection accidentally invoked the real CLI and archived the committed Juniper evidence. Nothing was deleted. The one file replacement moved to ignored recovery storage, the complete 43 file run returned to its original path, and its Git object hash matched the committed run report before work continued.
 - Attempt 11: a direct Node 24 probe proved that Windows rejects spawning `npx.cmd` without a command processor. The installer now uses pinned System32 tools with an owned process tree, bounded cleanup, and sanitized failure states. A harmless version probe through the same command builder exited successfully without installing a browser.
+- Attempt 12: two final verification processes briefly overlapped on the fixed preview port. The failing process reported only port collisions, the competing helper was stopped, the port cleared, and the isolated 54 test critic suite passed without a lifecycle change.
 
 ## Known prototype limits
 

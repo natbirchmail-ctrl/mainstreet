@@ -14,7 +14,7 @@ Canyon Wheelworks owns the current shared alias. Cloudflare verified the selecte
 - `LIVE_URL: https://mainstreet-hackathon.pages.dev/`
 - `LIVE_IMMUTABLE_URL: https://f3a57ad6.mainstreet-hackathon.pages.dev/`
 - `LIVE_AGGREGATE_SHA256: e9af70db174e2ac1a3be49fb6519513c5098f61ad377e6900bb5e1e56c9140e9`
-- `DEPLOYMENT_COMMIT: 26e6714c571ab07f25a7a230b8fa73674fa9a6ce`
+- `DEPLOYMENT_COMMIT: 5e61d6a09eefaad61973a3c70a81b8b96ccba5a4`
 
 The shared alias points to the most recent verified promotion. Each example also has an immutable Cloudflare URL in the evidence table below. A loopback URL proves local delivery only and never replaces either public record.
 
@@ -201,7 +201,7 @@ runs/<slug>/
 
 ## Example evidence
 
-Each selected critique ran in vision mode and passed mechanics, asset resolution, all eight laws, and ship eligibility. Every run stopped when it reached the score threshold. Cloudflare verified all three deployments. Harborlight and Juniper record commit `fe6fb5c4d65fcb5ddadc83caebdbd80a07fb0fd1`; Canyon records commit `26e6714c571ab07f25a7a230b8fa73674fa9a6ce`.
+Each selected critique ran in vision mode and passed mechanics, asset resolution, all eight laws, and ship eligibility. Every run stopped when it reached the score threshold. Cloudflare verified all three deployments. Harborlight records commit `e1bb0948fc6c253999d460c6eeb620d12488d6b6`; Juniper records commit `0d524f78162452d6ac6b65d267f2fc5ca1d8e72a`; Canyon records commit `5e61d6a09eefaad61973a3c70a81b8b96ccba5a4`.
 
 | Business | Score path | Selected cycle | Final verdict | Stop reason | Delivery | Immutable URL | Aggregate SHA 256 | Evidence |
 | --- | --- | ---: | --- | --- | --- | --- | --- | --- |

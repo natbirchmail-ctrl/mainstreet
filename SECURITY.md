@@ -23,6 +23,7 @@ A failed gate, source only critique, unresolved image, unavailable commit, or Cl
 ## Secret handling
 
 - Store secrets only in `.env`.
+- Publish from a reviewed Git commit only. Never upload the raw working directory or ignored recovery storage.
 - Never commit `.env` or paste its values into run details.
 - Use a least privilege Cloudflare token limited to Pages operations.
 - Rotate a credential immediately if it appears in a terminal capture, screenshot, log, commit, issue, or video.

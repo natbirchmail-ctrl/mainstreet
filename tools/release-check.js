@@ -120,6 +120,12 @@ const RAW_SECRET_PATTERNS = Object.freeze([
     "i",
   ),
 ]);
+const CREDENTIAL_LITERAL_PATTERNS = Object.freeze([
+  /\b(?:sk_live|rk_(?:live|test))_[a-z0-9_]{16,}\b/i,
+  /\bxox[a-z]-[a-z0-9-]{20,}\b/i,
+  /\bxapp-[a-z0-9-]{20,}\b/i,
+  /\beyJ[a-z0-9_-]{5,}\.[a-z0-9_-]{5,}\.[a-z0-9_-]{10,}\b/i,
+]);
 const WINDOWS_MACHINE_PATH = new RegExp(
   String.raw`(?:^|[\s"'\x60(=:[,])(?:file:\/\/\/)?[a-z]:(?:[\\/]+)[^\s"'\x60<>|]+`,
   "im",
@@ -1523,6 +1529,9 @@ function scanContent(
   if (text === null) return;
   if (hasSecretAssignment(text)) {
     findings.add("SECRET_ASSIGNMENT", relativePath);
+  }
+  if (CREDENTIAL_LITERAL_PATTERNS.some((pattern) => pattern.test(text))) {
+    findings.add("CREDENTIAL_LITERAL", relativePath);
   }
   if (
     !suppressAbsoluteMachinePath &&

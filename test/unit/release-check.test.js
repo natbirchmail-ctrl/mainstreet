@@ -109,7 +109,6 @@ const approvedHistoricalAbsolutePathFixtures = Object.freeze([
     bytes: 17823,
   }),
 ]);
-
 test("release checker exports the public API and formats stable rule path lines", () => {
   assert.equal(typeof checkRelease, "function");
   assert.equal(typeof formatFindings, "function");
@@ -257,6 +256,100 @@ test("unquoted YAML secret assignments are detected without exposing values", as
   assertFinding(result, "SECRET_ASSIGNMENT", "notes/config.yml");
   assert.equal(formatFindings(result.findings).includes(secret), false);
 });
+
+test("credential-shaped literals are rejected without exposing their values", async (t) => {
+  const credentials = [
+    [
+      "Stripe live secret",
+      ["sk", "live", randomUUID().replaceAll("-", "")].join("_"),
+    ],
+    [
+      "Stripe restricted secret",
+      ["rk", "live", randomUUID().replaceAll("-", "")].join("_"),
+    ],
+    [
+      "Stripe test restricted secret",
+      ["rk", "test", randomUUID().replaceAll("-", "")].join("_"),
+    ],
+    [
+      "Slack xox token",
+      ["xoxb", "123456789012", randomUUID().replaceAll("-", "")].join("-"),
+    ],
+    [
+      "Slack app token",
+      ["xapp", "1", "A1234567890", randomUUID().replaceAll("-", "")].join("-"),
+    ],
+    [
+      "JWT",
+      [
+        Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString("base64url"),
+        Buffer.from(JSON.stringify({ sub: "synthetic-release-fixture" })).toString("base64url"),
+        randomUUID().replaceAll("-", ""),
+      ].join("."),
+    ],
+  ];
+
+  for (const [name, credential] of credentials) {
+    await t.test(name, async () => {
+      const fixture = await makeFixture();
+      const relativePath = `notes/${name.toLowerCase().replaceAll(" ", "-")}.txt`;
+      await writeOwnedFile(fixture.root, relativePath, `credential=${credential}\n`);
+
+      const result = await checkRelease({
+        repoRoot: fixture.root,
+        expectedSlugs: fixture.expectedSlugs,
+      });
+
+      assertFinding(result, "CREDENTIAL_LITERAL", relativePath);
+      const output = formatFindings(result.findings);
+      assert.equal(output.includes(credential), false);
+      assert.equal(output.includes(fixture.root), false);
+    });
+  }
+});
+
+test("runtime-composed credential fixtures do not become literal findings", async () => {
+  const fixture = await makeFixture();
+  await writeOwnedFile(
+    fixture.root,
+    "notes/synthetic-fixtures.js",
+    [
+      `const stripe = ["sk", "live", "syntheticValueForTests"].join("_");`,
+      `const slack = ["xoxb", "syntheticValueForTests"].join("-");`,
+      `const jwt = ["eyJheader", "eyJpayload", "syntheticSignature"].join(".");`,
+      "",
+    ].join("\n"),
+  );
+
+  assert.deepEqual(
+    await checkRelease({
+      repoRoot: fixture.root,
+      expectedSlugs: fixture.expectedSlugs,
+    }),
+    { ok: true, findings: [] },
+  );
+});
+
+test(
+  "credential-shaped literals in reachable history remain rejected and redacted",
+  async () => {
+    const credential = [
+      "xoxp",
+      "123456789012",
+      randomUUID().replaceAll("-", ""),
+    ].join("-");
+    const value = Buffer.from(`credential=${credential}\n`);
+    const relativePath = "notes/deleted-credential.txt";
+    const result = await checkSyntheticHistory([
+      { path: relativePath, object: gitBlobObjectId(value), value },
+    ]);
+
+    assertFinding(result, "CREDENTIAL_LITERAL", relativePath);
+    const output = formatFindings(result.findings);
+    assert.equal(output.includes(credential), false);
+    assert.equal(/[a-f0-9]{40}/i.test(output), false);
+  },
+);
 
 test("absolute machine paths report ABSOLUTE_MACHINE_PATH without echoing them", async () => {
   const fixture = await makeFixture();
